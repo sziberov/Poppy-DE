@@ -1,0 +1,7 @@
+{
+	"name": "Poppy DE",
+	"main": "System/Library/Kernels/Kernel.html",
+	"window": {
+		"fullscreen": true
+	}
+}

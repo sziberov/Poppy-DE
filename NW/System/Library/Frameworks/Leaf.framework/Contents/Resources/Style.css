@@ -1,0 +1,667 @@
+@keyframes LFWorkspace {
+	0%		{ opacity: 0; transform: scale(0.875); }
+	100%	{ opacity: 1; transform: scale(1); }
+}
+
+LFWorkspace {
+	position: absolute;
+	z-index: 0;
+
+	width: 100%;
+	height: 100%;
+
+	background-color: #bf6060;
+	background-position: center;
+	background-size: cover;
+
+	animation: LFWorkspace 1s ease;
+}
+
+LFButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	position: relative;
+
+	padding: 0 8px;
+
+	min-height: 24px;
+
+	background: linear-gradient(to bottom,
+		#ffffff,
+		#f2f2f2 50%,
+		#e5e5e5 50%,
+		#f2f2f2
+	);
+	border-radius: 4px;
+	box-shadow:
+		inset 0 0 0 1px #808080,
+		inset 0 0 0 2px rgba(255,255,255,0.25),
+		0 1px rgba(0,0,0,0.05);
+}
+
+LFButton:after {
+	content: attr(title);
+}
+
+LFButton[focus]:before {
+	content: '';
+
+	position: absolute;
+	top: 0;
+	left: 0;
+
+	width: 100%;
+	height: 100%;
+
+	border-radius: inherit;
+	box-shadow:
+		inset 0 0 0 1px rgba(255,128,128,0.75),
+		inset 0 0 0 2px rgba(255,128,128,0.325),
+		0 0 0 1px rgba(255,128,128,0.75),
+		0 0 0 2px rgba(255,128,128,0.325);
+
+	pointer-events: none;
+}
+
+@keyframes LFButton_highlighted {
+	0%	{ filter: brightness(1); }
+	50%	{ filter: brightness(0.875) saturate(1.25); }
+	0%	{ filter: brightness(1); }
+}
+
+LFButton[highlighted] {
+	background: linear-gradient(to bottom,
+		#ffcccc,
+		#ff9999 50%,
+		#ff8080 50%,
+		#ffcccc
+	);
+	box-shadow:
+		inset 0 0 0 1px #804040,
+		inset 0 2px rgba(255,255,255,0.25),
+		0 1px rgba(0,0,0,0.05);
+
+	animation: LFButton_highlighted 1s ease infinite;
+}
+
+LFButton[highlighted][focus]:before {
+	z-index: -1;
+}
+
+LFButton[active] {
+	filter: brightness(0.875);
+}
+
+LFButton[disabled] {
+	opacity: 0.5;
+}
+
+LFMenubar {
+	display: flex;
+
+	position: absolute;
+
+	padding: 0 8px;
+
+	width: calc(100% - 16px);
+	height: 24px;
+
+	background: linear-gradient(to bottom,
+		#f2f2f2,
+		#808080
+	);
+	box-shadow:
+		inset 0 1px #ffffff,
+		inset 0 -1px #404040;
+
+	transform: translateY(0);
+	transition: transform 0.5s ease;
+}
+
+LFMenubar[hidden] {
+	transform: translateY(-48px);
+}
+
+LFMenubar:after {
+	content: '';
+
+	position: absolute;
+	top: 100%;
+	left: 0;
+
+	width: 100%;
+	height: 100%;
+
+	background: linear-gradient(to bottom,
+		rgba(0,0,0,0.25),
+		rgba(0,0,0,0)
+	);
+
+	pointer-events: none;
+}
+
+LFMenubar[transparent] {
+	background: linear-gradient(to bottom,
+		rgba(255,255,255,0.75),
+		rgba(255,255,255,0.25)
+	);
+	-backdrop-filter: blur(4px);
+	box-shadow:
+		inset 0 1px rgba(255,255,255,0.25),
+		inset 0 -1px rgba(0,0,0,0.5);
+}
+
+LFMenubarGroup {
+	display: flex;
+}
+
+LFMenubarGroup[status] {
+	flex-direction: row-reverse;
+
+	margin-left: auto;
+}
+
+LFMenubar LFButton {
+	flex-shrink: 0;
+
+	min-width: 0;
+
+	background: none;
+	border-radius: 0;
+	box-shadow: none;
+
+	white-space: nowrap;
+}
+
+LFMenubar LFButton:after {
+	font-size: 17px;
+	text-shadow: 0 1px rgba(255,255,255,0.5);
+}
+
+LFMenubar LFButton:has(LFImage) :after {
+	margin-right: 16px;
+}
+
+LFMenubar LFButton[hover],
+LFMenubar LFButton[active] {
+	background: linear-gradient(to bottom,
+		#ff4040,
+		#bf0000
+	);
+	box-shadow:
+		inset 0 1px rgba(255,255,255,0.25),
+		inset 0 -1px rgba(0,0,0,0.25);
+	filter: none;
+}
+
+LFMenubar LFButton[hover]:after,
+LFMenubar LFButton[active]:after {
+	color: #ffffff;
+	text-shadow: none;
+}
+
+LFMenubar LFButton LFImage[template] {
+	filter: drop-shadow(0 1px rgba(255,255,255,0.5));
+}
+
+LFMenubar LFButton[hover] LFImage[template],
+LFMenubar LFButton[active] LFImage[template] {
+	filter: invert(1);
+}
+
+LFMenubar LFButton[disabled] LFImage {
+	opacity: 0.5;
+}
+
+LFMenubarGroup[application] LFButton:first-child:after {
+	font-weight: 500;
+}
+
+LFMenu {
+	display: flex;
+	flex-direction: column;
+
+	position: absolute;
+	top: 0;
+	left: 0;
+
+	padding: 4px 0;
+
+	min-width: 24px;
+	min-height: 24px;
+
+	background: rgba(255,255,255,0.875);
+	-backdrop-filter: blur(4px);
+	border-radius: 4px;
+	box-shadow:
+		0 0 0 1px rgba(0,0,0,0.25),
+		0 8px 8px rgba(0,0,0,0.25);
+}
+
+LFMenu:not([active]) {
+	visibility: hidden;
+}
+
+LFMenuItem {
+	display: flex;
+	align-items: center;
+
+	padding: 0 24px;
+
+	height: 24px;
+}
+
+LFMenuItem:after {
+	content: attr(title);
+}
+
+LFMenuItem[hover] {
+	background: linear-gradient(to bottom,
+		#ff4040,
+		#bf0000
+	);
+	box-shadow:
+		inset 0 1px rgba(0,0,0,0.25),
+		inset 0 -1px rgba(0,0,0,0.25);
+}
+
+LFMenuItem[hover]:after {
+	color: #ffffff;
+}
+
+LFMenuItem[disabled] {
+	color: #bfbfbf;
+}
+
+LFMenuItem[separator] {
+	margin: 4px 0;
+
+	height: 1px;
+
+	background: rgba(0,0,0,0.125);
+}
+
+LFWindow {
+	display: flex;
+	flex-direction: column;
+
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 0;
+
+	min-width: 64px;
+	min-height: 64px;
+
+	background: #e5e5e5;
+	border-radius: 4px;
+	box-shadow:
+		0 0 0 1px rgba(0,0,0,0.25),
+		0 8px 32px rgba(0,0,0,0.5);
+}
+
+LFWindow[backdrop] {
+	box-shadow:
+		0 0 0 1px rgba(0,0,0,0.25),
+		0 8px 8px rgba(0,0,0,0.25);
+}
+
+LFWindow[fullscreen] {
+	width: 100%;
+	height: calc(100% - 24px);
+
+	transform: translate(0px, 24px)!important;
+}
+
+LFWindow[borderless] {
+	border-radius: 0;
+	box-shadow: none;
+}
+
+@keyframes LFWindow_alert {
+	0%		{ transform: scale(0); }
+	75%		{ transform: scale(1.25); }
+	100%	{ transform: scale(1); }
+}
+
+LFWindow[alert] {
+	animation: LFWindow_alert 0.25s ease;
+}
+
+LFFrame {
+	display: flex;
+	flex-direction: column;
+
+	padding: 4px 8px;
+
+	min-height: 16px;
+
+	background:
+		var(--CGNoise),
+		linear-gradient(to bottom,
+			#e5e5e5,
+			#808080
+		);
+}
+
+LFFrame[top] {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	box-shadow:
+		inset 0 1px #ffffff,
+		inset 0 -2px rgba(255,255,255,0.125),
+		inset 0 -1px #404040;
+}
+
+LFFrame[bottom] {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	box-shadow: inset 0 1px #808080;
+}
+
+LFWindow[backdrop] LFFrame {
+	background:
+		var(--CGNoise),
+		linear-gradient(to bottom,
+			#f2f2f2,
+			#bfbfbf
+		);
+}
+
+LFWindow[backdrop] LFFrame[top] {
+	box-shadow:
+		inset 0 1px #ffffff,
+		inset 0 -2px rgba(255,255,255,0.125),
+		inset 0 -1px #808080;
+}
+
+LFWindow[backdrop] LFFrame[bottom] {
+	box-shadow: inset 0 1px #bfbfbf;
+}
+
+LFFrame > *:not(:last-child) {
+	margin-bottom: 4px;
+}
+
+LFTitlebar {
+	display: flex;
+	align-items: center;
+
+	position: relative;
+
+	height: 16px;
+}
+
+LFTitlebar:after {
+	content: attr(title);
+
+	position: absolute;
+	top: 50%;
+	left: 50%;
+
+	max-width: calc(100% - 120px);
+
+	overflow: hidden;
+
+	font-size: 17px;
+	text-shadow: 0 1px rgba(255,255,255,0.5);
+
+	transform: translate(-50%, -50%);
+}
+
+LFWindow[backdrop] LFTitlebar:after {
+	color: #808080;
+}
+
+LFTitlebarButton {
+	width: 12px;
+	height: 16px;
+
+	background: url(@Resources/LFTitlebarButton.svg);
+}
+
+LFTitlebarButton:not(:last-child) {
+	margin-right: 8px;
+}
+
+LFTitlebarButton[hover][close] {
+	background:
+		url(@Resources/LFTitlebarButtonClose.svg),
+		url(@Resources/LFTitlebarButton.svg);
+}
+
+LFTitlebarButton[hover][miniaturize] {
+	background:
+		url(@Resources/LFTitlebarButtonMiniaturize.svg),
+		url(@Resources/LFTitlebarButton.svg);
+}
+
+LFTitlebarButton[hover][zoom] {
+	background:
+		url(@Resources/LFTitlebarButtonZoom.svg),
+		url(@Resources/LFTitlebarButton.svg);
+}
+
+LFTitlebarButton[active] {
+	filter: brightness(0.5);
+}
+
+LFTitlebarButton[disabled] {
+	background: url(@Resources/LFTitlebarButtonDisabled.svg);
+}
+
+LFWindow[backdrop] LFTitlebarButton {
+	background: url(@Resources/LFTitlebarButtonBackdrop.svg);
+}
+
+LFWindow[backdrop] LFTitlebarButton[hover][close] {
+	background:
+		url(@Resources/LFTitlebarButtonClose.svg),
+		url(@Resources/LFTitlebarButtonBackdrop.svg);
+}
+
+LFWindow[backdrop] LFTitlebarButton[hover][miniaturize] {
+	background:
+		url(@Resources/LFTitlebarButtonMiniaturize.svg),
+		url(@Resources/LFTitlebarButtonBackdrop.svg);
+}
+
+LFWindow[backdrop] LFTitlebarButton[hover][zoom] {
+	background:
+		url(@Resources/LFTitlebarButtonZoom.svg),
+		url(@Resources/LFTitlebarButtonBackdrop.svg);
+}
+
+LFToolbar {
+	display: flex;
+
+	margin: 4px 0;
+}
+
+LFToolbar > *:not(:last-child) {
+	margin-right: 8px;
+}
+
+LFToolbar LFButton {
+	background: linear-gradient(to bottom,
+		rgba(255,255,255,0.5),
+		rgba(255,255,255,0)
+	);
+	box-shadow:
+		inset 0 0 0 1px #404040,
+		inset 0 2px rgba(255,255,255,0.25),
+		0 1px rgba(255,255,255,0.25);
+}
+
+LFToolbar LFButton:after {
+	text-shadow: 0 1px rgba(255,255,255,0.5);
+}
+
+LFToolbar LFButton[active] {
+	background:
+		var(--CGNoise),
+		linear-gradient(to bottom,
+			#404040,
+			#808080
+		);
+	box-shadow:
+		inset 0 0 0 1px rgba(0,0,0,0.25),
+		inset 0 2px rgba(0,0,0,0.125),
+		0 1px rgba(255,255,255,0.25);
+	filter: none;
+}
+
+LFToolbar LFButton[active]:after {
+	color: #ffffff;
+	text-shadow: 0 1px rgba(0,0,0,0.5);
+}
+
+LFToolbar LFButton[disabled] {
+	opacity: 1;
+}
+
+LFToolbar LFButton[disabled]:after,
+LFToolbar LFButton[disabled] LFImage {
+	opacity: 0.5;
+}
+
+LFToolbar LFButton LFImage[template] {
+	filter: drop-shadow(0 1px rgba(255,255,255,0.5));
+}
+
+LFToolbar LFButton[active] LFImage[template] {
+	filter: drop-shadow(0 1px rgba(255,255,255,0.5)) invert(1);
+}
+
+LFWindow[backdrop] LFToolbar LFButton {
+	opacity: 0.5;
+}
+
+LFView {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	align-items: flex-start;
+
+	min-width: 0;
+	min-height: 0;
+}
+
+LFView:not([tight]) > *:not(:last-child) {
+	margin-right: 16px;
+}
+
+LFView[vertical] {
+	flex-direction: column;
+}
+
+LFView[vertical]:not([tight]) > *:not(:last-child) {
+	margin-right: 0;
+	margin-bottom: 16px;
+}
+
+LFView[xCenter] {
+	justify-content: center;
+}
+
+LFView[xEnd] {
+	justify-content: flex-end;
+}
+
+LFView[yCenter] {
+	align-items: center;
+}
+
+LFView[yEnd] {
+	align-items: flex-end;
+}
+
+LFView[yStretch] {
+	align-items: stretch;
+}
+
+LFWindow > LFView {
+	flex: 1;
+
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	overflow: hidden;
+}
+
+LFWindow > LFView:not([tight]) {
+	padding: 16px;
+}
+
+LFImage {
+	flex-shrink: 0;
+
+	width: 16px;
+	height: 16px;
+
+	background-position: center;
+}
+
+LFText {
+	font-size: 14px;
+	font-weight: 300;
+}
+
+LFText[small] {
+	font-size: 12px;
+}
+
+LFText[big] {
+	font-size: 17px;
+}
+
+LFText[bold] {
+	font-weight: 500;
+}
+
+LFTable {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+
+	background: linear-gradient(to bottom,
+		#ffffff,
+		#ffffff 50%,
+		#fbefef 50%,
+		#fbefef
+	);
+	background-size: 100% 32px;
+	box-shadow: 0 0 0 1px #808080;
+}
+
+LFTableRow {
+	display: flex;
+	align-items: center;
+
+	padding: 0 24px;
+
+	min-height: 16px;
+
+	overflow-y: auto;
+}
+
+LFTableRow:after {
+	content: attr(title);
+}
+
+LFTableRow[active] {
+	background: #bf0000;
+}
+
+LFTableRow[active]:after {
+	color: #ffffff;
+}
+
+LFWindow[backdrop] LFTableRow[active] {
+	background: #bfbfbf;
+}
+
+LFWindow[backdrop] LFTableRow[active]:after {
+	color: #000000;
+}
