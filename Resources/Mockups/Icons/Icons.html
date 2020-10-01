@@ -1,0 +1,151 @@
+<html>
+<head></head>
+<body>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+
+			background: url('between_light_and_shadow_by_ellysiumn_ddmjeof-fullview.jpg');
+			background-position: center;
+			background-size: cover;
+		}
+
+		Container {
+			display: flex;
+
+			margin: 32px 0;
+
+			background: #ffffff;
+		}
+
+		Container[desktop] {
+			background: transparent;
+		}
+
+		LFIcon {
+			width: 128px;
+
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+		}
+
+		LFCell {
+			margin: 2px;
+			padding: 8px;
+
+			border-radius: 4px;
+		}
+
+		LFIcon[selected] LFCell {
+			background: rgba(0%,0%,0%,0.25);
+		}
+
+		Container[desktop] LFIcon[selected] LFCell {
+			box-shadow:
+				inset 0 1px rgba(0%,0%,0%,0.125),
+				0 0 0 2px rgba(100%,100%,100%,0.25);
+		}
+
+		LFImage {
+			display: block;
+
+			width: 64px;
+			height: 64px;
+
+			background: url('Hard Drive.svg');
+		}
+
+		LFText {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+
+			font: 12px Roboto Mono;
+			color: #000000;
+		}
+
+		Container[desktop] LFText,
+		LFIcon[selected] LFText {
+			color: #ffffff;
+		}
+
+		Container[desktop] LFIcon:not([selected]) LFText {
+			text-shadow:
+				0 0 2px #000000,
+				0 0 2px #000000,
+				0 2px 2px #000000,
+				0 2px 4px #000000;
+		}
+
+		LFText Row {
+			height: 16px;
+
+			padding: 0 8px;
+		}
+
+		LFIcon[selected] Row {
+			background: #bf0000;
+		}
+
+		Container[desktop] LFIcon[selected] LFText {
+			filter: drop-shadow(0 1px rgba(0%,0%,0%,0.25));
+		}
+
+		LFText Row:first-child {
+			border-top-left-radius: 8px;
+			border-top-right-radius: 8px;
+		}
+
+		LFText Row:last-child {
+			border-bottom-left-radius: 8px;
+			border-bottom-right-radius: 8px;
+		}
+
+		LFText Row:only-child {
+			border-radius: 16px;
+		}
+	</style>
+	<Container>
+		<LFIcon selected>
+			<LFCell>
+				<LFImage></LFImage>
+			</LFCell>
+			<LFText>
+				<Row>File With Extra</Row>
+				<Row>Super Long</Row>
+				<Row>Title</Row>
+			</LFText>
+		</LFIcon>
+		<LFIcon>
+			<LFCell>
+				<LFImage></LFImage>
+			</LFCell>
+			<LFText>
+				<Row>File</Row>
+			</LFText>
+		</LFIcon>
+	</Container>
+	<Container desktop>
+		<LFIcon>
+			<LFCell>
+				<LFImage></LFImage>
+			</LFCell>
+			<LFText>
+				<Row>File With Extra</Row>
+				<Row>Super Long</Row>
+				<Row>Title</Row>
+			</LFText>
+		</LFIcon>
+		<LFIcon selected>
+			<LFCell>
+				<LFImage></LFImage>
+			</LFCell>
+			<LFText>
+				<Row>File</Row>
+			</LFText>
+		</LFIcon>
+	</Container>
+</body>
+</html>

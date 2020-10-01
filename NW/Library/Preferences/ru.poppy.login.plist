@@ -1,0 +1,31 @@
+{
+	"users": [
+		{
+			"id": 0,
+			"login": "root",
+			"password": "root",
+			"group": 0,
+			"hidden": true,
+			"title": "Super User",
+			"image": ""
+		},
+		{
+			"id": 1,
+			"login": "guest",
+			"password": "",
+			"group": 2,
+			"hidden": false,
+			"title": "Guest User",
+			"image": ""
+		},
+		{
+			"id": 2,
+			"login": "dies",
+			"password": "",
+			"group": 1,
+			"hidden": false,
+			"title": "DIES",
+			"image": "/Library/User Images/Flower.png"
+		}
+	]
+}

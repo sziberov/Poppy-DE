@@ -1,0 +1,72 @@
+* {
+	--CGNoise: url('@Resources/Noise.svg');
+}
+
+body {
+	font-family: Ubuntu;
+	font-size: 13px;
+	font-style: normal;
+	font-weight: normal;
+	line-height: 16px;
+}
+
+CGCursor {
+	display: block;
+
+	position: absolute;
+	z-index: 1;
+
+	width: 32px;
+	height: 32px;
+
+	transform: translate(32px, 32px);
+
+	pointer-events: none;
+}
+
+CGCursor:after {
+	content: '';
+
+	position: absolute;
+	top: 0;
+	left: 0;
+
+	width: 64px;
+	height: 64px;
+
+	background: url('@Resources/CursorDefault.svg');
+	filter: drop-shadow(0 1px 1px rgba(0%,0%,0%,0.5));
+
+	opacity: 1;
+	transform: translate(-16px, -16px);
+	transition: 0.125s ease opacity, 0.125s ease transform;
+}
+
+CGCursor[wait]:after {
+	background: url('@Resources/CursorWait.svg');
+}
+
+CGCursor[progress]:after {
+	background: url('@Resources/CursorProgress.svg');
+}
+
+CGCursor[copy]:after {
+	background: url('@Resources/CursorCopy.svg');
+}
+
+CGCursor[notAllowed]:after {
+	background: url('@Resources/CursorNotAllowed.svg');
+}
+
+CGCursor[text]:after {
+	background: url('@Resources/CursorText.svg');
+	filter: drop-shadow(0 1px 1px rgba(100%,100%,100%,0.5));
+}
+
+CGCursor[shaked]:after {
+	transform: translate(96px, 96px) scale(8);
+}
+
+CGCursor[hidden]:after {
+	opacity: 0;
+}

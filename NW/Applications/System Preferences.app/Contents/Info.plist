@@ -1,6 +1,0 @@
-{
-	"CFBundleIdentifier": "ru.poppy.system-preferences",
-	"CFBundleExecutable": "System Preferences",
-	"CFBundleTitle": "System Preferences",
-	"CFBundleIcon": "System Preferences.icns"
-}

@@ -1,0 +1,6 @@
+{
+	"CFBundleIdentifier": "ru.poppy.environment-preferences",
+	"CFBundleExecutable": "Environment Preferences",
+	"CFBundleTitle": "Environment Preferences",
+	"CFBundleIcon": "Environment Preferences.icns"
+}
