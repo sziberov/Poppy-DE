@@ -178,7 +178,8 @@
 
 				for(let v of a) {
 					this.events.emitter.removeListener(v.event, v.functionActual);
-					this.events.catchers.splice(this.events.catchers.findIndex(vv => vv.functionActual == v.functionActual), 1);
+				//	this.events.catchers.splice(this.events.catchers.findIndex(vv => vv.functionActual == v.functionActual), 1);
+					this.events.catchers = this.events.catchers.filter(vv => vv.functionActual !== v.functionActual);
 				}
 			}
 
