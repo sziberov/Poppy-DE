@@ -3,7 +3,7 @@ Poppy DE - is a free cross-platform OS X-like user interface and applications im
 Architecture:
 
 	NW.JS						Native
-		Opium Kernel				HTML + JS
+		Opium Kernel				HTML + CSS + JS + Node.JS
 			CoreFoundation Framework	.framework Bundles
 			CoreGraphics Framework
 			Leaf Framework
