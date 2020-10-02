@@ -10,6 +10,6 @@ return class extends LFView {
 		}
 
 		this.attributes['title'] = this._.title;
-		this.subviews = this._.subviews;
+		this.subviews.add(...this._.subviews);
 	}
 }

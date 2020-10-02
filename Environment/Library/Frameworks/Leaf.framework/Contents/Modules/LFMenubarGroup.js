@@ -10,7 +10,7 @@ return class extends LFView {
 		}
 
 		this.attributes[this._.type] = ['application', 'status'].includes(this._.type) ? '' : undefined;
-		this.subviews = this._.subviews;
+		this.subviews.add(...this._.subviews);
 		if(this.type == 'application') {
 			this.application;
 		}

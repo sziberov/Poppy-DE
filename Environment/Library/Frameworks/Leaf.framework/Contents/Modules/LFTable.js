@@ -8,12 +8,14 @@ return class extends LFView {
 			..._
 		}
 
-		this.subviews = this._.subviews;
+		this.subviews.add(...this._.subviews);
 	}
 
 	get activeRow() {
 		for(let v of this.subviews) {
-			if(v.state == true) return v;
+			if(v.state == true) {
+				return v;
+			}
 		}
 	}
 

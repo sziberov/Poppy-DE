@@ -45,22 +45,22 @@ return class extends LFControl {
 	}
 
 	set image(_value) {
-		this.subviews = this.subviews.filter(v => v.class !== 'LFImage');
+		this.subviews.removeByFilter(v => v.class == 'LFImage');
 		if(_value?.class == 'LFImage') {
 			this._.image = _value;
-			this.subviews.push(_value);
+			this.subviews.add(_value);
 		} else {
 			this._.image = undefined;
 		}
 	}
 
 	set menu(_value) {
-		this.subviews = this.subviews.filter(v => v.class !== 'LFMenu');
+		this.subviews.removeByFilter(v => v.class == 'LFMenu');
 		if(_value?.class == 'LFMenu') {
 			this._.menu = _value;
 			this.attributes['enabled'] = '';
 			this.attributes['menu'] = '';
-			this.subviews.push(_value);
+			this.subviews.add(_value);
 		} else {
 			this._.menu = undefined;
 			if(!this.action) {

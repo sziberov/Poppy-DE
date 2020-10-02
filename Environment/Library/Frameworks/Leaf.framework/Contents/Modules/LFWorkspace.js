@@ -11,7 +11,7 @@ return _fork('@Title') || _single(class extends LFView {
 		}
 		this.desktopImage = this.desktopImage;
 
-		this.subviews = [new LFMenubar({ transparent: true })]
+		this.subviews.add(new LFMenubar({ transparent: true }));
 	}
 
 	get launchedApplications() {

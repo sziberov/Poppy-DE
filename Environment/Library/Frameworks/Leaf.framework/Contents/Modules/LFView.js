@@ -8,7 +8,7 @@ return class extends LFResponder {
 		}
 
 		this.superview;
-		this.subviews = []
+		this.subviews = new CFArray();
 	}
 
 	get tag() {
@@ -36,7 +36,7 @@ return class extends LFResponder {
 				['x'+this._.xAlign]: ['center', 'end'].includes(this._.xAlign) ? '' : undefined,
 				['y'+this._.yAlign]: ['center', 'end', 'stretch'].includes(this._.yAlign) ? '' : undefined
 			}
-			this.subviews = this._.subviews;
+			this.subviews.add(...this._.subviews);
 		}
 
 		return super.create();
@@ -56,10 +56,10 @@ return class extends LFResponder {
 				Subview: () => {
 					let _did = false;
 
-					if(!_view.subviews.includes(this)) {
+					if(!_view.subviews.contains(this)) {
 						_did = true;
 
-						_view.subviews.push(this);
+						_view.subviews.add(this);
 					}
 					if(!this.element || !$.contains(_view.element[0], this.element[0])) {
 						_did = true;
@@ -86,7 +86,7 @@ return class extends LFResponder {
 	}
 
 	addSubviews(_subviews) {
-		for(var v of _subviews) {
+		for(let v of _subviews) {
 			v.add(this);
 		}
 
@@ -94,7 +94,14 @@ return class extends LFResponder {
 	}
 
 	setSubviews(_subviews) {
-		for(var v of this.subviews) {
+		/*
+		let i = this.subviews.length;
+
+		while(i--) {
+			this.subviews[i].destroy();
+		}
+		*/
+		for(let v of this.subviews) {
 			v.destroy();
 		}
 		this.addSubviews(_subviews);
@@ -167,6 +174,7 @@ return class extends LFResponder {
 			super.destroy();
 		} else {
 			this.remove();
+		//	this.superview.subviews.remove(this);
 			this.superview.subviews = this.superview.subviews.filter(v => v !== this);
 			window[this.class].remove;
 		}

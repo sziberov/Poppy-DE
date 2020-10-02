@@ -39,7 +39,7 @@ return class extends LFView {
 			'borderless': this._.style.includes('borderless') ? '' : undefined,
 			'unifiedTitlebarAndToolbar': this._.style.includes('unifiedTitlebarAndToolbar') ? '' : undefined
 		}
-		this.subviews = [
+		this.subviews.add(
 			...!this._.style.includes('borderless') ? [
 				new LFFrame({ type: 'top', subviews: [
 					...this._.style.includes('titled') ? [
@@ -53,7 +53,7 @@ return class extends LFView {
 				] }),
 			] : [],
 			...this.view?.class == 'LFView' ? [this.view] : [new LFView()]
-		]
+		);
 		this.level = [0, 1, 2].includes(this._.level) ? this._.level : 1;
 
 		this.add(new LFWorkspace());

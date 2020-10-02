@@ -26,9 +26,28 @@ return class extends Array {
 	remove(..._value) {
 		for(let v of _value) {
 			if(this.contains(v)) {
+			//	this.data[v] = { ...this.filter(vv => vv !== v) };
 				super.splice(this.indexOf(v), 1);
 
 				CFEventEmitter.dispatch('arrayChanged.'+this.code, { event: 'removed', value: v });
+			}
+		}
+
+		return this;
+	}
+
+	removeAll() {
+		this.remove(...this);
+
+		return this;
+	}
+
+	removeByFilter(_function) {
+		if(typeof _function === 'function') {
+			for(let v of this) {
+				if(_function(v)) {
+					this.remove(v);
+				}
 			}
 		}
 
@@ -79,7 +98,7 @@ return class extends Array {
 	}
 
 	static addObserver(_array, _function) {
-		if(_array.code && typeof _function === 'function') {
+		if(typeof _function === 'function') {
 			CFEventEmitter.addHandler('arrayChanged.'+_array.code, _function);
 		}
 
@@ -87,8 +106,6 @@ return class extends Array {
 	}
 
 	static removeObserver(_array, _function) {
-		if(_array.code) {
-			CFEventEmitter.removeHandler('arrayChanged.'+_array.code, _function);
-		}
+		CFEventEmitter.removeHandler('arrayChanged.'+_array.code, _function);
 	}
 }

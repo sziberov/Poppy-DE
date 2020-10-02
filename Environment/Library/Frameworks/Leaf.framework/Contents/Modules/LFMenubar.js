@@ -9,7 +9,7 @@ return _fork('@Title') || _single(class extends LFView {
 		}
 
 		this.attributes['transparent'] = this._.transparent == true ? '' : undefined;
-		this.subviews = [
+		this.subviews.add(
 			new LFButton({ title: '', image: new LFImage({ shared: 'TemplateLogo' }), action: function() { _PoppyMenu.setState('Toggle', this) } }),
 			new LFMenubarGroup({ type: 'application' }),
 			/*
@@ -50,7 +50,7 @@ return _fork('@Title') || _single(class extends LFView {
 					] })
 				})
 			] })
-		]
+		);
 	}
 
 	get transparent() {
@@ -63,7 +63,7 @@ return _fork('@Title') || _single(class extends LFView {
 	}
 
 	getGroup(_type) {
-		return this.subviews.filter(v => v.class == 'LFMenubarGroup' && v.attributes[_type.toLowerCase()] == '')[0]
+		return this.subviews.filter(v => v.class == 'LFMenubarGroup' && v.type == _type.toLowerCase())[0]
 	}
 
 	setGroup(_type, _subviews, _application) {

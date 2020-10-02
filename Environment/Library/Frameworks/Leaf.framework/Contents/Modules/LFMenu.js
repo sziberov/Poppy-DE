@@ -12,7 +12,7 @@ return class extends LFView {
 			..._
 		}
 
-		this.subviews = this._.items.filter(v => v.class == 'LFMenuItem');
+		this.subviews.add(...this._.items.filter(v => v.class == 'LFMenuItem'));
 		this.forSuperview;
 		this.origin = this._;
 	}

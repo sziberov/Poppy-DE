@@ -8,6 +8,6 @@ return class extends LFView {
 			..._
 		}
 
-		this.subviews = this._.subviews;
+		this.subviews.add(...this._.subviews);
 	}
 }
