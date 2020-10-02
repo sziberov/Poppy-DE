@@ -412,6 +412,10 @@ LFWindow[animatedAlert] {
 	animation: LFWindow_animatedAlert 0.25s ease;
 }
 
+LFWindow[hidden] {
+	visibility: hidden;
+}
+
 LFFrame {
 	display: flex;
 	flex-direction: column;

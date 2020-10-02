@@ -38,7 +38,7 @@ return _fork('@Title') || _single(class extends LFView {
 			new LFAlert({
 				message: 'Application unable to load.',
 				information: _error.name+': '+_error.message
-			}).add(this);
+			});
 
 			throw _error;
 		}
@@ -55,7 +55,7 @@ return _fork('@Title') || _single(class extends LFView {
 				new LFAlert({
 					message: `"${_title}" unable to launch.`,
 					information: _error.name+': '+_error.message
-				}).add(this);
+				});
 
 				throw _error;
 			}

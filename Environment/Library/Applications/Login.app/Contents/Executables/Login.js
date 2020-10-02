@@ -28,7 +28,7 @@ return class {
 			new LFMenuItem({ title: 'Environment Preferences', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') }),
 			new LFMenuItem({ title: 'Dock',
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: 'Test Alert', action: () => new LFAlert().add(new LFWorkspace()) }),
+					new LFMenuItem({ title: 'Test Alert', action: () => new LFAlert() }),
 					new LFMenuItem({ title: 'Submenu',
 						menu: new LFMenu({ items: [
 							new LFMenuItem(),
@@ -62,16 +62,14 @@ return class {
 	}
 
 	forceQuit() {
-		var _forceQuit =
-				new LFWindow({ tag: 'forceQuit', width: 384, style: ['titled', 'closable', 'resizable'], title: 'Force Quit Applications',
-					view: new LFView({ type: 'vertical', subviews: [
-						new LFText({ string: 'If an application doesn\'t respond for a while, select it\'s title and click Force Quit.', size: 'small' })
-					] })
-				}),
-			_window = new LFApp().windows.filter(v => v.tag == 'forceQuit')[0];
+		let _window = new LFApp().windows.filter(v => v.tag == 'forceQuit')[0];
 
 		if(!_window) {
-			new LFApp().windows.push(_forceQuit);
+			new LFWindow({ tag: 'forceQuit', width: 384, style: ['titled', 'closable', 'resizable'], title: 'Force Quit Applications',
+				view: new LFView({ type: 'vertical', subviews: [
+					new LFText({ string: 'If an application doesn\'t respond for a while, select it\'s title and click Force Quit.', size: 'small' })
+				] })
+			});
 		} else {
 			_window.focus();
 		}

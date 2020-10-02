@@ -1,5 +1,7 @@
 return class extends LFView {
 	#application = new LFApplication();
+	#hidden = true;
+	#main = false;
 
 	constructor(_) {
 		super(_);
@@ -53,7 +55,16 @@ return class extends LFView {
 			...this.view?.class == 'LFView' ? [this.view] : [new LFView()]
 		]
 		this.level = [0, 1, 2].includes(this._.level) ? this._.level : 1;
-		this.main = false;
+
+		this.add(new LFWorkspace());
+	}
+
+	get hidden() {
+		return this.#hidden;
+	}
+
+	get main() {
+		return this.#main;
 	}
 
 	get minimized() {
@@ -78,6 +89,28 @@ return class extends LFView {
 
 	get application() {
 		return new LFLaunchedApplication();
+	}
+
+	set hidden(_value) {
+		if([false, true].includes(_value)) {
+			this.#hidden = _value;
+			if(!_value) {
+				this.attributes['hidden'] = '';
+			} else {
+				this.attributes['hidden'] = undefined;
+			}
+		}
+	}
+
+	set main(_value) {
+		if([false, true].includes(_value)) {
+			this.#main = _value;
+			if(_value) {
+				for(let v of this.get('Siblings', this.class).filter(v => v.application == this.application)) {
+					v.main = false;
+				}
+			}
+		}
 	}
 
 	set origin(_value) {
@@ -105,6 +138,7 @@ return class extends LFView {
 	didAddSubview() {
 		this.origin = this._;
 
+		this.hidden = false;
 		this.focus();
 	}
 
@@ -140,9 +174,6 @@ return class extends LFView {
 			this.attributes['focused'] = '';
 		}
 		if(this.application) {
-			for(let v of this.get('Siblings', this.class).filter(v => v.application == this.application)) {
-				v.main = false;
-			}
 			this.main = true;
 			this.application.focus();
 		}

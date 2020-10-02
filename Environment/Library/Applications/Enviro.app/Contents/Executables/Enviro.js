@@ -62,11 +62,10 @@ return class {
 			] }),
 			new LFMenu({ title: 'Help' })
 		]
-		new LFApp().windows = [
-			new LFWindow({ tag: 'desktop', level: 0, style: ['borderless', 'fullscreen'], background: 'none', view:
-				new LFView()
-			})
-		]
+
+		new LFWindow({ tag: 'desktop', level: 0, style: ['borderless', 'fullscreen'], background: 'none', view:
+			new LFView()
+		});
 	}
 
 	aboutSystem() {
@@ -96,35 +95,33 @@ return class {
 				return _variable;
 			})(),
 			_software = _request('version', 'DE').join(' '),
-			_aboutSystem =
-				new LFWindow({ tag: 'aboutSystem', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: 'About This Poppy', view:
-					new LFView({ yAlign: 'center', subviews: [
-						new LFImage({ width: 128, height: 128, shared: 'Monoblock' }),
-						new LFView({ type: 'vertical', subviews: [
-							new LFText({ string: _pc, size: 'big', weight: 'bold' }),
-							new LFView({ subviews: [
-								new LFView({ type: 'vertical', tight: true, subviews: [
-									new LFText({ string: 'Processor', size: 'small', weight: 'bold' }),
-									new LFText({ string: 'Memory', size: 'small', weight: 'bold' }),
-									new LFText({ string: 'Graphics', size: 'small', weight: 'bold' }),
-									new LFText({ string: 'Software', size: 'small', weight: 'bold' }),
-									new LFText({ string: 'Serial Number', size: 'small', weight: 'bold' }),
-								] }),
-								new LFView({ type: 'vertical', tight: true, subviews: [
-									new LFText({ string: _cpu, size: 'small' }),
-									new LFText({ string: _memory, size: 'small' }),
-									new LFText({ string: _gpu || 'Unknown', size: 'small' }),
-									new LFText({ string: _software, size: 'small' }),
-									new LFText({ string: 'Unknown', size: 'small' })
-								] })
+			_window = new LFApp().windows.filter(v => v.tag == 'aboutSystem')[0]
+
+		if(!_window) {
+			new LFWindow({ tag: 'aboutSystem', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: 'About This Poppy', view:
+				new LFView({ yAlign: 'center', subviews: [
+					new LFImage({ width: 128, height: 128, shared: 'Monoblock' }),
+					new LFView({ type: 'vertical', subviews: [
+						new LFText({ string: _pc, size: 'big', weight: 'bold' }),
+						new LFView({ subviews: [
+							new LFView({ type: 'vertical', tight: true, subviews: [
+								new LFText({ string: 'Processor', size: 'small', weight: 'bold' }),
+								new LFText({ string: 'Memory', size: 'small', weight: 'bold' }),
+								new LFText({ string: 'Graphics', size: 'small', weight: 'bold' }),
+								new LFText({ string: 'Software', size: 'small', weight: 'bold' }),
+								new LFText({ string: 'Serial Number', size: 'small', weight: 'bold' }),
+							] }),
+							new LFView({ type: 'vertical', tight: true, subviews: [
+								new LFText({ string: _cpu, size: 'small' }),
+								new LFText({ string: _memory, size: 'small' }),
+								new LFText({ string: _gpu || 'Unknown', size: 'small' }),
+								new LFText({ string: _software, size: 'small' }),
+								new LFText({ string: 'Unknown', size: 'small' })
 							] })
 						] })
 					] })
-				}),
-			_window = new LFApp().windows.filter(v => v.tag == 'aboutSystem')[0];
-
-		if(!_window) {
-			new LFApp().windows.push(_aboutSystem);
+				] })
+			});
 		} else {
 			_window.focus();
 		}
@@ -133,7 +130,7 @@ return class {
 	window() {
 		let _window = new LFWindow({ width: 384, height: 256, title: new LFApp().bundle.properties.CFBundleTitle,
 				toolbar: new LFToolbar({ subviews: [
-					new LFButton({ title: 'Alert', action: () => new LFApp().windows.push(new LFAlert({ message: 'Clicked.' })) })
+					new LFButton({ title: 'Alert', action: () => new LFAlert({ message: 'Clicked.' }) })
 				] }),
 				view: new LFView({ type: 'horizontal', tight: true, subviews: [
 					new LFSidebar(),
@@ -144,8 +141,6 @@ return class {
 				] })
 			}),
 			_table = []
-
-		new LFApp().windows.push(_window);
 
 		_table.push(new LFTableRow({ title: 'None', action: () => {
 			new LFWorkspace().desktopImage = '';

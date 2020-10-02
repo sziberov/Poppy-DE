@@ -1,6 +1,5 @@
 return _single(class {
 	#menus = CFArray.observe([], () => this.update('Menus'));
-	#windows = CFArray.observe([], () => this.update('Windows'));
 	#focusingPolicy = 0;
 	#quitableBySingleWindow = false;
 
@@ -18,7 +17,7 @@ return _single(class {
 						new LFAlert({
 							message: `"${that.title}"'s method returned exception.`,
 							information: error.name+': '+error.message
-						}).add(new LFWorkspace());
+						});
 					}
 
 					return result;
@@ -35,7 +34,7 @@ return _single(class {
 	}
 
 	get windows() {
-		return this.#windows;
+		return new LFWorkspace().subviews.filter(v => v.application == new LFLaunchedApplication() && v.class == 'LFWindow');
 	}
 
 	get focusingPolicy() {
@@ -87,11 +86,6 @@ return _single(class {
 		this.#menus.push(..._value);
 	}
 
-	set windows(_value) {
-		this.#windows.length = 0;
-		this.#windows.push(..._value);
-	}
-
 	set focusingPolicy(_value) {
 		if([0, 1, 2].includes(_value)) {
 			this.#focusingPolicy = _value;
@@ -138,8 +132,6 @@ return _single(class {
 				}
 			},
 			Windows: () => {
-				CFArray.remove(this.windows, ...this.windows.filter(v => v.class !== 'LFWindow'));
-
 				let _windows = this.windows;
 
 				if(this.focusingPolicy < 2) {
@@ -175,7 +167,7 @@ return _single(class {
 			new LFAlert({
 				message: `"${this.title}"'s method returned exception.`,
 				information: error.name+': '+error.message
-			}).add(new LFWorkspace());
+			});
 		}
 	}
 
@@ -208,9 +200,6 @@ return _single(class {
 			let _focused = new LFMenubar().getGroup('Application').application;
 
 			new LFWorkspace().launchedApplications.remove(new LFLaunchedApplication());
-
-			this.menus = []
-			this.windows = []
 
 			new LFMenubar().setGroup('Application', []);
 			for(let v of new LFWorkspace().subviews.filter(v => v.application == new LFLaunchedApplication())) {
