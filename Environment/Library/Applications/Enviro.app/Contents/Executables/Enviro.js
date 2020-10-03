@@ -8,9 +8,7 @@ return class {
 			new LFMenuItem({ title: 'View',
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: 'Toggle Menubar Transparency', action: () => {
-						var a = new LFMenubar().transparent;
-
-						new LFMenubar().transparent = !a;
+						new LFMenubar().transparent = !new LFMenubar().transparent;
 					} })
 				] })
 			}),
