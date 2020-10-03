@@ -1,5 +1,5 @@
 return _single(class {
-	#menus = CFArray.observe([], () => this.update('Menus'));
+	#menuItems = new CFArray();
 	#focusingPolicy = 0;
 	#quitableBySingleWindow = false;
 
@@ -32,10 +32,11 @@ return _single(class {
 				this.update('Windows')
 			}
 		});
+		CFArray.addObserver(this.menuItems, () => this.update('MenuItems'));
 	}
 
-	get menus() {
-		return this.#menus;
+	get menuItems() {
+		return this.#menuItems;
 	}
 
 	get windows() {
@@ -86,16 +87,17 @@ return _single(class {
 		return this.bundle.properties.CFBundleIcon && this.bundle.resources+'/'+this.bundle.properties.CFBundleIcon;
 	}
 
-	set menus(_value) {
-		this.#menus.length = 0;
-		this.#menus.push(..._value);
+	set menuItems(_value) {
+		_value = _value.filter(v => v.class == 'LFMenuItem');
+
+		this.#menuItems.removeAll().add(..._value);
 	}
 
 	set focusingPolicy(_value) {
 		if([0, 1, 2].includes(_value)) {
 			this.#focusingPolicy = _value;
 		}
-		this.update('Menus');
+		this.update('MenuItems');
 		this.update('Windows');
 	}
 
@@ -107,27 +109,19 @@ return _single(class {
 
 	update(_mode) {
 		return {
-			Menus: () => {
-				CFArray.remove(this.menus, ...this.menus.filter(v => v.class !== 'LFMenu'));
-
+			MenuItems: () => {
 				if(this.focusingPolicy < 1 && new LFWorkspace().getApplication(this.identifier)) {
-					let _menus = this.menus,
-						_array = [
-							new LFButton({ title: this.title,
-								menu: new LFMenu({ items: [
-									new LFMenuItem({ title: 'About '+this.title, action: () => this.about() }),
-									new LFMenuItem().separator(),
-									new LFMenuItem({ title: 'Quit', action: () => this.quit() })
-								] })
-							})
-						]
-
-					for(let v of _menus) {
-						_array.push(
-							new LFButton({ title: v.title, menu: v.items?.length > 0 ? v : undefined })
-						);
-					}
-					new LFMenubar().setGroup('Application', _array, new LFLaunchedApplication());
+					new LFMenubar().applicationMenu.items = [
+						new LFMenuItem({ title: this.title,
+							menu: new LFMenu({ items: [
+								new LFMenuItem({ title: 'About '+this.title, action: () => this.about() }),
+								new LFMenuItem().separator(),
+								new LFMenuItem({ title: 'Quit', action: () => this.quit() })
+							] })
+						}),
+						...this.menuItems
+					]
+					new LFMenubar().applicationMenu.application = new LFLaunchedApplication();
 				} else {
 					let _applications = new LFWorkspace().launchedApplications;
 
@@ -137,12 +131,10 @@ return _single(class {
 				}
 			},
 			Windows: () => {
-				let _windows = this.windows;
-
 				if(this.focusingPolicy < 2) {
-					new LFWorkspace().addSubviews(_windows);
+					new LFWorkspace().addSubviews(this.windows);
 				} else {
-					for(let v of _windows) {
+					for(let v of this.windows) {
 						v.remove();
 					}
 				}
@@ -152,8 +144,8 @@ return _single(class {
 
 	focus(_mode) {
 		if(!_mode || _mode == 'Menu') {
-			if(this.focusingPolicy < 1 && new LFMenubar().getGroup('Application').application !== new LFLaunchedApplication()) {
-				this.update('Menus');
+			if(this.focusingPolicy < 1 && new LFMenubar().applicationMenu.application !== new LFLaunchedApplication()) {
+				this.update('MenuItems');
 			}
 		}
 		if(!_mode || _mode == 'Window') {
@@ -202,11 +194,11 @@ return _single(class {
 
 	quit() {
 		if(new LFWorkspace().getApplication(this.identifier)) {
-			let _focused = new LFMenubar().getGroup('Application').application;
+			let _focused = new LFMenubar().applicationMenu.application;
 
 			new LFWorkspace().launchedApplications.remove(new LFLaunchedApplication());
 
-			new LFMenubar().setGroup('Application', []);
+			new LFMenubar().applicationMenu.items = []
 			for(let v of new LFWorkspace().subviews.filter(v => v.application == new LFLaunchedApplication())) {
 				v.destroy();
 			}

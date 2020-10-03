@@ -399,24 +399,23 @@
 			}
 
 			classSingle(a) {
-				let b = {}
-					b.instance = undefined;
-					b.construct = (target, args) => {
-						if(!b.instance) {
-							b.instance = new target(...args);
+				return new Proxy(a, {
+					instance: undefined,
+					construct: function(target, args) {
+						if(!this.instance) {
+							this.instance = new target(...args);
 						}
 
-						return b.instance;
-					}
-					b.get = (target, property) => {
+						return this.instance;
+					},
+					get: function(target, property) {
 						if(property == 'remove') {
-							b.instance = undefined;
+							this.instance = undefined;
 						}
 
 						return target.property;
 					}
-
-				return new Proxy(a, b);
+				});
 			}
 
 			system() {

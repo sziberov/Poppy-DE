@@ -198,7 +198,6 @@ LFMenubar LFButton:has(LFImage) :after {
 	margin-right: 16px;
 }
 
-LFMenubar LFButton[enabled][highlighted],
 LFMenubar LFButton[enabled][activated] {
 	background: linear-gradient(to bottom,
 		#ff4040,
@@ -210,7 +209,6 @@ LFMenubar LFButton[enabled][activated] {
 	filter: none;
 }
 
-LFMenubar LFButton[enabled][highlighted]:after,
 LFMenubar LFButton[enabled][activated]:after {
 	color: rgba(100%,100%,100%,1);
 	text-shadow: none;
@@ -220,17 +218,12 @@ LFMenubar LFButton LFImage[template] {
 	filter: drop-shadow(0 1px rgba(100%,100%,100%,0.5));
 }
 
-LFMenubar LFButton[enabled][highlighted] LFImage[template],
 LFMenubar LFButton[enabled][activated] LFImage[template] {
 	filter: invert(1);
 }
 
 LFMenubar LFButton:not([enabled]) LFImage {
 	opacity: 0.5;
-}
-
-LFMenubarGroup[application] LFButton:first-child:after {
-	font-family: Ubuntu-Medium;
 }
 
 LFMenubar {
@@ -261,7 +254,6 @@ LFMenubar {
 		font-family: Ubuntu-Medium;
 	}
 
-	LFMenuItem[enabled][highlighted],
 	LFMenuItem[enabled][activated] {
 		background: linear-gradient(to bottom,
 			#ff4040,
@@ -272,7 +264,6 @@ LFMenubar {
 			inset 0 -1px rgba(0%,0%,0%,0.25);
 	}
 
-	LFMenuItem[enabled][highlighted]:after,
 	LFMenuItem[enabled][activated]:after {
 		color: rgba(100%,100%,100%,1);
 		text-shadow: none;

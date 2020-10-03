@@ -68,7 +68,7 @@ return class extends LFView {
 	}
 
 	get minimized() {
-		return this.attributes['minimized'] == '' ? true : false
+		return this.attributes['minimized'] == '' ? true : false;
 	}
 
 	get maximized() {
@@ -231,14 +231,10 @@ return class extends LFView {
 	destroy() {
 		super.destroy();
 
-		if(this.#application) {
-			let _application = this.#application,
-				_windows = _application.windows;
+		let _application = this.#application;
 
-			CFArray.remove(_windows, this);
-			if(_application.quitableBySingleWindow && _windows.length == 0) {
-				_application.quit();
-			}
+		if(_application.quitableBySingleWindow && _application.windows.length == 0) {
+			_application.quit();
 		}
 	}
 }

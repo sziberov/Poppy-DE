@@ -78,7 +78,7 @@ return class extends LFControl {
 	}
 
 	mousedown(_event) {
-		super.mousedown(_event);
+		super.mousedown(_event, this.menu);
 
 		if(!this.action && this.menu && _event.button == 0) {
 			this.menu.setState('Toggle', this);
@@ -89,7 +89,7 @@ return class extends LFControl {
 
 	mouseup() {
 		if(!this.menu) {
-			this.state = false;
+			super.mouseup();
 		}
 	}
 

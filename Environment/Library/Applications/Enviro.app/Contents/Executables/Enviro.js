@@ -2,8 +2,7 @@ return class {
 	constructor() {
 		_import('Leaf');
 
-		/*
-		new LFApp().menu = new LFMenu({ items: [
+		new LFApp().menuItems = [
 			new LFMenuItem({ title: 'File' }),
 			new LFMenuItem({ title: 'Edit' }),
 			new LFMenuItem({ title: 'View',
@@ -33,34 +32,6 @@ return class {
 				] })
 			}),
 			new LFMenuItem({ title: 'Help' })
-		] });
-		*/
-		new LFApp().menus = [
-			new LFMenu({ title: 'File' }),
-			new LFMenu({ title: 'Edit' }),
-			new LFMenu({ title: 'View', items: [
-				new LFMenuItem({ title: 'Toggle Menubar Transparency', action: () => {
-					var a = new LFMenubar().transparent;
-
-					new LFMenubar().transparent = !a;
-				} })
-			] }),
-			new LFMenu({ title: 'Go' }),
-			new LFMenu({ title: 'Window', items: [
-				new LFMenuItem({ title: 'Minimize', action: () => new LFApp().windows.filter(v => v.main == true)[0].minimize() }),
-				new LFMenuItem({ title: 'Maximize', action: () => new LFApp().windows.filter(v => v.main == true)[0].maximize() }),
-				new LFMenuItem().separator(),
-				new LFMenuItem({ title: 'New Window...', action: () => this.window() }),
-				new LFMenuItem({ title: 'Align Windows',
-					menu: new LFMenu({ items: [
-						new LFMenuItem({ title: 'Cascade' }),
-						new LFMenuItem({ title: 'Column' })
-					] })
-				}),
-				new LFMenuItem().separator(),
-				new LFMenuItem({ title: 'Windows List...' })
-			] }),
-			new LFMenu({ title: 'Help' })
 		]
 
 		new LFWindow({ tag: 'desktop', level: 0, style: ['borderless', 'fullscreen'], background: 'none', view:

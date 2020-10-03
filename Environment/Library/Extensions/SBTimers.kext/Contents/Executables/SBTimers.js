@@ -1,5 +1,5 @@
 const setTimeouts = [];
-window.setTimeout = function customSetTimeout(cb, interval) {
+function customSetTimeout(cb, interval) {
 	const now = window.performance.now();
 	const index = setTimeouts.length;
 	setTimeouts[index] = () => {
@@ -23,14 +23,14 @@ window.setTimeout = function customSetTimeout(cb, interval) {
 	return index;
 }
 
-window.clearTimeout = function customClearTimeout(setTimeoutId) {
+function customClearTimeout(setTimeoutId) {
 	if (setTimeouts[setTimeoutId]) {
 		setTimeouts[setTimeoutId].active = false;
 	}
 }
 
 const setIntervals = [];
-window.setInterval = function customSetInterval(cb, interval) {
+function customSetInterval(cb, interval) {
 	const intervalId = setIntervals.length;
 	setIntervals[intervalId] = function () {
 		if (setIntervals[intervalId].active) {
@@ -43,11 +43,16 @@ window.setInterval = function customSetInterval(cb, interval) {
 	return intervalId;
 }
 
-window.clearInterval = function customClearInterval(intervalId) {
+function customClearInterval(intervalId) {
 	if (setIntervals[intervalId]) {
 		setIntervals[intervalId].active = false;
 	}
 }
+
+window.setTimeout = customSetTimeout;
+window.clearTimeout = customClearTimeout;
+window.setInterval = customSetInterval;
+window.clearInterval = customClearInterval;
 
 /*
 return {

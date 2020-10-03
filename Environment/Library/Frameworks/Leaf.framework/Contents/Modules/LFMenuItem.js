@@ -32,33 +32,53 @@ return class extends LFButton {
 		}
 	}
 
+	click() {}
+
 	mouseover(_event) {
-		let _menu = this.menu;
+		let _shouldActivate = false;
 
 		_event.stopPropagation();
 		this.attributes['highlighted'] = '';
-		if(_menu) {
-			this.state = true;
-			_menu.setState('Active', this);
+		if(this.menu) {
+			if(this.superview.autoactivatesItems) {
+				_shouldActivate = true;
+			} else {
+				for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
+					if(v.state) {
+						_shouldActivate = true;
+					}
+				}
+			}
 		}
-		for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
-			v.state = false;
-			v.menu.setState('Inactive');
+		if(_shouldActivate) {
+			this.state = true;
+			this.menu.setState('Active', this);
+		}
+		if(this.action || _shouldActivate) {
+			for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
+				v.state = false;
+				v.menu.setState('Inactive');
+			}
 		}
 	}
 
 	mousedown(_event) {
 		_event.stopPropagation();
-		if(this.action) {
-			this.element.one('mouseup', () => {
-				LFMenu.deactivateAll();
-			});
+		if(_event.button == 0 && this.menu && !this.superview.autoactivatesItems) {
+			this.menu.setState('Toggle', this);
+			LFMenu.deactivateAll(this.menu);
 		}
 	}
 
-	mouseup() {}
+	mouseup() {
+		if(this.action) {
+			LFMenu.deactivateAll();
+			this.action();
+		}
+	}
 
 	separator() {
+		this.action = undefined;
 		this.attributes = {
 			'title': undefined,
 			'separator': ''
@@ -68,6 +88,7 @@ return class extends LFButton {
 				this[v] = undefined;
 			}
 		}
+		this.mousedown = (_event) => _event.stopPropagation();
 
 		return this;
 	}

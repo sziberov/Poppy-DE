@@ -4,12 +4,14 @@ return class {
 
 		new LFApp().quitableBySingleWindow = true;
 
-		new LFApp().menus = [
-			new LFMenu({ title: 'File', items: [
-				new LFMenuItem({ title: 'Quit Highlighted', action: () => this.quit() }),
-				new LFMenuItem({ title: 'Update', action: () => this.update() }),
-				new LFMenuItem({ title: 'Switch', action: () => this.switch() })
-			] })
+		new LFApp().menuItems = [
+			new LFMenuItem({ title: 'File',
+				menu: new LFMenu({ items: [
+					new LFMenuItem({ title: 'Quit Highlighted', action: () => this.quit() }),
+					new LFMenuItem({ title: 'Update', action: () => this.update() }),
+					new LFMenuItem({ title: 'Switch', action: () => this.switch() })
+				] })
+			})
 		]
 
 		new LFWindow({ x: 'center', y: 'center', width: 512, height: 256, title: new LFApp().title,

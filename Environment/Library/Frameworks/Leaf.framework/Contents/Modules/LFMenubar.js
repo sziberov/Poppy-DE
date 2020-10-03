@@ -11,22 +11,8 @@ return _fork('@Title') || _single(class extends LFView {
 		this.attributes['transparent'] = this._.transparent == true ? '' : undefined;
 		this.subviews.add(
 			new LFButton({ title: '', image: new LFImage({ shared: 'TemplateLogo' }), action: function() { _PoppyMenu.setState('Toggle', this) } }),
-			new LFMenubarGroup({ type: 'application' }),
-			/*
-			new LFMenu({ items: [
-				new LFMenuItem({ title: 'File' }),
-				new LFMenuItem({ title: 'Edit' }),
-				new LFMenuItem({ title: 'View',
-					menu: new LFMenu({ items: [
-						new LFMenuItem({ title: 'Toggle Menubar Transparency', action: () => {
-							var a = new LFMenubar().transparent;
-
-							new LFMenubar().transparent = !a;
-						} })
-					] })
-				})
-			] }),
-			*/
+			new LFMenu({ tag: 'application', autoactivatesItems: false }),
+		//	new LFMenu({ tag: 'status', autoactivatesItems: false }),
 			new LFMenubarGroup({ type: 'status', subviews: [
 				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateNotifications' }), action: () => alert('HUHU') }),
 				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateSearch' }) }),
@@ -57,25 +43,20 @@ return _fork('@Title') || _single(class extends LFView {
 		return this._.transparent;
 	}
 
+	get applicationMenu() {
+		return this.subviews.filter(v => v.tag == 'application')[0]
+	}
+
+	get statusMenu() {
+		return this.subviews.filter(v => v.tag == 'status')[0]
+	}
+
+	get statusGroup() {
+		return this.subviews.filter(v => v.class == 'LFMenubarGroup' && v.type == 'status')[0]
+	}
+
 	set transparent(_value) {
 		this._.transparent = _value;
 		this.attributes['transparent'] = _value == true ? '' : undefined;
-	}
-
-	getGroup(_type) {
-		return this.subviews.filter(v => v.class == 'LFMenubarGroup' && v.type == _type.toLowerCase())[0]
-	}
-
-	setGroup(_type, _subviews, _application) {
-		let _group = this.subviews.filter(v => v.class == 'LFMenubarGroup' && v.type == _type.toLowerCase())[0]
-
-		if(_group) {
-			_group.setSubviews(_subviews);
-			if(_type == 'Application') {
-				_group.application =  _application;
-			}
-		}
-
-		return this;
 	}
 });

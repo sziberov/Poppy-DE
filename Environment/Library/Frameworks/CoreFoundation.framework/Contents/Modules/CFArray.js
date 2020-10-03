@@ -13,6 +13,8 @@ return class extends Array {
 		return this.#tag;
 	}
 
+	set length(_value) {}
+
 	add(..._value) {
 		for(let v of _value) {
 			super.push(v);
@@ -26,7 +28,6 @@ return class extends Array {
 	remove(..._value) {
 		for(let v of _value) {
 			if(this.contains(v)) {
-			//	this.data[v] = { ...this.filter(vv => vv !== v) };
 				super.splice(this.indexOf(v), 1);
 
 				CFEventEmitter.dispatch('arrayChanged.'+this.tag, { event: 'removed', value: v });
@@ -37,6 +38,11 @@ return class extends Array {
 	}
 
 	removeAll() {
+		/*
+		super.length = 0;
+
+		CFEventEmitter.dispatch('arrayChanged.'+this.tag, { event: 'removedAll' });
+		*/
 		this.remove(...this);
 
 		return this;
