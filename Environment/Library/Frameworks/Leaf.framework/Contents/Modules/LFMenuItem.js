@@ -51,12 +51,10 @@ return class extends LFButton {
 			}
 		}
 		if(_shouldActivate) {
-			this.state = true;
 			this.menu.setState('Active', this);
 		}
-		if(this.action || _shouldActivate) {
+		if(this.superview.autoactivatesItems && this.action || _shouldActivate) {
 			for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
-				v.state = false;
 				v.menu.setState('Inactive');
 			}
 		}
@@ -64,14 +62,25 @@ return class extends LFButton {
 
 	mousedown(_event) {
 		_event.stopPropagation();
-		if(_event.button == 0 && this.menu && !this.superview.autoactivatesItems) {
-			this.menu.setState('Toggle', this);
-			LFMenu.deactivateAll(this.menu);
+		if(_event.button == 0) {
+			if(this.action && !this.menu) {
+				this.state = true;
+				for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
+					v.menu.setState('Inactive');
+				}
+			} else
+			if(this.menu && !this.superview.autoactivatesItems) {
+				this.menu.setState('Toggle', this);
+				LFMenu.deactivateAll(this.menu);
+			}
 		}
 	}
 
 	mouseup() {
 		if(this.action) {
+			if(!this.menu) {
+				this.state = false;
+			}
 			LFMenu.deactivateAll();
 			this.action();
 		}

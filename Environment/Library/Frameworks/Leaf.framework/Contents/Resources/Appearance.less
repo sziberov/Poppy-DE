@@ -11,6 +11,10 @@ LFWorkspace {
 	height: 100%;
 
 	background-color: #bf6060;
+	-background-image: radial-gradient(circle at 50% 25%,
+		rgba(25%,25%,25%,1),
+		rgba(12.5%,12.5%,12.5%,1)
+	);
 	background-position: center;
 	background-size: cover;
 
@@ -47,6 +51,10 @@ LFButton {
 
 LFButton:after {
 	content: attr(title);
+}
+
+LFButton[title][image]:after {
+	margin-left: 8px;
 }
 
 LFButton[enabled][focused]:before {
@@ -167,71 +175,18 @@ LFMenubar[transparent] {
 		inset 0 -1px rgba(0%,0%,0%,0.5);
 }
 
-LFMenubarGroup {
-	display: flex;
-}
-
-LFMenubarGroup[status] {
-	flex-direction: row-reverse;
-
-	margin-left: auto;
-}
-
-LFMenubar LFButton {
-	flex-shrink: 0;
-
-	min-width: 0;
-
-	background: none;
-	border-radius: 0;
-	box-shadow: none;
-
-	white-space: nowrap;
-}
-
-LFMenubar LFButton:after {
-	font-size: 15px;
-	text-shadow: 0 1px rgba(100%,100%,100%,0.5);
-}
-
-LFMenubar LFButton:has(LFImage) :after {
-	margin-right: 16px;
-}
-
-LFMenubar LFButton[enabled][activated] {
-	background: linear-gradient(to bottom,
-		#ff4040,
-		#bf0000
-	);
-	box-shadow:
-		inset 0 1px rgba(100%,100%,100%,0.25),
-		inset 0 -1px rgba(0%,0%,0%,0.25);
-	filter: none;
-}
-
-LFMenubar LFButton[enabled][activated]:after {
-	color: rgba(100%,100%,100%,1);
-	text-shadow: none;
-}
-
-LFMenubar LFButton LFImage[template] {
-	filter: drop-shadow(0 1px rgba(100%,100%,100%,0.5));
-}
-
-LFMenubar LFButton[enabled][activated] LFImage[template] {
-	filter: invert(1);
-}
-
-LFMenubar LFButton:not([enabled]) LFImage {
-	opacity: 0.5;
-}
-
 LFMenubar {
 	LFMenu {
 		display: flex;
 		flex-direction: row;
 
 		transform: none!important;
+	}
+
+	LFMenu[status] {
+		flex-direction: row-reverse;
+
+		margin-left: auto;
 	}
 
 	LFMenuItem {
@@ -250,7 +205,11 @@ LFMenubar {
 		text-shadow: 0 1px rgba(100%,100%,100%,0.5);
 	}
 
-	LFMenuItem:first-child:after {
+	LFMenuItem[title][image]:after {
+		margin-left: 8px;
+	}
+
+	LFMenu[application] LFMenuItem:first-child:after {
 		font-family: Ubuntu-Medium;
 	}
 
@@ -270,6 +229,18 @@ LFMenubar {
 	}
 
 	LFMenuItem:not([enabled]) {
+		opacity: 0.5;
+	}
+
+	LFMenuItem LFImage[template] {
+		filter: drop-shadow(0 1px rgba(100%,100%,100%,0.5));
+	}
+
+	LFMenuItem[enabled][activated] LFImage[template] {
+		filter: invert(1);
+	}
+
+	LFMenuItem:not([enabled]) LFImage {
 		opacity: 0.5;
 	}
 }

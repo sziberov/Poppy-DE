@@ -22,28 +22,32 @@ return class {
 		new LFWorkspace().desktopImage = '/Library/Desktop Images/249785.jpg';
 		new LFWorkspace().add();
 
-		new CFProcessInfo().environment._PoppyMenu = new LFMenu({ x: 8, y: 24, items: [
-			new LFMenuItem({ title: 'About This Poppy', action: () => new LFWorkspace().getApplication('ru.poppy.enviro').cautiously('aboutSystem') }),
-			new LFMenuItem().separator(),
-			new LFMenuItem({ title: 'Environment Preferences', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') }),
-			new LFMenuItem({ title: 'Dock',
+		new LFMenubar().mainMenu.items = [
+			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateLogo' }),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: 'Test Alert', action: () => new LFAlert() }),
-					new LFMenuItem({ title: 'Submenu',
+					new LFMenuItem({ title: 'About This Poppy', action: () => new LFWorkspace().getApplication('ru.poppy.enviro').cautiously('aboutSystem') }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: 'Environment Preferences', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') }),
+					new LFMenuItem({ title: 'Dock',
 						menu: new LFMenu({ items: [
-							new LFMenuItem(),
-							new LFMenuItem()
+							new LFMenuItem({ title: 'Test Alert', action: () => new LFAlert() }),
+							new LFMenuItem({ title: 'Submenu',
+								menu: new LFMenu({ items: [
+									new LFMenuItem(),
+									new LFMenuItem()
+								] })
+							})
 						] })
-					})
+					}),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: 'Force Quit', action: () => this.forceQuit() }),
+					new LFMenuItem({ title: 'Activity Monitor', action: () => new LFWorkspace().launchApplication('/Applications/Activity Monitor') }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: 'Relaunch', action: () => _request('relaunch') }),
+					new LFMenuItem({ title: 'Quit', action: () => _request('quit') })
 				] })
-			}),
-			new LFMenuItem().separator(),
-			new LFMenuItem({ title: 'Force Quit', action: () => this.forceQuit() }),
-			new LFMenuItem({ title: 'Activity Monitor', action: () => new LFWorkspace().launchApplication('/Applications/Activity Monitor') }),
-			new LFMenuItem().separator(),
-			new LFMenuItem({ title: 'Relaunch', action: () => _request('relaunch') }),
-			new LFMenuItem({ title: 'Quit', action: () => _request('quit') })
-		] }).add();
+			})
+		]
 
 		this.launchServices();
 		CFArray.addObserver(new LFWorkspace().launchedApplications, () => this.launchServices());

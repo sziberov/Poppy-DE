@@ -41,16 +41,18 @@ return class extends LFControl {
 
 	set title(_value) {
 		this._.title = _value;
-		this.attributes['title'] = _value;
+		this.attributes['title'] = _value?.length > 0 ? _value : undefined;
 	}
 
 	set image(_value) {
 		this.subviews.removeByFilter(v => v.class == 'LFImage');
 		if(_value?.class == 'LFImage') {
 			this._.image = _value;
+			this.attributes['image'] = '';
 			this.subviews.add(_value);
 		} else {
 			this._.image = undefined;
+			this.attributes['image'] = undefined;
 		}
 	}
 

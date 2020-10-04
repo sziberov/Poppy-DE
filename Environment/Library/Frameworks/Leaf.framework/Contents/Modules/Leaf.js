@@ -31,4 +31,4 @@ _import('@Title', 'LFTableRow');
 _import('@Title', 'LFAlert');
 
 new LFApplication();
-new CFProcessInfo().environment._LFAppearance = new CGAppearance('@Resources').add();
+new CFProcessInfo().environment._LFAppearance = new CGAppearance('@Resources/Appearance.less').add();

@@ -28,21 +28,14 @@ LFButton {
 
 	min-height: 24px;
 
-	background:
-		linear-gradient(to bottom,
-			rgba(0%,0%,0%,0),
-			rgba(0%,0%,0%,0) 25%,
-			rgba(0%,0%,0%,0.0625) 50%,
-			rgba(0%,0%,0%,0.125) 50%,
-			rgba(0%,0%,0%,0.125) 75%,
-			rgba(0%,0%,0%,0.0625)
-		),
-		rgba(100%,100%,100%,1);
+	background: linear-gradient(to bottom,
+		rgba(100%,100%,100%,1),
+		rgba(87.5%,87.5%,87.5%,1)
+	);
 	border-radius: 4px;
 	box-shadow:
-		inset 0 0 0 1px #808080,
-		inset 0 0 0 2px rgba(100%,100%,100%,0.25),
-		0 1px rgba(0%,0%,0%,0.05);
+		0 0 0 1px rgba(0%,0%,0%,0.0625),
+		0 1px rgba(0%,0%,0%,0.25);
 }
 
 LFButton:after {
@@ -120,15 +113,8 @@ LFMenubar {
 	width: calc(100% - 16px);
 	height: 24px;
 
-	background:
-		linear-gradient(to bottom,
-			rgba(0%,0%,0%,0.0625),
-			rgba(0%,0%,0%,0.5)
-		),
-		rgba(100%,100%,100%,1);
-	box-shadow:
-		inset 0 1px rgba(100%,100%,100%,1),
-		inset 0 -1px #404040;
+	background: rgba(100%,100%,100%,1);
+	box-shadow: 0 1px rgba(0%,0%,0%,0.125);
 
 	transform: translateY(0);
 	transition: 0.5s ease transform;
@@ -157,14 +143,8 @@ LFMenubar:after {
 }
 
 LFMenubar[transparent] {
-	background: linear-gradient(to bottom,
-		rgba(100%,100%,100%,0.75),
-		rgba(100%,100%,100%,0.25)
-	);
-	backdrop-filter: blur(4px);
-	box-shadow:
-		inset 0 1px rgba(100%,100%,100%,0.25),
-		inset 0 -1px rgba(0%,0%,0%,0.5);
+	background: rgba(100%,100%,100%,0.5);
+	backdrop-filter: blur(8px);
 }
 
 LFMenubarGroup {
@@ -191,36 +171,21 @@ LFMenubar LFButton {
 
 LFMenubar LFButton:after {
 	font-size: 15px;
-	text-shadow: 0 1px rgba(100%,100%,100%,0.5);
 }
 
 LFMenubar LFButton:has(LFImage) :after {
 	margin-right: 16px;
 }
 
-LFMenubar LFButton[enabled][highlighted],
 LFMenubar LFButton[enabled][activated] {
-	background: linear-gradient(to bottom,
-		#ff4040,
-		#bf0000
-	);
-	box-shadow:
-		inset 0 1px rgba(100%,100%,100%,0.25),
-		inset 0 -1px rgba(0%,0%,0%,0.25);
+	background: #bf0000;
 	filter: none;
 }
 
-LFMenubar LFButton[enabled][highlighted]:after,
 LFMenubar LFButton[enabled][activated]:after {
 	color: rgba(100%,100%,100%,1);
-	text-shadow: none;
 }
 
-LFMenubar LFButton LFImage[template] {
-	filter: drop-shadow(0 1px rgba(100%,100%,100%,0.5));
-}
-
-LFMenubar LFButton[enabled][highlighted] LFImage[template],
 LFMenubar LFButton[enabled][activated] LFImage[template] {
 	filter: invert(1);
 }
@@ -229,113 +194,147 @@ LFMenubar LFButton:not([enabled]) LFImage {
 	opacity: 0.5;
 }
 
-LFMenubarGroup[application] LFButton:first-child:after {
-	font-family: Ubuntu-Medium;
+LFMenubar {
+	LFMenu {
+		display: flex;
+		flex-direction: row;
+
+		transform: none!important;
+	}
+
+	LFMenuItem {
+		display: flex;
+		align-items: center;
+
+		padding: 0 8px;
+
+		min-height: 24px;
+	}
+
+	LFMenuItem:after {
+		content: attr(title);
+
+		font-size: 15px;
+	}
+
+	LFMenuItem:first-child:after {
+		font-family: Ubuntu-Medium;
+	}
+
+	LFMenuItem[enabled][activated] {
+		background: #bf0000;
+	}
+
+	LFMenuItem[enabled][activated]:after {
+		color: rgba(100%,100%,100%,1);
+	}
+
+	LFMenuItem:not([enabled]) {
+		opacity: 0.5;
+	}
 }
 
-LFMenu {
-	display: flex;
-	flex-direction: column;
+LFWorkspace {
+	& > LFMenu {
+		display: flex;
+		flex-direction: column;
 
-	position: fixed;
-	top: 0;
-	left: 0;
-	z-index: 0;
+		position: fixed;
+		top: 0;
+		left: 0;
+		z-index: 0;
 
-	padding: 4px 0;
+		padding: 4px 0;
 
-	min-width: 24px;
-	min-height: 24px;
+		min-width: 24px;
+		min-height: 24px;
 
-	background: rgba(100%,100%,100%,0.875);
-	backdrop-filter: blur(4px);
-	border-radius: 4px;
-	box-shadow:
-		0 0 0 1px rgba(0%,0%,0%,0.25),
-		0 8px 8px rgba(0%,0%,0%,0.25);
+		background: rgba(100%,100%,100%,0.5);
+		backdrop-filter: blur(8px);
+		border-radius: 4px;
+		box-shadow:
+			0 0 0 1px rgba(0%,0%,0%,0.125),
+			0 8px 8px rgba(0%,0%,0%,0.25);
 
-	opacity: 0;
-	transition: 250ms ease opacity;
-	pointer-events: none;
-}
+		opacity: 0;
+		transition: 250ms ease opacity;
+		pointer-events: none;
+	}
 
-LFMenu[activated] {
-	opacity: 1;
-	transition: none;
-	pointer-events: all;
-}
+	& > LFMenu[activated] {
+		opacity: 1;
+		transition: none;
+		pointer-events: all;
+	}
 
-LFMenu[topLeft] {
-	border-top-left-radius: 0;
-}
+	& > LFMenu[topLeft] {
+		border-top-left-radius: 0;
+	}
 
-LFMenu[topRight] {
-	border-top-right-radius: 0;
-}
+	& > LFMenu[topRight] {
+		border-top-right-radius: 0;
+	}
 
-LFMenu[bottomLeft] {
-	border-bottom-left-radius: 0;
-}
+	& > LFMenu[bottomLeft] {
+		border-bottom-left-radius: 0;
+	}
 
-LFMenu[bottomRight] {
-	border-bottom-right-radius: 0;
-}
+	& > LFMenu[bottomRight] {
+		border-bottom-right-radius: 0;
+	}
 
-LFMenuItem {
-	display: flex;
-	align-items: center;
+	& > LFMenu {
+		LFMenuItem {
+			display: flex;
+			align-items: center;
 
-	padding: 0 24px;
+			padding: 0 24px;
 
-	height: 24px;
-}
+			height: 24px;
+		}
 
-LFMenuItem:after {
-	content: attr(title);
-}
+		LFMenuItem:after {
+			content: attr(title);
+		}
 
-LFMenuItem[menu]:before {
-	content: '';
+		LFMenuItem[menu]:before {
+			content: '';
 
-	position: absolute;
-	right: 8px;
+			position: absolute;
+			right: 8px;
 
-	border-style: solid;
-	border-width: 4px 0 4px 8px;
-	border-color: transparent transparent transparent rgba(25%,25%,25%,1);
-}
+			border-style: solid;
+			border-width: 4px 0 4px 8px;
+			border-color: transparent transparent transparent rgba(25%,25%,25%,1);
+		}
 
-LFMenuItem[enabled][highlighted],
-LFMenuItem[enabled][activated] {
-	background: linear-gradient(to bottom,
-		#ff4040,
-		#bf0000
-	);
-	box-shadow:
-		inset 0 1px rgba(0%,0%,0%,0.25),
-		inset 0 -1px rgba(0%,0%,0%,0.25);
-}
+		LFMenuItem[enabled][highlighted],
+		LFMenuItem[enabled][activated] {
+			background: #bf0000;
+		}
 
-LFMenuItem[enabled][highlighted]:after,
-LFMenuItem[enabled][activated]:after {
-	color: rgba(100%,100%,100%,1);
-}
+		LFMenuItem[enabled][highlighted]:after,
+		LFMenuItem[enabled][activated]:after {
+			color: rgba(100%,100%,100%,1);
+		}
 
-LFMenuItem[enabled][menu][highlighted]:before,
-LFMenuItem[enabled][menu][activated]:before {
-	border-color: transparent transparent transparent rgba(100%,100%,100%,1);
-}
+		LFMenuItem[enabled][menu][highlighted]:before,
+		LFMenuItem[enabled][menu][activated]:before {
+			border-color: transparent transparent transparent rgba(100%,100%,100%,1);
+		}
 
-LFMenuItem:not([enabled]) {
-	color: #bfbfbf;
-}
+		LFMenuItem:not([enabled]) {
+			color: rgba(0%,0%,0%,0.25);
+		}
 
-LFMenuItem[separator] {
-	margin: 4px 0;
+		LFMenuItem[separator] {
+			margin: 4px 0;
 
-	height: 1px;
+			height: 1px;
 
-	background: rgba(0%,0%,0%,0.125);
+			background: rgba(0%,0%,0%,0.125);
+		}
+	}
 }
 
 LFWindow {
@@ -412,10 +411,6 @@ LFWindow[animatedAlert] {
 	animation: LFWindow_animatedAlert 0.25s ease;
 }
 
-LFWindow[hidden] {
-	visibility: hidden;
-}
-
 LFFrame {
 	display: flex;
 	flex-direction: column;
@@ -424,21 +419,18 @@ LFFrame {
 
 	min-height: 16px;
 
-	background:
-		var(--CGNoise),
-		linear-gradient(to bottom,
-			rgba(0%,0%,0%,0.125),
-			rgba(0%,0%,0%,0.5)
-		),
-		rgba(100%,100%,100%,1);
+	background: linear-gradient(to bottom,
+		rgba(0%,0%,0%,0.0625),
+		rgba(0%,0%,0%,0.25)
+	);
+	backdrop-filter: blur(8px);
 }
 
 LFFrame[top] {
 	border-radius: 4px 4px 0 0;
 	box-shadow:
 		inset 0 1px rgba(100%,100%,100%,0.5),
-		inset 0 -1px #404040,
-		inset 0 -2px rgba(100%,100%,100%,0.125);
+		inset 0 -1px rgba(0%,0%,0%,0.125);
 }
 
 LFFrame[bottom] {
@@ -467,7 +459,7 @@ LFWindow:not([focused]) LFFrame[top] {
 	box-shadow:
 		inset 0 1px rgba(100%,100%,100%,1),
 		inset 0 -1px #808080,
-		inset 0 -2px rgba(100%,100%,100%,0.125);
+		inset 0 -2px rgba(100%,100%,100%,0.25);
 }
 
 LFWindow:not([focused]) LFFrame[bottom] {
@@ -509,7 +501,6 @@ LFWindow:not([unifiedTitlebarAndToolbar]) LFTitlebar:after {
 	overflow: hidden;
 
 	font-size: 15px;
-	text-shadow: 0 1px rgba(100%,100%,100%,0.5);
 
 	transform: translate(-50%, -50%);
 }
@@ -528,7 +519,6 @@ LFTitlebarButton {
 	background: url('@Resources/LFTitlebarButton.svg');
 	background-repeat: no-repeat!important;
 	background-position: 4px 2px!important;
-	filter: drop-shadow(0 1px rgba(100%,100%,100%,0.5));
 }
 
 LFTitlebarButton:first-child {
@@ -560,9 +550,7 @@ LFTitlebarButton[enabled][highlighted][maximize] {
 }
 
 LFTitlebarButton[enabled][activated] {
-	filter:
-		brightness(0.5)
-		drop-shadow(0 1px rgba(100%,100%,100%,0.5));
+	filter: brightness(0.5);
 }
 
 LFTitlebarButton:not([enabled]) {
@@ -611,36 +599,27 @@ LFToolbar > *:not(:last-child) {
 
 LFToolbar LFButton {
 	background: linear-gradient(to bottom,
-		rgba(100%,100%,100%,0.5),
-		rgba(100%,100%,100%,0)
+		rgba(100%,100%,100%,1),
+		rgba(75%,75%,75%,1)
 	);
 	box-shadow:
-		inset 0 0 0 1px #404040,
-		inset 0 2px rgba(100%,100%,100%,0.25),
-		0 1px rgba(100%,100%,100%,0.25);
-}
-
-LFToolbar LFButton:after {
-	text-shadow: 0 1px rgba(100%,100%,100%,0.5);
+		0 0 0 1px rgba(0%,0%,0%,0.0625),
+		0 1px rgba(0%,0%,0%,0.25);
 }
 
 LFToolbar LFButton[enabled][activated] {
-	background:
-		var(--CGNoise),
-		linear-gradient(to bottom,
-			#404040,
-			#808080
-		);
+	background: linear-gradient(to bottom,
+		rgba(50%,50%,50%,1),
+		rgba(25%,25%,25%,1)
+	);
 	box-shadow:
-		inset 0 0 0 1px rgba(0%,0%,0%,0.25),
-		inset 0 2px rgba(0%,0%,0%,0.125),
-		0 1px rgba(100%,100%,100%,0.25);
+		0 0 0 1px rgba(0%,0%,0%,0.03125),
+		0 1px rgba(0%,0%,0%,0.125);
 	filter: none;
 }
 
 LFToolbar LFButton[enabled][activated]:after {
 	color: rgba(100%,100%,100%,1);
-	text-shadow: 0 1px rgba(0%,0%,0%,0.5);
 }
 
 LFToolbar LFButton:not([enabled]) {
@@ -652,12 +631,8 @@ LFToolbar LFButton:not([enabled]) LFImage {
 	opacity: 0.5;
 }
 
-LFToolbar LFButton LFImage[template] {
-	filter: drop-shadow(0 1px rgba(100%,100%,100%,0.5));
-}
-
 LFToolbar LFButton[enabled][activated] LFImage[template] {
-	filter: drop-shadow(0 1px rgba(100%,100%,100%,0.5)) invert(1) /*brightness(0.5) sepia(100) saturate(100) hue-rotate(25deg)*/;
+	filter: invert(1) /*brightness(0.5) sepia(100) saturate(100) hue-rotate(25deg)*/;
 }
 
 LFWindow:not([focused]) LFToolbar LFButton {

@@ -10,14 +10,13 @@ return _fork('@Title') || _single(class extends LFView {
 
 		this.attributes['transparent'] = this._.transparent == true ? '' : undefined;
 		this.subviews.add(
-			new LFButton({ title: '', image: new LFImage({ shared: 'TemplateLogo' }), action: function() { _PoppyMenu.setState('Toggle', this) } }),
+			new LFMenu({ tag: 'main', autoactivatesItems: false }),
 			new LFMenu({ tag: 'application', autoactivatesItems: false }),
-		//	new LFMenu({ tag: 'status', autoactivatesItems: false }),
-			new LFMenubarGroup({ type: 'status', subviews: [
-				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateNotifications' }), action: () => alert('HUHU') }),
-				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateSearch' }) }),
-				new LFButton({ title: 'DIES', action: function() { this.title = 'Random Title' } }),
-				new LFButton({ title: '20:48', action: function() {
+			new LFMenu({ tag: 'status', items: [
+				new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateNotifications' }), action: () => alert('HUHU') }),
+				new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateSearch' }) }),
+				new LFMenuItem({ title: 'DIES', action: function() { this.title = 'Random Title' } }),
+				new LFMenuItem({ title: '20:48', action: function() {
 					let update = () => {
 						let _date = new Date(),
 							_time = ('0'+_date.getHours()).substr(-2)+':'+('0'+_date.getMinutes()).substr(-2);
@@ -27,7 +26,7 @@ return _fork('@Title') || _single(class extends LFView {
 					update();
 					setInterval(update, 30000);
 				} }),
-				new LFButton({ title: '', image: new LFImage({ width: 24, shared: 'TemplateBatteryConnected' }),
+				new LFMenuItem({ title: '', image: new LFImage({ width: 24, shared: 'TemplateBatteryConnected' }),
 					menu: new LFMenu({ items: [
 						new LFMenuItem({ title: '100% Remaining' }),
 						new LFMenuItem({ title: 'Power Source: Charger' }),
@@ -35,12 +34,19 @@ return _fork('@Title') || _single(class extends LFView {
 						new LFMenuItem({ title: 'Energy Saver Preferences...', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') })
 					] })
 				})
-			] })
+			], autoactivatesItems: false })
 		);
+
+		this.applicationMenu.attributes['application'] = '';
+		this.statusMenu.attributes['status'] = '';
 	}
 
 	get transparent() {
 		return this._.transparent;
+	}
+
+	get mainMenu() {
+		return this.subviews.filter(v => v.tag == 'main')[0]
 	}
 
 	get applicationMenu() {
@@ -49,10 +55,6 @@ return _fork('@Title') || _single(class extends LFView {
 
 	get statusMenu() {
 		return this.subviews.filter(v => v.tag == 'status')[0]
-	}
-
-	get statusGroup() {
-		return this.subviews.filter(v => v.class == 'LFMenubarGroup' && v.type == 'status')[0]
 	}
 
 	set transparent(_value) {

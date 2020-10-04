@@ -8,22 +8,24 @@ return _fork('@Title') || class {
 
 	add() {
 		if(!this.element && this.url && !@Title.#urls.includes(this.url)) {
-			let _add = $('<style/>'),
-				_files = CFDirectory.content(this.url, 'Files'),
+			let _file = CFFile.content(this.url),
 				_format =
-					_files.includes('Appearance.less') ? 'less' :
-					_files.includes('Appearance.css') ? 'css' :
+					this.url.endsWith('.less') ? 'less' :
+					this.url.endsWith('.css') ? 'css' :
 					undefined;
 
-			if(_format) {
+			if(_file && _format) {
+				let _add = $('<style/>');
+
 				@Title.#urls.push(this.url);
 				_add.attr('type', 'text/'+_format);
-				_add.text(CFFile.content(`${this.url}/Appearance.${_format}`).replace(/@(Resources)/g, this.url));
-			}
-			this.element = _add.appendTo('body');
+				_add.text(_file.replace(/@(Resources)/g, this.url.replace(/(?<=\/Resources\/)(.*)/g, '')));
 
-			if(_format == 'less') {
-				less?.refreshStyles();
+				this.element = _add.appendTo('body');
+
+				if(_format == 'less') {
+					less?.refreshStyles();
+				}
 			}
 		}
 

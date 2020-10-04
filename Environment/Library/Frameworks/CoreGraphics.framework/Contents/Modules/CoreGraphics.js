@@ -10,4 +10,4 @@ _import('@Title', 'CGElement');
 _import('@Title', 'CGCursor');
 _import('@Title', 'CGFontManager');
 
-new CFProcessInfo().environment._CGAppearance = new CGAppearance('@Resources').add();
+new CFProcessInfo().environment._CGAppearance = new CGAppearance('@Resources/Appearance.css').add();
