@@ -12,29 +12,7 @@ return _fork('@Title') || _single(class extends LFView {
 		this.subviews.add(
 			new LFMenu({ tag: 'main', autoactivatesItems: false }),
 			new LFMenu({ tag: 'application', autoactivatesItems: false }),
-			new LFMenu({ tag: 'status', items: [
-				new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateNotifications' }), action: () => alert('HUHU') }),
-				new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateSearch' }) }),
-				new LFMenuItem({ title: 'DIES', action: function() { this.title = 'Random Title' } }),
-				new LFMenuItem({ title: '20:48', action: function() {
-					let update = () => {
-						let _date = new Date(),
-							_time = ('0'+_date.getHours()).substr(-2)+':'+('0'+_date.getMinutes()).substr(-2);
-
-						this.title = _time;
-					}
-					update();
-					setInterval(update, 30000);
-				} }),
-				new LFMenuItem({ title: '', image: new LFImage({ width: 24, shared: 'TemplateBatteryConnected' }),
-					menu: new LFMenu({ items: [
-						new LFMenuItem({ title: '100% Remaining' }),
-						new LFMenuItem({ title: 'Power Source: Charger' }),
-						new LFMenuItem().separator(),
-						new LFMenuItem({ title: 'Energy Saver Preferences...', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') })
-					] })
-				})
-			], autoactivatesItems: false })
+			new LFMenu({ tag: 'status', autoactivatesItems: false })
 		);
 
 		this.applicationMenu.attributes['application'] = '';

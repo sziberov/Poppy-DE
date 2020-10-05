@@ -48,6 +48,33 @@ return class {
 				] })
 			})
 		]
+		new LFMenubar().statusMenu.items = [
+			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateNotifications' }), action: () => alert('HUHU') }),
+			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateSearch' }),
+				menu: new LFMenu({ items: [
+					new LFMenuItem({ title: 'Search...' })
+				] })
+			}),
+			new LFMenuItem({ title: 'DIES', action: function() { this.title = 'Random Title' } }),
+			new LFMenuItem({ title: '20:48', action: function() {
+				let update = () => {
+					let _date = new Date(),
+						_time = ('0'+_date.getHours()).substr(-2)+':'+('0'+_date.getMinutes()).substr(-2);
+
+					this.title = _time;
+				}
+				update();
+				setInterval(update, 30000);
+			} }),
+			new LFMenuItem({ title: '', image: new LFImage({ width: 24, shared: 'TemplateBatteryConnected' }),
+				menu: new LFMenu({ items: [
+					new LFMenuItem({ title: '100% Remaining' }),
+					new LFMenuItem({ title: 'Power Source: Charger' }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: 'Energy Saver Preferences...', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') })
+				] })
+			})
+		]
 
 		this.launchServices();
 		CFArray.addObserver(new LFWorkspace().launchedApplications, () => this.launchServices());
