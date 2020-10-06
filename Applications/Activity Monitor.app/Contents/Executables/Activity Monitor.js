@@ -43,38 +43,41 @@ return class {
 	}
 
 	quit() {
-		this.table.activeRow.data.application.quit();
+		this.table.activeRow?.data.application.quit();
 	}
 
 	switch() {
-		this.table.activeRow.data.application.focus();
+		this.table.activeRow?.data.application.focus();
 	}
 
 	information() {
-		var _application = this.table.activeRow.data.application,
-			_window = new LFApp().windows.filter(v => v.tag == _application.identifier)[0]
+		let _application = this.table.activeRow?.data.application;
 
-		if(!_window) {
-			new LFWindow({ tag: _application.identifier, width: 384, style: ['titled', 'closable', 'minimizable'], title: _application.title,
-				view: new LFView({ type: 'vertical', subviews: [
-					new LFView({ subviews: [
-						new LFView({ type: 'vertical', tight: true, subviews: [
-							new LFText({ string: 'Bundle', size: 'small', weight: 'bold' }),
-							new LFText({ string: 'Identifier', size: 'small', weight: 'bold' })
+		if(_application) {
+			let _window = new LFApp().windows.filter(v => v.tag == _application.identifier)[0]
+
+			if(!_window) {
+				new LFWindow({ tag: _application.identifier, width: 384, style: ['titled', 'closable', 'minimizable'], title: _application.title,
+					view: new LFView({ type: 'vertical', subviews: [
+						new LFView({ subviews: [
+							new LFView({ type: 'vertical', tight: true, subviews: [
+								new LFText({ string: 'Bundle', size: 'small', weight: 'bold' }),
+								new LFText({ string: 'Identifier', size: 'small', weight: 'bold' })
+							] }),
+							new LFView({ type: 'vertical', tight: true, subviews: [
+								new LFText({ string: _application.bundle.url, size: 'small' }),
+								new LFText({ string: _application.identifier, size: 'small' })
+							] })
 						] }),
-						new LFView({ type: 'vertical', tight: true, subviews: [
-							new LFText({ string: _application.bundle.url, size: 'small' }),
-							new LFText({ string: _application.identifier, size: 'small' })
-						] })
-					] }),
-					new LFButton({ title: 'Quit', action: function() {
-						this.get('Superview', 'LFWindow').close();
-						_application.quit();
-					} })
-				] })
-			});
-		} else {
-			_window.focus();
+						new LFButton({ title: 'Quit', action: function() {
+							this.get('Superview', 'LFWindow').close();
+							_application.quit();
+						} })
+					] })
+				});
+			} else {
+				_window.focus();
+			}
 		}
 	}
 }

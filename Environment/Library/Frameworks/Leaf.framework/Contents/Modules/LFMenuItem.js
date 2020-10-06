@@ -38,24 +38,24 @@ return class extends LFButton {
 		let _shouldActivate = false;
 
 		_event.stopPropagation();
-		this.attributes['highlighted'] = '';
+		this.highlighted = true;
 		if(this.menu) {
 			if(this.superview.autoactivatesItems) {
 				_shouldActivate = true;
 			} else {
 				for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
-					if(v.state) {
+					if(v.activated) {
 						_shouldActivate = true;
 					}
 				}
 			}
 		}
 		if(_shouldActivate) {
-			this.menu.setState('Active', this);
+			this.menu.setActivated(true, this);
 		}
 		if(this.superview.autoactivatesItems && this.action || _shouldActivate) {
 			for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
-				v.menu.setState('Inactive');
+				v.menu.setActivated(false);
 			}
 		}
 	}
@@ -64,13 +64,13 @@ return class extends LFButton {
 		_event.stopPropagation();
 		if(_event.button == 0) {
 			if(this.action && !this.menu) {
-				this.state = true;
+				this.activated = true;
 				for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
-					v.menu.setState('Inactive');
+					v.menu.setActivated(false);
 				}
 			} else
 			if(this.menu && !this.superview.autoactivatesItems) {
-				this.menu.setState('Toggle', this);
+				this.menu.setActivated('Toggle', this);
 				LFMenu.deactivateAll(this.menu);
 			}
 		}
@@ -79,7 +79,7 @@ return class extends LFButton {
 	mouseup() {
 		if(this.action) {
 			if(!this.menu) {
-				this.state = false;
+				this.activated = false;
 			}
 			LFMenu.deactivateAll();
 			this.action();

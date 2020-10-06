@@ -13,16 +13,16 @@ return class extends LFControl {
 
 	mouseover(_event) {
 		_event.stopPropagation();
-		this.attributes['highlighted'] = '';
-		for(var v of this.get('Siblings', this.class)) {
-			v.attributes['highlighted'] = '';
+		this.highlighted = true;
+		for(let v of this.get('Siblings', this.class)) {
+			v.highlighted = true;
 		}
 	}
 
 	mouseout() {
-		this.attributes['highlighted'] = undefined;
-		for(var v of this.get('Siblings', this.class)) {
-			v.attributes['highlighted'] = undefined;
+		this.highlighted = false;
+		for(let v of this.get('Siblings', this.class)) {
+			v.highlighted = false;
 		}
 	}
 }

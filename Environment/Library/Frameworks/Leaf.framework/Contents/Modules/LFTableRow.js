@@ -16,7 +16,7 @@ return class extends LFControl {
 		return this._.title;
 	}
 
-	get state() {
+	get activated() {
 		return this.attributes['activated'] == '' ? true : false;
 	}
 
@@ -29,12 +29,12 @@ return class extends LFControl {
 		this.attributes['title'] = _value;
 	}
 
-	set state(_value) {
+	set activated(_value) {
 		return {
 			true: () => {
 				this.attributes['activated'] = '';
 				for(let v of this.get('Siblings', this.class)) {
-					v.state = false;
+					v.activated = false;
 				}
 			},
 			false: () => {
@@ -56,7 +56,7 @@ return class extends LFControl {
 	}
 
 	mouseleave() {
-		this.attributes['highlighted'] = undefined;
+		this.highlighted = false;
 	}
 
 	mouseup() {}

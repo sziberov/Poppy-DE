@@ -13,7 +13,7 @@ return class extends LFView {
 
 	get activeRow() {
 		for(let v of this.subviews) {
-			if(v.state == true) {
+			if(v.activated == true) {
 				return v;
 			}
 		}
@@ -23,7 +23,7 @@ return class extends LFView {
 		let _window = this.get('Superview', 'LFWindow');
 
 		for(let v of this.subviews) {
-			v.state = false;
+			v.activated = false;
 		}
 		if(_window) {
 			_window.focus();

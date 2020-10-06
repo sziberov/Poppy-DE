@@ -73,9 +73,9 @@ return class extends LFControl {
 	}
 
 	mouseleave() {
-		this.attributes['highlighted'] = undefined;
+		this.highlighted = false;
 		if(!this.menu) {
-			this.state = false;
+			this.activated = false;
 		}
 	}
 
@@ -83,7 +83,7 @@ return class extends LFControl {
 		super.mousedown(_event, this.menu);
 
 		if(!this.action && this.menu && _event.button == 0) {
-			this.menu.setState('Toggle', this);
+			this.menu.setActivated('Toggle', this);
 		} else {
 
 		}

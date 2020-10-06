@@ -14,8 +14,12 @@ return class extends LFView {
 		}
 
 		this.subviews.add(...this._.items.filter(v => v.class == 'LFMenuItem'));
-		this.forSuperview;
+		this.targetView;
 		this.origin = this._;
+	}
+
+	get activated() {
+		return this.attributes['activated'] == '' ? true : false;
 	}
 
 	get title() {
@@ -30,8 +34,8 @@ return class extends LFView {
 		return this._.autoactivatesItems;
 	}
 
-	get state() {
-		return this.attributes['activated'] == '' ? true : false;
+	set activated(_value) {
+		this.attributes['activated'] = _value == true ? '' : undefined;
 	}
 
 	set origin(_value) {
@@ -56,10 +60,6 @@ return class extends LFView {
 		}
 	}
 
-	set state(_value) {
-		this.attributes['activated'] = _value == true ? '' : undefined;
-	}
-
 	add(_view) {
 		super.add(_view?.class == 'LFMenubar' ? _view : new LFWorkspace());
 
@@ -67,20 +67,23 @@ return class extends LFView {
 	}
 
 	didAddSubview() {
+		this.element.on('mousedown', (_event) => {
+			_event.stopPropagation();
+		});
 		new LFWorkspace().element.on('mousedown', (_event) => {
-			if(this.element && _event.target !== this.element[0]) {
-				this.setState('Inactive');
+			if(this.element) {
+				this.setActivated(false);
 			}
 		});
 	}
 
-	setState(_mode, _view) {
-		this.forSuperview = _view ? _view : this.forSuperview;
+	setActivated(_mode, _view) {
+		this.targetView = _view ? _view : this.targetView;
 
-		if((_mode == 'Active' || _mode == 'Toggle') && this.state == false) {
+		if((_mode == true || _mode == 'Toggle') && this.activated == false) {
 			let _topDepth = 0,
-				_element = this.forSuperview?.element,
-				_side = this.forSuperview?.get('Superview', 'LFMenubar') ? 'Bottom' : 'TopRight',
+				_element = this.targetView?.element,
+				_side = this.targetView?.get('Superview', 'LFMenubar') ? 'Bottom' : 'TopRight',
 				_origin = {
 					Default: () => {
 						return { x: this._.x, y: this._.y, corners: [] }
@@ -103,26 +106,26 @@ return class extends LFView {
 				_topDepth = v.element ? Math.max(_topDepth, Number.parseInt(v.element.css('z-index'))) : 0;
 			}
 			this.style['z-index'] = _topDepth+1;
-			if(['LFButton', 'LFMenuItem'].includes(this.forSuperview?.class)) {
-				if(this.forSuperview?.class == 'LFButton') {
-					this.forSuperview.menu = this;
+			if(['LFButton', 'LFMenuItem'].includes(this.targetView?.class)) {
+				if(this.targetView?.class == 'LFButton') {
+					this.targetView.menu = this;
 				}
-				this.forSuperview.state = true;
+				this.targetView.activated = true;
 			}
 			this.origin = _origin;
-			this.state = true;
+			this.activated = true;
 		} else
-		if((_mode == 'Inactive' || _mode == 'Toggle') && this.state == true) {
-			if(['LFButton', 'LFMenuItem'].includes(this.forSuperview?.class)) {
-				this.forSuperview.state = false;
+		if((_mode == false || _mode == 'Toggle') && this.activated == true) {
+			if(['LFButton', 'LFMenuItem'].includes(this.targetView?.class)) {
+				this.targetView.activated = false;
 			}
-			this.state = false;
+			this.activated = false;
 		}
 		for(let v of this.subviews) {
-			v.attributes['highlighted'] = undefined;
+			v.highlighted = false;
 			if(v.menu) {
-				v.state = false;
-				v.menu.setState('Inactive');
+				v.activated = false;
+				v.menu.setActivated(false);
 			}
 		}
 	}
@@ -142,7 +145,7 @@ return class extends LFView {
 					if(_exceptView.class == 'LFMenu') {
 						_exceptList.push(_exceptView);
 
-						_exceptView = _exceptView.forSuperview;
+						_exceptView = _exceptView.targetView;
 					} else
 					if(_exceptView.class == 'LFMenuItem') {
 						_exceptView = _exceptView.superview;
@@ -156,7 +159,7 @@ return class extends LFView {
 		_exceptCheck();
 		for(let v of new LFWorkspace().get('Subviews', '@Title')) {
 			if(!_exceptList.includes(v)) {
-				v.setState('Inactive');
+				v.setActivated(false);
 			}
 		}
 	}

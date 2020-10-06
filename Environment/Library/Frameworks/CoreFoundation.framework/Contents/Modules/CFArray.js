@@ -88,21 +88,6 @@ return class extends Array {
 		return _array.contains && _array.contains(_value) || _array.includes && _array.includes(_value);
 	}
 
-	static observe(_array = [], _function) {
-		return new Proxy(_array, {
-			set: (t, k, v) => {
-			//	if(k !== 'length' || k == 'length' && t[k] > v) {
-					t[k] = v;
-					_function(k, v);
-			//	} else {
-			//		t[k] = v;
-			//	}
-
-				return true;
-			}
-		});
-	}
-
 	static addObserver(_array, _function) {
 		if(typeof _function === 'function') {
 			CFEventEmitter.addHandler('arrayChanged.'+_array.tag, _function);

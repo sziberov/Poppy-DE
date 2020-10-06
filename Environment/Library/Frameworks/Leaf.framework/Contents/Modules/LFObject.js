@@ -1,43 +1,42 @@
 return class {
+	#properties = {
+		style: CFObject.observe({}, (k, v) => {
+			if(this.element) {
+				this.element.css(k, v);
+			}
+		}),
+		attributes: CFObject.observe({}, (k, v) => {
+			if(this.element) {
+				if(v !== undefined) {
+					this.element.attr(k, v);
+				} else {
+					this.element.removeAttr(k);
+				}
+			}
+		}),
+		text: ''
+	}
+
 	constructor() {
 		this.class = '@Title';
 
 		this.element;
-		this.properties = {
-			style: CFArray.observe({}, (k, v) => {
-				if(this.element) {
-					this.element.css(k, v);
-				}
-			}),
-			attributes: CFArray.observe({}, (k, v) => {
-				if(this.element) {
-					if(v !== undefined) {
-						this.element.attr(k, v);
-					} else {
-						this.element.removeAttr(k);
-					}
-				}
-			}),
-			text: ''
-		}
-
-		Object.defineProperty(this, 'properties', { writable: false });
 	}
 
 	get style() {
-		return this.properties.style;
+		return this.#properties.style;
 	}
 
 	get attributes() {
-		return this.properties.attributes;
+		return this.#properties.attributes;
 	}
 
 	get text() {
-		return this.properties.text;
+		return this.#properties.text;
 	}
 
 	set style(_value) {
-		let _style = this.properties.style;
+		let _style = this.#properties.style;
 
 		for(let v in _style) {
 			delete _style[v]
@@ -46,7 +45,7 @@ return class {
 	}
 
 	set attributes(_value) {
-		let _attributes = this.properties.attributes;
+		let _attributes = this.#properties.attributes;
 
 		for(let v in _attributes) {
 			delete _attributes[v]
@@ -55,7 +54,7 @@ return class {
 	}
 
 	set text(_value) {
-		this.properties.text = _value;
+		this.#properties.text = _value;
 		if(this.element) {
 			this.element.text(_value);
 		}

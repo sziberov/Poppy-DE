@@ -15,6 +15,7 @@ return class {
 			new LFMenuItem({ title: 'Go' }),
 			new LFMenuItem({ title: 'Window',
 				menu: new LFMenu({ items: [
+					new LFMenuItem({ title: 'Close', action: () => new LFApp().windows.filter(v => v.main == true)[0].close() }),
 					new LFMenuItem({ title: 'Minimize', action: () => new LFApp().windows.filter(v => v.main == true)[0].minimize() }),
 					new LFMenuItem({ title: 'Maximize', action: () => new LFApp().windows.filter(v => v.main == true)[0].maximize() }),
 					new LFMenuItem().separator(),

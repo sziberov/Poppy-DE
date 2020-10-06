@@ -10,15 +10,27 @@ return class extends LFView {
 		this.action = this.action;
 	}
 
-	get state() {
+	get highlighted() {
+		return this.attributes['highlighted'] == '' ? true : false;
+	}
+
+	get activated() {
 		return this.attributes['activated'] == '' ? true : false;
+	}
+
+	get enabled() {
+		return this.attributes['enabled'] == '' ? true : false;
 	}
 
 	get action() {
 		return this._.action;
 	}
 
-	set state(_value) {
+	set highlighted(_value) {
+		this.attributes['highlighted'] = _value == true ? '' : undefined;
+	}
+
+	set activated(_value) {
 		this.attributes['activated'] = _value == true ? '' : undefined;
 	}
 
@@ -39,12 +51,12 @@ return class extends LFView {
 	}
 
 	mouseover() {
-		this.attributes['highlighted'] = '';
+		this.highlighted = true;
 	}
 
 	mouseleave() {
-		this.attributes['highlighted'] = undefined;
-		this.state = false;
+		this.highlighted = false;
+		this.activated = false;
 	}
 
 	mousedown(_event, _exceptView) {
@@ -53,7 +65,7 @@ return class extends LFView {
 
 		_event.stopPropagation();
 		if(_event.button == 0) {
-			this.state = true;
+			this.activated = true;
 		}
 		if(_window) {
 			_window.focus();
@@ -64,6 +76,6 @@ return class extends LFView {
 	}
 
 	mouseup() {
-		this.state = false;
+		this.activated = false;
 	}
 }
