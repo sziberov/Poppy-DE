@@ -11,8 +11,7 @@ return class extends LFControl {
 		this.attributes[this._.type] = ['close', 'minimize', 'maximize'].includes(this._.type) ? '' : undefined;
 	}
 
-	mouseover(_event) {
-		_event.stopPropagation();
+	mouseover() {
 		this.highlighted = true;
 		for(let v of this.get('Siblings', this.class)) {
 			v.highlighted = true;

@@ -60,21 +60,14 @@ return class extends LFView {
 		}
 	}
 
+	mousedown(_event) {
+		_event.stopPropagation();
+	}
+
 	add(_view) {
 		super.add(_view?.class == 'LFMenubar' ? _view : new LFWorkspace());
 
 		return this;
-	}
-
-	didAddSubview() {
-		this.element.on('mousedown', (_event) => {
-			_event.stopPropagation();
-		});
-		new LFWorkspace().element.on('mousedown', (_event) => {
-			if(this.element) {
-				this.setActivated(false);
-			}
-		});
 	}
 
 	setActivated(_mode, _view) {

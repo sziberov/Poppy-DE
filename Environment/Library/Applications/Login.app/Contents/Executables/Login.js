@@ -56,16 +56,24 @@ return class {
 				] })
 			}),
 			new LFMenuItem({ title: 'DIES', action: function() { this.title = 'Random Title' } }),
-			new LFMenuItem({ title: '20:48', action: function() {
-				let update = () => {
-					let _date = new Date(),
-						_time = ('0'+_date.getHours()).substr(-2)+':'+('0'+_date.getMinutes()).substr(-2);
+			new LFMenuItem({ title: '20:48',
+				action: function() {
+					let update = () => {
+						let _date = new Date(),
+							_time = ('0'+_date.getHours()).substr(-2)+':'+('0'+_date.getMinutes()).substr(-2);
 
-					this.title = _time;
-				}
-				update();
-				setInterval(update, 30000);
-			} }),
+						this.title = _time;
+					}
+					update();
+					setInterval(update, 30000);
+				},
+				menu: new LFMenu({ items: [
+					new LFMenuItem({ title: 'View as Analog' }),
+					new LFMenuItem({ title: 'View as Digital' }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: 'Date & Time Preferences...', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') })
+				] })
+			}),
 			new LFMenuItem({ title: '', image: new LFImage({ width: 24, shared: 'TemplateBatteryConnected' }),
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: '100% Remaining' }),

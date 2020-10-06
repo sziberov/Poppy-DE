@@ -27,6 +27,10 @@ return _fork('@Title') || _single(class extends LFView {
 		this.style['background-image'] = 'url(\''+_value+'\')';
 	}
 
+	mousedown() {
+		LFMenu.deactivateAll();
+	}
+
 	launchApplication(_url, ..._arguments) {
 		_url = _url.endsWith('.app') ? _url : _url+='.app';
 

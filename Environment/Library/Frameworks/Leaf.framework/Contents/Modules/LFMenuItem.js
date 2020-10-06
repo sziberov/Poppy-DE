@@ -34,10 +34,9 @@ return class extends LFButton {
 
 	click() {}
 
-	mouseover(_event) {
+	mouseover() {
 		let _shouldActivate = false;
 
-		_event.stopPropagation();
 		this.highlighted = true;
 		if(this.menu) {
 			if(this.superview.autoactivatesItems) {
@@ -61,7 +60,6 @@ return class extends LFButton {
 	}
 
 	mousedown(_event) {
-		_event.stopPropagation();
 		if(_event.button == 0) {
 			if(this.action && !this.menu) {
 				this.activated = true;
@@ -80,8 +78,8 @@ return class extends LFButton {
 		if(this.action) {
 			if(!this.menu) {
 				this.activated = false;
+				LFMenu.deactivateAll();
 			}
-			LFMenu.deactivateAll();
 			this.action();
 		}
 	}
@@ -97,7 +95,6 @@ return class extends LFButton {
 				this[v] = undefined;
 			}
 		}
-		this.mousedown = (_event) => _event.stopPropagation();
 
 		return this;
 	}
