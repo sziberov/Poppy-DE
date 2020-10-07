@@ -19,14 +19,9 @@ return class extends LFView {
 		}
 	}
 
-	mousedown(_event) {
-		let _window = this.get('Superview', 'LFWindow');
-
+	mousedown() {
 		for(let v of this.subviews) {
 			v.activated = false;
-		}
-		if(_window) {
-			_window.focus();
 		}
 	}
 }

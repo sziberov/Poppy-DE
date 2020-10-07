@@ -45,11 +45,11 @@ return class extends LFControl {
 	}
 
 	set image(_value) {
-		this.subviews.removeByFilter(v => v.class == 'LFImage');
+		this.image?.destroy();
 		if(_value?.class == 'LFImage') {
 			this._.image = _value;
 			this.attributes['image'] = '';
-			this.subviews.add(_value);
+			this.addSubviews([_value]);
 		} else {
 			this._.image = undefined;
 			this.attributes['image'] = undefined;
@@ -57,12 +57,12 @@ return class extends LFControl {
 	}
 
 	set menu(_value) {
-		this.subviews.removeByFilter(v => v.class == 'LFMenu');
+		this.menu?.destroy();
 		if(_value?.class == 'LFMenu') {
 			this._.menu = _value;
 			this.attributes['enabled'] = '';
 			this.attributes['menu'] = '';
-			this.subviews.add(_value);
+			this.addSubviews([_value]);
 		} else {
 			this._.menu = undefined;
 			if(!this.action) {

@@ -124,6 +124,7 @@ return class extends LFView {
 	}
 
 	destroy() {
+		this.setActivated(false);
 		for(let v of this.subviews) {
 			v.menu?.destroy();
 		}

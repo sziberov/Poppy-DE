@@ -94,16 +94,14 @@ return class extends LFResponder {
 	}
 
 	setSubviews(_subviews) {
-		/*
-		let i = this.subviews.length;
-
-		while(i--) {
-			this.subviews[i].destroy();
+		for(let k = this.subviews.length; k--;) {
+			this.subviews[k].destroy();
 		}
-		*/
+		/*
 		for(let v of this.subviews) {
 			v.destroy();
 		}
+		*/
 		this.addSubviews(_subviews);
 
 		return this;
@@ -174,8 +172,8 @@ return class extends LFResponder {
 			super.destroy();
 		} else {
 			this.remove();
-		//	this.superview.subviews.remove(this);
-			this.superview.subviews = this.superview.subviews.filter(v => v !== this);
+			this.superview.subviews.remove(this);
+		//	this.superview.subviews = this.superview.subviews.filter(v => v !== this);
 			window[this.class].remove;
 		}
 	}

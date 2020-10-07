@@ -3,7 +3,11 @@ return class {
 		_import('Leaf');
 
 		new LFApp().menuItems = [
-			new LFMenuItem({ title: 'File' }),
+			new LFMenuItem({ title: 'File',
+				menu: new LFMenu({ items: [
+					new LFMenuItem({ title: 'New Window...', action: () => this.window() })
+				] })
+			}),
 			new LFMenuItem({ title: 'Edit' }),
 			new LFMenuItem({ title: 'View',
 				menu: new LFMenu({ items: [
@@ -13,88 +17,43 @@ return class {
 				] })
 			}),
 			new LFMenuItem({ title: 'Go' }),
-			new LFMenuItem({ title: 'Window',
-				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: 'Close', action: () => new LFApp().windows.filter(v => v.main == true)[0].close() }),
-					new LFMenuItem({ title: 'Minimize', action: () => new LFApp().windows.filter(v => v.main == true)[0].minimize() }),
-					new LFMenuItem({ title: 'Maximize', action: () => new LFApp().windows.filter(v => v.main == true)[0].maximize() }),
-					new LFMenuItem().separator(),
-					new LFMenuItem({ title: 'New Window...', action: () => this.window() }),
-					new LFMenuItem({ title: 'Align Windows',
-						menu: new LFMenu({ items: [
-							new LFMenuItem({ title: 'Cascade' }),
-							new LFMenuItem({ title: 'Column' })
-						] })
-					}),
-					new LFMenuItem().separator(),
-					new LFMenuItem({ title: 'Windows List...' })
-				] })
-			}),
+			new LFMenuItem({ title: 'Window' }),
 			new LFMenuItem({ title: 'Help' })
 		]
+
+		CFArray.addObserver(new LFWorkspace().subviews, (a) => {
+			if(a.value.application == new LFLaunchedApplication() && a.value.class == 'LFWindow') {
+				let _list = []
+
+				for(let v of new LFApp().windows) {
+					if(v.level == 1) {
+						_list.push(new LFMenuItem({ title: v.title || '[Titleless]', action: () => v.focus() }));
+					}
+				}
+				if(_list.length > 0) {
+					_list.unshift(new LFMenuItem().separator());
+					new LFApp().menuItems.filter(v => v.title == 'Window')[0].menu = new LFMenu({ items: [
+						new LFMenuItem({ title: 'Close', action: () => new LFApp().windows.filter(v => v.main == true)[0].close() }),
+						new LFMenuItem({ title: 'Minimize', action: () => new LFApp().windows.filter(v => v.main == true)[0].minimize() }),
+						new LFMenuItem({ title: 'Maximize', action: () => new LFApp().windows.filter(v => v.main == true)[0].maximize() }),
+						new LFMenuItem().separator(),
+						new LFMenuItem({ title: 'Align Windows',
+							menu: new LFMenu({ items: [
+								new LFMenuItem({ title: 'Cascade' }),
+								new LFMenuItem({ title: 'Column' })
+							] })
+						}),
+						..._list
+					] });
+				} else {
+					new LFApp().menuItems.filter(v => v.title == 'Window')[0].menu = undefined;
+				}
+			}
+		});
 
 		new LFWindow({ tag: 'desktop', level: 0, style: ['borderless', 'fullscreen'], background: 'none', view:
 			new LFView()
 		});
-	}
-
-	aboutSystem() {
-		function bytesConvert(a) {
-			var b = ['Bytes', 'KB', 'MB', 'GB', 'TB'],
-				c = parseInt(Math.floor(Math.log(a) / Math.log(1024))),
-				d = (a == 0 ? '0 Bytes' : Math.round(a / Math.pow(1024, c), 2) + ' ' + b[c]);
-
-			return d;
-		}
-
-		var _system = _request('system'),
-			_pc = 'Poppy Monoblock Pro 2019', //_system.hostname(),
-			_cpu = _system.cpus()[0].model,
-			_memory = bytesConvert(_system.totalmem()),
-			_gpu = (() => {
-				var _variable;
-				/*
-				require('child_process').execSync('wmic path win32_VideoController get name', (error, stdout, stderr) => {
-					if(!_error && !_stderr) {
-						_variable = stdout.replace('Name ', '').trim();
-					}
-				});
-				*/
-			//	console.log(_variable);
-
-				return _variable;
-			})(),
-			_software = _request('version', 'DE').join(' '),
-			_window = new LFApp().windows.filter(v => v.tag == 'aboutSystem')[0]
-
-		if(!_window) {
-			new LFWindow({ tag: 'aboutSystem', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: 'About This Poppy', view:
-				new LFView({ yAlign: 'center', subviews: [
-					new LFImage({ width: 128, height: 128, shared: 'Monoblock' }),
-					new LFView({ type: 'vertical', subviews: [
-						new LFText({ string: _pc, size: 'big', weight: 'bold' }),
-						new LFView({ subviews: [
-							new LFView({ type: 'vertical', tight: true, subviews: [
-								new LFText({ string: 'Processor', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Memory', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Graphics', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Software', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Serial Number', size: 'small', weight: 'bold' }),
-							] }),
-							new LFView({ type: 'vertical', tight: true, subviews: [
-								new LFText({ string: _cpu, size: 'small' }),
-								new LFText({ string: _memory, size: 'small' }),
-								new LFText({ string: _gpu || 'Unknown', size: 'small' }),
-								new LFText({ string: _software, size: 'small' }),
-								new LFText({ string: 'Unknown', size: 'small' })
-							] })
-						] })
-					] })
-				] })
-			});
-		} else {
-			_window.focus();
-		}
 	}
 
 	window() {

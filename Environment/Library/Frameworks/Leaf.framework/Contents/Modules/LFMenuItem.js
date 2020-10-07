@@ -15,13 +15,13 @@ return class extends LFButton {
 	}
 
 	set menu(_value) {
-		this.subviews.removeByFilter(v => v.class == 'LFMenu');
+		this.menu?.destroy();
 		if(_value && _value.class == 'LFMenu') {
 			this._.menu = _value;
 			this.attributes['enabled'] = '';
 			this.attributes['menu'] = '';
 			this.click = undefined;
-			this.subviews.add(this.menu);
+			this.addSubviews([_value]);
 		} else {
 			this._.menu = undefined;
 			if(!this.action) {

@@ -28,8 +28,8 @@ return _single(class {
 
 		new LFWorkspace().launchedApplications.add(new LFLaunchedApplication(this));
 		CFArray.addObserver(new LFWorkspace().subviews, (a) => {
-			if(/*a.event == 'added' &&*/ a.value.application == new LFLaunchedApplication() && a.value.class == 'LFWindow') {
-				this.update('Windows')
+			if(a.value.application == new LFLaunchedApplication() && a.value.class == 'LFWindow') {
+				this.update('Windows');
 			}
 		});
 		CFArray.addObserver(this.menuItems, () => this.update('MenuItems'));

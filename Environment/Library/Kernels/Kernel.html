@@ -162,31 +162,66 @@
 			}
 
 			eventCatch(process, event, _function) {
-				let __function = (...a) => _function(...a);
+				let a = this.events.catchers.filter(v => v.event == event && v.function == _function),
+					__function = (...a) => _function(...a);
 
-				this.events.emitter.on(event, __function);
-				this.events.catchers.push({
-					processId: process || undefined,
-					event: event,
-					function: _function,
-					functionActual: __function
-				});
+				if(a.length == 0) {
+					this.events.emitter.on(event, __function);
+					this.events.catchers.push({
+						process: process || undefined,
+						event: event,
+						function: _function,
+						functionActual: __function
+					});
+					if(process) {
+						this.kdbAdd(`
+							eventCatch: Successfully set catcher:
+							    "${event}"@${process.path}
+						`);
+					} else {
+						this.kdbAdd(`eventCatch: Successfully set catcher: "${event}"`);
+					}
+				} else {
+					if(process) {
+						this.kdbAdd(`
+							eventCatch: Same catcher already set${(a[0].process !== process ? ' by another process' : '')}:
+							    "${event}"@${process.path}
+						`);
+					} else {
+						this.kdbAdd(`eventCatch: Same catcher already set: "${event}"`);
+					}
+				}
 			}
 
 			eventCatchRemove(process, event, _function) {
-				let a = this.events.catchers.filter(v => (process ? v.processId == process : true) && v.event == event && v.function == _function);
+				let a = this.events.catchers.filter(v => v.event == event && v.function == _function);
 
 				for(let v of a) {
-					this.events.emitter.removeListener(v.event, v.functionActual);
-				//	this.events.catchers.splice(this.events.catchers.findIndex(vv => vv.functionActual == v.functionActual), 1);
-					this.events.catchers = this.events.catchers.filter(vv => vv.functionActual !== v.functionActual);
+					if(!process || process && v.process == process) {
+						this.events.emitter.removeListener(v.event, v.functionActual);
+					//	this.events.catchers.splice(this.events.catchers.findIndex(vv => vv.functionActual == v.functionActual), 1);
+						this.events.catchers = this.events.catchers.filter(vv => vv.functionActual !== v.functionActual);
+						if(process) {
+							this.kdbAdd(`
+								eventCatchRemove: Successfully removed catcher:
+								    "${event}"@${process.path}
+							`);
+						} else {
+							this.kdbAdd(`eventCatchRemove: Successfully removed catcher: "${event}"`);
+						}
+					} else {
+						this.kdbAdd(`
+							eventCatchRemove: ${ v.process ? 'Cannot remove catcher set by another process' : 'Event catchers blacklisted for removing by processes' }:
+							    "${event}"@${process.path}
+						`);
+					}
 				}
 			}
 
 			eventCatchVerify() {
 				for(let v of this.events.catchers) {
-					if(!this.events.reserved.includes(v.event) && !this.processes.filter(vv => vv.id == v.processId).length > 0) {
-						this.eventCatchRemove(v.processId, v.event, v.function);
+					if(!this.events.reserved.includes(v.event) && !this.processes.filter(vv => vv == v.process).length > 0) {
+						this.eventCatchRemove(v.process, v.event, v.function);
 					}
 				}
 			}
@@ -228,8 +263,8 @@
 					remove: () => {},
 					removeDir: () => {},
 					throw: (a, ...b) => this.eventThrow(process, a, ...b),
-					catch: (a, b) => this.eventCatch(process.id, a, b),
-					catchRemove: (a, b) => this.eventCatchRemove(process.id, a, b),
+					catch: (a, b) => this.eventCatch(process, a, b),
+					catchRemove: (a, b) => this.eventCatchRemove(process, a, b),
 					exec: (a, b, c, d, ...e) => this.psExec(process.id, a, b, c, d, ...e),
 					list: () => this.psList(),
 					info: (a) => this.psInfo(a || process.id, true),

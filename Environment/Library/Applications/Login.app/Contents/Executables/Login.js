@@ -25,7 +25,7 @@ return class {
 		new LFMenubar().mainMenu.items = [
 			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateLogo' }),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: 'About This Poppy', action: () => new LFWorkspace().getApplication('ru.poppy.enviro').cautiously('aboutSystem') }),
+					new LFMenuItem({ title: 'About This Poppy', action: () => this.about() }),
 					new LFMenuItem().separator(),
 					new LFMenuItem({ title: 'Environment Preferences', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') }),
 					new LFMenuItem({ title: 'Dock',
@@ -97,6 +97,64 @@ return class {
 					v.error = true;
 				}
 			}
+		}
+	}
+
+	about() {
+		var bytesConvert = (a) => {
+				var b = ['Bytes', 'KB', 'MB', 'GB', 'TB'],
+					c = parseInt(Math.floor(Math.log(a) / Math.log(1024))),
+					d = (a == 0 ? '0 Bytes' : Math.round(a / Math.pow(1024, c), 2) + ' ' + b[c]);
+
+				return d;
+			},
+			_system = _request('system'),
+			_pc = 'Poppy Monoblock Pro 2019', //_system.hostname(),
+			_cpu = _system.cpus()[0].model,
+			_memory = bytesConvert(_system.totalmem()),
+			_gpu = (() => {
+				var _variable;
+				/*
+				require('child_process').execSync('wmic path win32_VideoController get name', (error, stdout, stderr) => {
+					if(!_error && !_stderr) {
+						_variable = stdout.replace('Name ', '').trim();
+					}
+				});
+				*/
+			//	console.log(_variable);
+
+				return _variable;
+			})(),
+			_software = _request('version', 'DE').join(' '),
+			_window = new LFApp().windows.filter(v => v.tag == 'about')[0]
+
+		if(!_window) {
+			new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: 'About This Poppy', view:
+				new LFView({ yAlign: 'center', subviews: [
+					new LFImage({ width: 128, height: 128, shared: 'Monoblock' }),
+					new LFView({ type: 'vertical', subviews: [
+						new LFText({ string: _pc, size: 'big', weight: 'bold' }),
+						new LFView({ subviews: [
+							new LFView({ type: 'vertical', tight: true, subviews: [
+								new LFText({ string: 'Processor', size: 'small', weight: 'bold' }),
+								new LFText({ string: 'Memory', size: 'small', weight: 'bold' }),
+								new LFText({ string: 'Graphics', size: 'small', weight: 'bold' }),
+								new LFText({ string: 'Software', size: 'small', weight: 'bold' }),
+								new LFText({ string: 'Serial Number', size: 'small', weight: 'bold' }),
+							] }),
+							new LFView({ type: 'vertical', tight: true, subviews: [
+								new LFText({ string: _cpu, size: 'small' }),
+								new LFText({ string: _memory, size: 'small' }),
+								new LFText({ string: _gpu || 'Unknown', size: 'small' }),
+								new LFText({ string: _software, size: 'small' }),
+								new LFText({ string: 'Unknown', size: 'small' })
+							] })
+						] })
+					] })
+				] })
+			});
+		} else {
+			_window.focus();
 		}
 	}
 

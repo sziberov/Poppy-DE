@@ -60,19 +60,12 @@ return class extends LFView {
 	}
 
 	mousedown(_event, _exceptView) {
-		let _window = this.get('Superview', 'LFWindow'),
-			_menu = new LFWorkspace().get('Subviews', 'LFMenu');
-
 		_event.stopPropagation();
 		if(_event.button == 0) {
 			this.activated = true;
 		}
-		if(_window) {
-			_window.focus();
-		}
-		if(_menu) {
-			LFMenu.deactivateAll(_exceptView);
-		}
+		LFMenu.deactivateAll(_exceptView);
+		this.get('Superview', 'LFWindow')?.focus();
 	}
 
 	mouseup() {

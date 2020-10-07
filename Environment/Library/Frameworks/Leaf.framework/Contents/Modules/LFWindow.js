@@ -132,6 +132,7 @@ return class extends LFView {
 	}
 
 	mousedown() {
+		LFMenu.deactivateAll();
 		this.focus();
 	}
 

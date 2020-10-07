@@ -12,7 +12,6 @@ _import('@Title', 'LFView');
 _import('@Title', 'LFControl');
 _import('@Title', 'LFButton');
 _import('@Title', 'LFMenubar');
-_import('@Title', 'LFMenubarGroup');
 _import('@Title', 'LFMenu');
 _import('@Title', 'LFMenuItem');
 _import('@Title', 'LFWorkspace');
