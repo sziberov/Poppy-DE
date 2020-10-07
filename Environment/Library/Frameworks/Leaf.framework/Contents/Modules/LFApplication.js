@@ -199,6 +199,7 @@ return _single(class {
 			new LFWorkspace().launchedApplications.remove(new LFLaunchedApplication());
 
 			new LFMenubar().applicationMenu.items = []
+			new LFMenubar().applicationMenu.application = undefined;
 			for(let v of new LFWorkspace().subviews.filter(v => v.application == new LFLaunchedApplication())) {
 				v.destroy();
 			}

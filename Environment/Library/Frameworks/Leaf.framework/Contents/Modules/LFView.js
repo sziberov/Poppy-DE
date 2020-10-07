@@ -73,12 +73,10 @@ return class extends LFResponder {
 				}
 			}
 
-		if(_mode) {
-			if(_add[_mode]()) {
-				this.addSubviews(this.subviews);
-				if(typeof this.didAddSubview === 'function') {
-					this.didAddSubview();
-				}
+		if(_mode && _add[_mode]()) {
+			this.addSubviews(this.subviews);
+			if(typeof this.didAddSubview === 'function') {
+				this.didAddSubview();
 			}
 		}
 

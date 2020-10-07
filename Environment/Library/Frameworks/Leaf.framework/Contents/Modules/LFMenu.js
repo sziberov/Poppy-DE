@@ -93,7 +93,7 @@ return class extends LFView {
 
 						return { x: _offsetX, y: _offsetY, corners: ['topLeft'] }
 					}
-				}[_side || 'Default']();
+				}[_element ? _side : 'Default']();
 
 			for(let v of [...new LFWorkspace().get('Subviews', this.class), ...new LFWorkspace().get('Subviews', 'LFWindow')]) {
 				_topDepth = v.element ? Math.max(_topDepth, Number.parseInt(v.element.css('z-index'))) : 0;

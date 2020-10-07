@@ -95,10 +95,12 @@ return class extends LFControl {
 		}
 	}
 
+	didAddSubview() {
+		this.menu = this.menu;
+	}
+
 	destroy() {
-		for(let v of this.subviews.filter(v => v.class == 'LFMenu')) {
-			v.destroy();
-		}
+		this.menu?.destroy();
 
 		super.destroy();
 	}

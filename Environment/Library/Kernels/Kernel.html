@@ -35,7 +35,6 @@
 				]
 				this.processes = []
 
-				this.eventCatch(undefined, 'psListChanged', () => this.eventCatchVerify());
 				/*
 				Function.prototype.callAsWorker = function (...args) {
 					return new Promise( (resolve, reject) => {
@@ -218,14 +217,6 @@
 				}
 			}
 
-			eventCatchVerify() {
-				for(let v of this.events.catchers) {
-					if(!this.events.reserved.includes(v.event) && !this.processes.filter(vv => vv == v.process).length > 0) {
-						this.eventCatchRemove(v.process, v.event, v.function);
-					}
-				}
-			}
-
 			extensionExec(...a) {
 				var a = Array.isArray(a) ? a : []
 
@@ -390,6 +381,9 @@
 						b = error;
 					}
 
+					for(let v of this.events.catchers.filter(vv => vv.process.id == processId)) {
+						this.eventCatchRemove(v.process, v.event, v.function);
+					}
 					this.processes.splice(a, 1);    //.indexOf(processId)
 					this.kdbAdd(`psKill: Process removed: ${processId}`);
 					/*
