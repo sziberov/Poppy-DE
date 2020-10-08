@@ -5,32 +5,34 @@ return class extends LFObject {
 	}
 
 	create() {
-		let _create = super.create();
+		let create = super.create();
 
 		for(let v of ['click', 'dblclick', 'contextmenu', 'mouseover', 'mouseenter', 'mouseout', 'mouseleave', 'mousedown', 'mouseup', 'mousemove', 'drag']) {
 			if(typeof this[v] === 'function') {
 				if(v !== 'drag') {
-					_create.on(v, (e) => this[v].bind(this)(e));
+					create.on(v, (e) => this[v].bind(this)(e));
 				} else {
 					this.dragCache = []
 
-					let _dragCache = this.dragCache;
+					let dragCache = this.dragCache;
 
-					_create.on('mousedown', (e) => {
-						if(e.button == 0) _dragCache = [true, e.pageX, e.pageY]
+					create.on('mousedown', (e) => {
+						if(e.button == 0) {
+							dragCache = [true, e.pageX, e.pageY]
+						}
 					});
 					$(document).on('mousemove mouseup', (e) => {
-						if(e.type == 'mousemove' && _dragCache[0]) {
-							this['drag'](e, _dragCache);
+						if(e.type == 'mousemove' && dragCache[0]) {
+							this['drag'](e, dragCache);
 						}
 						if(e.type == 'mouseup') {
-							_dragCache[0] = false;
+							dragCache[0] = false;
 						}
 					});
 				}
 			}
 		}
 
-		return _create;
+		return create;
 	}
 }

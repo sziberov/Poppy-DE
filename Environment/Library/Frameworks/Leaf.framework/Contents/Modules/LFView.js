@@ -21,15 +21,15 @@ return class extends LFResponder {
 		return this._.tag;
 	}
 
-	set subviews(_value) {
+	set subviews(value) {
 		for(let k = this.subviews.length; k--;) {
 			this.subviews[k].destroy();
 		}
-		this.addSubviews(_value);
+		this.addSubviews(value);
 	}
 
-	set tag(_value) {
-		this._.tag = _value;
+	set tag(value) {
+		this._.tag = value;
 	}
 
 	create() {
@@ -55,38 +55,38 @@ return class extends LFResponder {
 		return super.create();
 	}
 
-	add(_view) {
-		let _mode =
-				!_view ? 'View' :
-				_view.subviews && this.subviews ? 'Subview' :
+	add(view) {
+		let mode =
+				!view ? 'View' :
+				view.subviews && this.subviews ? 'Subview' :
 				undefined,
-			_add = {
+			add = {
 				View: () => {
 					super.add();
 
 					return true;
 				},
 				Subview: () => {
-					let _did = false;
+					let did = false;
 
-					if(!_view.subviews.contains(this)) {
-						_did = true;
+					if(!view.subviews.contains(this)) {
+						did = true;
 
-						_view.subviews.add(this);
+						view.subviews.add(this);
 					}
-					if(!this.element || !$.contains(_view.element[0], this.element[0])) {
-						_did = true;
+					if(!this.element || !$.contains(view.element[0], this.element[0])) {
+						did = true;
 
 						this.remove();
-						this.element = this.create().appendTo(_view.element);
+						this.element = this.create().appendTo(view.element);
 					}
-					this.superview = _view;
+					this.superview = view;
 
-					return _did;
+					return did;
 				}
 			}
 
-		if(_mode && _add[_mode]()) {
+		if(mode && add[mode]()) {
 			this.addSubviews(this.subviews);
 			if(typeof this.didAddSubview === 'function') {
 				this.didAddSubview();
@@ -96,60 +96,60 @@ return class extends LFResponder {
 		return this;
 	}
 
-	addSubviews(_subviews) {
-		for(let v of _subviews) {
+	addSubviews(subviews) {
+		for(let v of subviews) {
 			v.add(this);
 		}
 
 		return this;
 	}
 
-	get(_mode, _value) {
+	get(mode, value) {
 		return {
 			Superview: () => {
-				var _superview = this.superview;
+				var superview = this.superview;
 
 				function check() {
-					if(_superview.class !== _value) {
-						if(!_superview.superview) {
-							_superview = undefined;
+					if(superview.class !== value) {
+						if(!superview.superview) {
+							superview = undefined;
 						} else {
-							_superview = _superview.superview;
+							superview = superview.superview;
 							check();
 						}
 					}
 				}
 				check();
 
-				return _superview;
+				return superview;
 			},
 			Siblings: () => {
-				return this.superview.subviews.filter(v => v !== this && v.class == _value);
+				return this.superview.subviews.filter(v => v !== this && v.class == value);
 			},
 			Subviews: () => {
 				/*
-				var _subview = undefined,
-					_current = this;
+				var subview = undefined,
+					current = this;
 
 				function check() {
-					for(var v of _current.subviews) {
-						if(v.class == _value) {
-							_subview = v;
-							return _subview;
+					for(var v of current.subviews) {
+						if(v.class == value) {
+							subview = v;
+							return subview;
 						}
 					}
 				}
 				check();
 
-				return _subview;
+				return subview;
 				*/
 
-				return this.subviews.filter(v => v.class == _value);
+				return this.subviews.filter(v => v.class == value);
 			},
 			TaggedSubviews: () => {
-				return this.subviews.filter(v => v.tag == _value);
+				return this.subviews.filter(v => v.tag == value);
 			}
-		}[_mode]();
+		}[mode]();
 	}
 
 	remove() {

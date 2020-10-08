@@ -35,38 +35,38 @@ return class {
 		return this.#properties.text;
 	}
 
-	set style(_value) {
-		let _style = this.#properties.style;
+	set style(value) {
+		let style = this.#properties.style;
 
-		for(let v in _style) {
-			delete _style[v]
+		for(let v in style) {
+			delete style[v]
 		}
-		Object.assign(_style, _value);
+		Object.assign(style, value);
 	}
 
-	set attributes(_value) {
-		let _attributes = this.#properties.attributes;
+	set attributes(value) {
+		let attributes = this.#properties.attributes;
 
-		for(let v in _attributes) {
-			delete _attributes[v]
+		for(let v in attributes) {
+			delete attributes[v]
 		}
-		Object.assign(_attributes, _value);
+		Object.assign(attributes, value);
 	}
 
-	set text(_value) {
-		this.#properties.text = _value;
+	set text(value) {
+		this.#properties.text = value;
 		if(this.element) {
-			this.element.text(_value);
+			this.element.text(value);
 		}
 	}
 
 	create() {
-		let _create = $('<'+this.class+'/>')
+		let create = $('<'+this.class+'/>')
 				.css(this.style)
 				.attr(this.attributes)
 				.text(this.text);
 
-		return _create;
+		return create;
 	}
 
 	add() {
