@@ -23,15 +23,15 @@ return class {
 
 		CFArray.addObserver(new LFWorkspace().subviews, (a) => {
 			if(a.value.application == new LFLaunchedApplication() && a.value.class == 'LFWindow') {
-				let _list = []
+				let list = []
 
 				for(let v of new LFApp().windows) {
 					if(v.level == 1) {
-						_list.push(new LFMenuItem({ title: v.title || '[Titleless]', action: () => v.focus() }));
+						list.push(new LFMenuItem({ title: v.title || '[Titleless]', action: () => v.focus() }));
 					}
 				}
-				if(_list.length > 0) {
-					_list.unshift(new LFMenuItem().separator());
+				if(list.length > 0) {
+					list.unshift(new LFMenuItem().separator());
 					new LFApp().menuItems.filter(v => v.title == 'Window')[0].menu = new LFMenu({ items: [
 						new LFMenuItem({ title: 'Close', action: () => new LFApp().windows.filter(v => v.main == true)[0].close() }),
 						new LFMenuItem({ title: 'Minimize', action: () => new LFApp().windows.filter(v => v.main == true)[0].minimize() }),
@@ -43,7 +43,7 @@ return class {
 								new LFMenuItem({ title: 'Column' })
 							] })
 						}),
-						..._list
+						...list
 					] });
 				} else {
 					new LFApp().menuItems.filter(v => v.title == 'Window')[0].menu = undefined;
@@ -57,7 +57,7 @@ return class {
 	}
 
 	window() {
-		let _window = new LFWindow({ width: 384, height: 256, title: new LFApp().bundle.properties.CFBundleTitle,
+		let window = new LFWindow({ width: 384, height: 256, title: new LFApp().bundle.properties.CFBundleTitle,
 				toolbar: new LFToolbar({ subviews: [
 					new LFButton({ title: 'Alert', action: () => new LFAlert({ message: 'Clicked.' }) })
 				] }),
@@ -69,16 +69,16 @@ return class {
 					] })
 				] })
 			}),
-			_table = []
+			table = []
 
-		_table.push(new LFTableRow({ title: 'None', action: () => {
+		table.push(new LFTableRow({ title: 'None', action: () => {
 			new LFWorkspace().desktopImage = '';
 		} }));
 		for(let v of _request('readDir', '/Library/Desktop Images')) {
-			_table.push(new LFTableRow({ title: v.name, action: function(v) {
+			table.push(new LFTableRow({ title: v.name, action: function(v) {
 				return () => new LFWorkspace().desktopImage = '/Library/Desktop Images/'+v.name;
 			}(v) }));
 		}
-		_window.view.subviews[1].subviews[0].subviews = _table;
+		window.view.subviews[1].subviews[0].subviews = table;
 	}
 }

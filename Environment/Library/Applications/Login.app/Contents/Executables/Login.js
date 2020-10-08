@@ -2,12 +2,12 @@ return class {
 	#services = [
 		{
 			identifier: 'ru.poppy.enviro',
-			url: '/Environment/Library/Applications/Enviro',
+			URL: '/Environment/Library/Applications/Enviro',
 			error: false
 		},
 		{
 			identifier: 'ru.poppy.dock',
-			url: '/Environment/Library/Applications/Dock',
+			URL: '/Environment/Library/Applications/Dock',
 			error: false
 		}
 	]
@@ -59,10 +59,10 @@ return class {
 			new LFMenuItem({ title: '20:48',
 				action: function() {
 					let update = () => {
-						let _date = new Date(),
-							_time = ('0'+_date.getHours()).substr(-2)+':'+('0'+_date.getMinutes()).substr(-2);
+						let date = new Date(),
+							time = ('0'+date.getHours()).substr(-2)+':'+('0'+date.getMinutes()).substr(-2);
 
-						this.title = _time;
+						this.title = time;
 					}
 					update();
 					setInterval(update, 30000);
@@ -92,7 +92,7 @@ return class {
 		for(let v of this.#services) {
 			if(!v.error && !new LFWorkspace().getApplication(v.identifier)) {
 				try {
-					new LFWorkspace().launchApplication(v.url);
+					new LFWorkspace().launchApplication(v.URL);
 				} catch {
 					v.error = true;
 				}
@@ -108,32 +108,32 @@ return class {
 
 				return d;
 			},
-			_system = _request('system'),
-			_pc = 'Poppy Monoblock Pro 2019', //_system.hostname(),
-			_cpu = _system.cpus()[0].model,
-			_memory = bytesConvert(_system.totalmem()),
-			_gpu = (() => {
-				var _variable;
+			system = _request('system'),
+			pc = 'Poppy Monoblock Pro 2019', //system.hostname(),
+			cpu = system.cpus()[0].model,
+			memory = bytesConvert(system.totalmem()),
+			gpu = (() => {
+				var variable;
 				/*
 				require('child_process').execSync('wmic path win32_VideoController get name', (error, stdout, stderr) => {
 					if(!_error && !_stderr) {
-						_variable = stdout.replace('Name ', '').trim();
+						variable = stdout.replace('Name ', '').trim();
 					}
 				});
 				*/
-			//	console.log(_variable);
+			//	console.log(variable);
 
-				return _variable;
+				return variable;
 			})(),
-			_software = _request('version', 'DE').join(' '),
-			_window = new LFApp().windows.filter(v => v.tag == 'about')[0]
+			software = _request('version', 'DE').join(' '),
+			window = new LFApp().windows.filter(v => v.tag == 'about')[0]
 
-		if(!_window) {
+		if(!window) {
 			new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: 'About This Poppy', view:
 				new LFView({ yAlign: 'center', subviews: [
 					new LFImage({ width: 128, height: 128, shared: 'Monoblock' }),
 					new LFView({ type: 'vertical', subviews: [
-						new LFText({ string: _pc, size: 'big', weight: 'bold' }),
+						new LFText({ string: pc, size: 'big', weight: 'bold' }),
 						new LFView({ subviews: [
 							new LFView({ type: 'vertical', tight: true, subviews: [
 								new LFText({ string: 'Processor', size: 'small', weight: 'bold' }),
@@ -143,10 +143,10 @@ return class {
 								new LFText({ string: 'Serial Number', size: 'small', weight: 'bold' }),
 							] }),
 							new LFView({ type: 'vertical', tight: true, subviews: [
-								new LFText({ string: _cpu, size: 'small' }),
-								new LFText({ string: _memory, size: 'small' }),
-								new LFText({ string: _gpu || 'Unknown', size: 'small' }),
-								new LFText({ string: _software, size: 'small' }),
+								new LFText({ string: cpu, size: 'small' }),
+								new LFText({ string: memory, size: 'small' }),
+								new LFText({ string: gpu || 'Unknown', size: 'small' }),
+								new LFText({ string: software, size: 'small' }),
 								new LFText({ string: 'Unknown', size: 'small' })
 							] })
 						] })
@@ -154,28 +154,26 @@ return class {
 				] })
 			});
 		} else {
-			_window.focus();
+			window.focus();
 		}
 	}
 
 	forceQuit() {
-		let _window = new LFApp().windows.filter(v => v.tag == 'forceQuit')[0];
+		let window = new LFApp().windows.filter(v => v.tag == 'forceQuit')[0];
 
-		if(!_window) {
+		if(!window) {
 			new LFWindow({ tag: 'forceQuit', width: 384, style: ['titled', 'closable', 'resizable'], title: 'Force Quit Applications',
 				view: new LFView({ type: 'vertical', subviews: [
 					new LFText({ string: 'If an application doesn\'t respond for a while, select it\'s title and click Force Quit.', size: 'small' })
 				] })
 			});
 		} else {
-			_window.focus();
+			window.focus();
 		}
 	}
 
 	deconstructor() {
 		new CGCursor().remove();
 		new LFWorkspace().remove();
-
-		new CFProcessInfo().environment._PoppyMenu = undefined;
 	}
 }

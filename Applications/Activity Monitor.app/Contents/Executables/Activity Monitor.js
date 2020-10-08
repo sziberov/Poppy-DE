@@ -30,16 +30,16 @@ return class {
 	}
 
 	update() {
-		let _update = []
+		let update = []
 
 		for(let v of new LFWorkspace().launchedApplications) {
-			_update.push(
+			update.push(
 				new LFTableRow({ title: v.title, data: { application: v }, action: function(v) {
 					return () => v.focus()
 				}(v) })
 			);
 		}
-		this.table.subviews = _update;
+		this.table.subviews = update;
 	}
 
 	quit() {
@@ -51,13 +51,13 @@ return class {
 	}
 
 	information() {
-		let _application = this.table.activeRow?.data.application;
+		let application = this.table.activeRow?.data.application;
 
-		if(_application) {
-			let _window = new LFApp().windows.filter(v => v.tag == _application.identifier)[0]
+		if(application) {
+			let window = new LFApp().windows.filter(v => v.tag == application.identifier)[0]
 
-			if(!_window) {
-				new LFWindow({ tag: _application.identifier, width: 384, style: ['titled', 'closable', 'minimizable'], title: _application.title,
+			if(!window) {
+				new LFWindow({ tag: application.identifier, width: 384, style: ['titled', 'closable', 'minimizable'], title: application.title,
 					view: new LFView({ type: 'vertical', subviews: [
 						new LFView({ subviews: [
 							new LFView({ type: 'vertical', tight: true, subviews: [
@@ -65,18 +65,18 @@ return class {
 								new LFText({ string: 'Identifier', size: 'small', weight: 'bold' })
 							] }),
 							new LFView({ type: 'vertical', tight: true, subviews: [
-								new LFText({ string: _application.bundle.url, size: 'small' }),
-								new LFText({ string: _application.identifier, size: 'small' })
+								new LFText({ string: application.bundle.URL, size: 'small' }),
+								new LFText({ string: application.identifier, size: 'small' })
 							] })
 						] }),
 						new LFButton({ title: 'Quit', action: function() {
 							this.get('Superview', 'LFWindow').close();
-							_application.quit();
+							application.quit();
 						} })
 					] })
 				});
 			} else {
-				_window.focus();
+				window.focus();
 			}
 		}
 	}
