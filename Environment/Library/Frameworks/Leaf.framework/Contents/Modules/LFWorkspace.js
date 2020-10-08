@@ -12,6 +12,29 @@ return _fork('@Title') || _single(class extends LFView {
 		this.desktopImage = this.desktopImage;
 
 		this.subviews.add(new LFMenubar({ transparent: true }));
+		CFEventEmitter.addHandler('psListChanged', (a) => {
+			if(a.event == 'removed') {
+				let v = this.launchedApplications.filter(v => v.processIdentifier == a.value)[0],
+					_focused = new LFMenubar().applicationMenu.application;
+
+				this.launchedApplications.remove(v);
+
+				new LFMenubar().applicationMenu.items = []
+				new LFMenubar().applicationMenu.application = undefined;
+				for(let vvv of this.subviews.filter(vv => vv.application == v)) {
+					vvv.destroy();
+				}
+
+				let _default = this.getApplication('ru.poppy.enviro');
+
+				if(_focused == v && _default) {
+					_default.focus();
+				} else
+				if(_focused !== v) {
+					_focused.focus();
+				}
+			}
+		});
 	}
 
 	get launchedApplications() {

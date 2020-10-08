@@ -39,7 +39,7 @@ return class {
 				}(v) })
 			);
 		}
-		this.table.setSubviews(_update);
+		this.table.subviews = _update;
 	}
 
 	quit() {

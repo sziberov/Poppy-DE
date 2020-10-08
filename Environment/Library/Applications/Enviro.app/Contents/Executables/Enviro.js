@@ -79,6 +79,6 @@ return class {
 				return () => new LFWorkspace().desktopImage = '/Library/Desktop Images/'+v.name;
 			}(v) }));
 		}
-		_window.view.subviews[1].subviews[0].setSubviews(_table);
+		_window.view.subviews[1].subviews[0].subviews = _table;
 	}
 }

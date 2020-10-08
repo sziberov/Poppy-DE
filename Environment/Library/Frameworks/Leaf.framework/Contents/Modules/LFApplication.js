@@ -194,26 +194,7 @@ return _single(class {
 
 	quit() {
 		if(new LFWorkspace().getApplication(this.identifier)) {
-			let _focused = new LFMenubar().applicationMenu.application;
-
-			new LFWorkspace().launchedApplications.remove(new LFLaunchedApplication());
-
-			new LFMenubar().applicationMenu.items = []
-			new LFMenubar().applicationMenu.application = undefined;
-			for(let v of new LFWorkspace().subviews.filter(v => v.application == new LFLaunchedApplication())) {
-				v.destroy();
-			}
-
 			_request('kill');
-
-			let _default = new LFWorkspace().getApplication('ru.poppy.enviro');
-
-			if(_focused == new LFLaunchedApplication() && _default) {
-				_default.focus();
-			} else
-			if(_focused !== new LFLaunchedApplication()) {
-				_focused.focus();
-			}
 		}
 	}
 });

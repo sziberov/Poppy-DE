@@ -1,4 +1,6 @@
 return class extends LFResponder {
+	#subviews = new CFArray();
+
 	constructor(_) {
 		super();
 		this.class = '@Title';
@@ -8,11 +10,22 @@ return class extends LFResponder {
 		}
 
 		this.superview;
-		this.subviews = new CFArray();
+	//	CFArray.addObserver(this.#subviews, () => {});
+	}
+
+	get subviews() {
+		return this.#subviews;
 	}
 
 	get tag() {
 		return this._.tag;
+	}
+
+	set subviews(_value) {
+		for(let k = this.subviews.length; k--;) {
+			this.subviews[k].destroy();
+		}
+		this.addSubviews(_value);
 	}
 
 	set tag(_value) {
@@ -87,20 +100,6 @@ return class extends LFResponder {
 		for(let v of _subviews) {
 			v.add(this);
 		}
-
-		return this;
-	}
-
-	setSubviews(_subviews) {
-		for(let k = this.subviews.length; k--;) {
-			this.subviews[k].destroy();
-		}
-		/*
-		for(let v of this.subviews) {
-			v.destroy();
-		}
-		*/
-		this.addSubviews(_subviews);
 
 		return this;
 	}

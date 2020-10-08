@@ -79,7 +79,10 @@
 						a = a.replace(/^\t*/gm, '').trim().split(/^/gm);
 
 						for(let v of a) {
-							$('kdb strings').append('<string><text>'+v+'</text></string>');
+							let b = $('kdb strings');
+
+							b.append('<string><text>'+v+'</text></string>');
+							b[0].scrollTop = b[0].scrollHeight;
 							console.log(v);
 						}
 					}
@@ -299,15 +302,15 @@
 						try {
 							this.sbExec(`var _executable = (() => { ${executable} })(); _executable = new _executable(..._arguments);`, process.environment);
 							process.executable = process.environment._executable;
-							this.kdbAdd(`psExec: Process launched: ${process.id}: ${process.path}`);
-							this.eventThrow(undefined, 'psListChanged');
+							this.kdbAdd(`psExec: Process started: ${process.id}: ${process.path}`);
+							this.eventThrow(undefined, 'psListChanged', { event: 'added', value: process.id });
 
 							return this.psInfo(process.id);
 						} catch(error) {
 							error.fileName = process.path;
 							this.processes.splice(this.processes.indexOf(process), 1);
 							this.kdbAdd(`psExec: Process stopped: "${error.name}: ${error.message}":`, error.stack);
-							this.eventThrow(undefined, 'psListChanged');
+							this.eventThrow(undefined, 'psListChanged', { event: 'removed', value: process.id });
 
 							throw error;
 						}
@@ -391,7 +394,7 @@
 						this.kdbAdd(`    Deconstructor did failed:`, error.stack)
 					}
 					*/
-					this.eventThrow(undefined, 'psListChanged');
+					this.eventThrow(undefined, 'psListChanged', { event: 'removed', value: processId });
 				} else {
 					this.kdbAdd(`psKill: Unable to find process: ${processId}`);
 				}
@@ -500,10 +503,20 @@
 		kdb strings {
 			display: none;
 
+			position: absolute;
+
+			width: 100%;
+			height: 100%;
+			overflow-y: scroll;
+
 			color: #ffffff;
 			font: 16px Debug;
 			line-height: 16px;
 			white-space: pre;
+		}
+
+		kdb strings::-webkit-scrollbar {
+			display: none;
 		}
 
 		kdb[verbose] strings {
