@@ -1,19 +1,19 @@
 return class {
-	static create(_url) {
-		_request('createDir', _url);
+	static create(URL) {
+		_request('createDir', URL);
 	}
 
-	static content(_url, _mode) {
-		_mode = ['', 'Files', 'Directories'].includes(_mode) ? _mode : '';
+	static content(URL, mode) {
+		mode = ['', 'Files', 'Directories'].includes(mode) ? mode : '';
 
 		return {
-			'': () => _request('readDir', _url).map(v => v.name),
-			Files: () => _request('readDir', _url).filter(v => v.isFile()).map(v => v.name),
-			Directories: () => _request('readDir', _url).filter(v => !v.isFile()).map(v => v.name)
-		}[_mode]();
+			'': () => _request('readDir', URL).map(v => v.name),
+			Files: () => _request('readDir', URL).filter(v => v.isFile()).map(v => v.name),
+			Directories: () => _request('readDir', URL).filter(v => !v.isFile()).map(v => v.name)
+		}[mode]();
 	}
 
-	static remove(_url) {
-		_request('removeDir', _url);
+	static remove(URL) {
+		_request('removeDir', URL);
 	}
 }

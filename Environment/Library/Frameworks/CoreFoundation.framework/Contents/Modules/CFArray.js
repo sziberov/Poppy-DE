@@ -13,10 +13,10 @@ return class extends Array {
 		return this.#tag;
 	}
 
-	set length(_value) {}
+	set length(value) {}
 
-	add(..._value) {
-		for(let v of _value) {
+	add(...value) {
+		for(let v of value) {
 			super.push(v);
 
 			CFEventEmitter.dispatch('arrayChanged.'+this.tag, { event: 'added', value: v });
@@ -25,8 +25,8 @@ return class extends Array {
 		return this;
 	}
 
-	remove(..._value) {
-		for(let v of _value) {
+	remove(...value) {
+		for(let v of value) {
 			if(this.contains(v)) {
 				super.splice(this.indexOf(v), 1);
 
@@ -60,43 +60,43 @@ return class extends Array {
 		return this;
 	}
 
-	contains(_value) {
-		return super.includes(_value);
+	contains(value) {
+		return super.includes(value);
 	}
 
-	static add(_array = [], ..._value) {
-		if(_array.add) {
-			_array.add(..._value);
+	static add(array = [], ...value) {
+		if(array.add) {
+			array.add(...value);
 		} else
-		if(_array.push) {
-			_array.push(..._value);
+		if(array.push) {
+			array.push(...value);
 		}
 	}
 
-	static remove(_array = [], ..._value) {
-		for(let v of _value) {
-			if(_array.contains && _array.contains(v)) {
-				_array.remove(v);
+	static remove(array = [], ...value) {
+		for(let v of value) {
+			if(array.contains && array.contains(v)) {
+				array.remove(v);
 			} else
-			if(_array.includes && _array.includes(v)) {
-				_array.splice(_array.indexOf(v), 1);
+			if(array.includes && array.includes(v)) {
+				array.splice(array.indexOf(v), 1);
 			}
 		}
 	}
 
-	static contains(_array = [], _value) {
-		return _array.contains && _array.contains(_value) || _array.includes && _array.includes(_value);
+	static contains(array = [], value) {
+		return array.contains && array.contains(value) || array.includes && array.includes(value);
 	}
 
-	static addObserver(_array, _function) {
+	static addObserver(array, _function) {
 		if(typeof _function === 'function') {
-			CFEventEmitter.addHandler('arrayChanged.'+_array.tag, _function);
+			CFEventEmitter.addHandler('arrayChanged.'+array.tag, _function);
 		}
 
 		return _function;
 	}
 
-	static removeObserver(_array, _function) {
-		CFEventEmitter.removeHandler('arrayChanged.'+_array.tag, _function);
+	static removeObserver(array, _function) {
+		CFEventEmitter.removeHandler('arrayChanged.'+array.tag, _function);
 	}
 }

@@ -6,8 +6,8 @@ return class /*extends Object*/ {
 //		super(..._arguments);
 //	}
 
-	static observe(_object = {}, _function) {
-		return new Proxy(_object, {
+	static observe(object = {}, _function) {
+		return new Proxy(object, {
 			set: (t, k, v) => {
 			//	if(k !== 'length' || k == 'length' && t[k] > v) {
 					t[k] = v;

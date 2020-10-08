@@ -4,21 +4,21 @@ return class {
 		$(document).on('click dblclick contextmenu mouseover mouseout mousedown mouseup', '*', (e) => {
 			this.dispatch('Mouse', e);
 		});
-		this.handle('Mouse', (_value) => {
-			console.log(_value);
+		this.handle('Mouse', (value) => {
+			console.log(value);
 		});
 	}
 	*/
 
-	static dispatch(_event, ..._value) {
-		_request('throw', _event, ..._value);
+	static dispatch(event, ...value) {
+		_request('throw', event, ...value);
 	}
 
-	static addHandler(_event, _function) {
-		_request('catch', _event, _function);
+	static addHandler(event, _function) {
+		_request('catch', event, _function);
 	}
 
-	static removeHandler(_event, _function) {
-		_request('catchRemove', _event, _function);
+	static removeHandler(event, _function) {
+		_request('catchRemove', event, _function);
 	}
 }

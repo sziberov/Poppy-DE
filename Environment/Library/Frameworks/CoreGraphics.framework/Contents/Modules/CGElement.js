@@ -14,32 +14,36 @@ return class {
 			.text(this._.text);
 	}
 
-	set style(_value) {
-		this._.style = _value;
-		this.node.attr('style', '').css(_value);
+	set style(value) {
+		this._.style = value;
+		this.node.attr('style', '').css(value);
 	}
 
-	set attributes(_value) {
-		this._.attributes = _value;
-		for(var k in this.node[0].attributes) if(_value[k] == undefined) this.node.removeAttr(k);
-		this.node.attr(_value);
+	set attributes(value) {
+		this._.attributes = value;
+		for(let k in this.node[0].attributes) {
+			if(value[k] == undefined) {
+				this.node.removeAttr(k);
+			}
+		}
+		this.node.attr(value);
 	}
 
-	set text(_value) {
-		this._.text = _value;
-		this.node.text(_value);
+	set text(value) {
+		this._.text = value;
+		this.node.text(value);
 	}
 
-	add(_element) {
-		var _add = _element ? _element.node : 'body';
+	add(element) {
+		let add = element ? element.node : 'body';
 
-		this.node = this.node.appendTo(_add);
+		this.node = this.node.appendTo(add);
 
 		return this;
 	}
 
-	addEvent(_event, _function) {
-		this.node.on(_event, _function);
+	addEvent(event, _function) {
+		this.node.on(event, _function);
 
 		return this;
 	}

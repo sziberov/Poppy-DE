@@ -1,29 +1,29 @@
 return _fork('@Title') || class {
-	static #urls = []
+	static #URLs = []
 
-	constructor(_url) {
-		this.url = _url;
+	constructor(URL) {
+		this.URL = URL;
 		this.element;
 	}
 
 	add() {
-		if(!this.element && this.url && !@Title.#urls.includes(this.url)) {
-			let _file = CFFile.content(this.url),
-				_format =
-					this.url.endsWith('.less') ? 'less' :
-					this.url.endsWith('.css') ? 'css' :
+		if(!this.element && this.URL && !@Title.#URLs.includes(this.URL)) {
+			let file = CFFile.content(this.URL),
+				format =
+					this.URL.endsWith('.less') ? 'less' :
+					this.URL.endsWith('.css') ? 'css' :
 					undefined;
 
-			if(_file && _format) {
-				let _add = $('<style/>');
+			if(file && format) {
+				let add = $('<style/>');
 
-				@Title.#urls.push(this.url);
-				_add.attr('type', 'text/'+_format);
-				_add.text(_file.replace(/@(Resources)/g, this.url.replace(/(?<=\/Resources\/)(.*)/g, '')));
+				@Title.#URLs.push(this.URL);
+				add.attr('type', 'text/'+format);
+				add.text(file.replace(/@(Resources)/g, this.URL.replace(/(?<=\/Resources\/)(.*)/g, '')));
 
-				this.element = _add.appendTo('body');
+				this.element = add.appendTo('body');
 
-				if(_format == 'less') {
+				if(format == 'less') {
 					less?.refreshStyles();
 				}
 			}
@@ -34,7 +34,7 @@ return _fork('@Title') || class {
 
 	remove() {
 		if(this.element) {
-			CFArray.remove(@Title.#urls, this.url);
+			CFArray.remove(@Title.#URLs, this.URL);
 			this.element.remove();
 			this.element = undefined;
 		}

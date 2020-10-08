@@ -1,11 +1,13 @@
 return class {
-	constructor(_url) {
-		this.url = _url;
-		this.contents = this.url+'/Contents';
+	constructor(URL) {
+		this.URL = URL;
+		this.contents = this.URL+'/Contents';
 		this.executables = this.contents+'/Executables';
 		this.resources = this.contents+'/Resources';
 		this.properties = {}
 
-		if(this.url) this.properties = JSON.parse(CFFile.content(this.contents+'/Info.plist'));
+		if(this.URL) {
+			this.properties = JSON.parse(CFFile.content(this.contents+'/Info.plist'));
+		}
 	}
 }

@@ -8,11 +8,11 @@ return _fork('@Title') || _single(class {
 		this.add();
 	}
 
-	set type(_value) {
-		if(['default', 'wait', 'progress', 'copy', 'notAllowed', 'text', 'hidden'].includes(_value)) {
-			if(_value !== 'default') {
-				this.#type = _value;
-				this.#element.attr(_value, '');
+	set type(value) {
+		if(['default', 'wait', 'progress', 'copy', 'notAllowed', 'text', 'hidden'].includes(value)) {
+			if(value !== 'default') {
+				this.#type = value;
+				this.#element.attr(value, '');
 			} else {
 				this.#element.removeAttr(this.#type);
 				this.#type = undefined;
@@ -20,10 +20,10 @@ return _fork('@Title') || _single(class {
 		}
 	}
 
-	set hidden(_value) {
-		if([false, true].includes(_value)) {
-			this.#hidden = _value;
-			if(!_value) {
+	set hidden(value) {
+		if([false, true].includes(value)) {
+			this.#hidden = value;
+			if(!value) {
 				this.#element.removeAttr('hidden');
 			} else {
 				this.#element.attr('hidden', '');
@@ -35,8 +35,8 @@ return _fork('@Title') || _single(class {
 		if(!this.#element) {
 			this.#element = $('<@Title>').appendTo('body');
 			this.#event = $._data($('body')[0], 'events')?.mousemove?.length+1 || 1;
-			$('body').on('mousemove.'+this.#event, (_event) => {
-				this.#element.css('transform', 'translate('+_event.pageX+'px, '+_event.pageY+'px)');
+			$('body').on('mousemove.'+this.#event, (event) => {
+				this.#element.css('transform', 'translate('+event.pageX+'px, '+event.pageY+'px)');
 			});
 		}
 

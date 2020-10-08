@@ -1,18 +1,18 @@
 return class {
-	static create(_url) {
-		_request('create', _url);
+	static create(URL) {
+		_request('create', URL);
 	}
 
-	static content(_url, _content) {
-		var _mode = !_content ? 'Read' : 'Write';
+	static content(URL, content) {
+		let mode = !content ? 'Read' : 'Write';
 
 		return {
-			Read: () => _request('read', _url),
-			Write: () => _request('write', _url, _content)
-		}[_mode]();
+			Read: () => _request('read', URL),
+			Write: () => _request('write', URL, content)
+		}[mode]();
 	}
 
-	static remove(_url) {
-		_request('remove', _url);
+	static remove(URL) {
+		_request('remove', URL);
 	}
 }
