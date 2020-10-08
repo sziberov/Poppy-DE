@@ -14,24 +14,24 @@ return _fork('@Title') || _single(class extends LFView {
 		this.subviews.add(new LFMenubar({ transparent: true }));
 		CFEventEmitter.addHandler('psListChanged', (a) => {
 			if(a.event == 'removed') {
-				let v = this.launchedApplications.filter(v => v.processIdentifier == a.value)[0],
-					_focused = new LFMenubar().applicationMenu.application;
+				let application = this.launchedApplications.filter(v => v.processIdentifier == a.value)[0],
+					focused = new LFMenubar().applicationMenu.application;
 
-				this.launchedApplications.remove(v);
+				this.launchedApplications.remove(application);
 
 				new LFMenubar().applicationMenu.items = []
 				new LFMenubar().applicationMenu.application = undefined;
-				for(let vvv of this.subviews.filter(vv => vv.application == v)) {
-					vvv.destroy();
+				for(let v of this.subviews.filter(v => v.application == application)) {
+					v.destroy();
 				}
 
 				let _default = this.getApplication('ru.poppy.enviro');
 
-				if(_focused == v && _default) {
+				if(focused == application && _default) {
 					_default.focus();
 				} else
-				if(_focused !== v) {
-					_focused.focus();
+				if(focused !== application) {
+					focused.focus();
 				}
 			}
 		});
@@ -45,53 +45,53 @@ return _fork('@Title') || _single(class extends LFView {
 		return this._.desktopImage;
 	}
 
-	set desktopImage(_value) {
-		this._.desktopImage = _value;
-		this.style['background-image'] = 'url(\''+_value+'\')';
+	set desktopImage(value) {
+		this._.desktopImage = value;
+		this.style['background-image'] = 'url(\''+value+'\')';
 	}
 
 	mousedown() {
 		LFMenu.deactivateAll();
 	}
 
-	launchApplication(_url, ..._arguments) {
-		_url = _url.endsWith('.app') ? _url : _url+='.app';
+	launchApplication(URL, ..._arguments) {
+		URL = URL.endsWith('.app') ? URL : URL+='.app';
 
 		try {
-			var _bundle = new CFBundle(_url),
-				_identifier = _bundle.properties.CFBundleIdentifier,
-				_title = _bundle.properties.CFBundleTitle;
-		} catch(_error) {
+			var bundle = new CFBundle(URL),
+				identifier = bundle.properties.CFBundleIdentifier,
+				title = bundle.properties.CFBundleTitle;
+		} catch(error) {
 			new LFAlert({
 				message: 'Application unable to load.',
-				information: _error.name+': '+_error.message
+				information: error.name+': '+error.message
 			});
 
-			throw _error;
+			throw error;
 		}
 
-		if(!this.getApplication(_identifier)) {
+		if(!this.getApplication(identifier)) {
 			try {
-				_request('exec', 'root', 'root', _bundle.executables+'/'+_bundle.properties.CFBundleExecutable+'.js', ..._arguments);
+				_request('exec', 'root', 'root', bundle.executables+'/'+bundle.properties.CFBundleExecutable+'.js', ..._arguments);
 
-				return this.getApplication(_identifier);
-			} catch(_error) {
-				if(this.getApplication(_identifier)) {
-					this.getApplication(_identifier).quit();
+				return this.getApplication(identifier);
+			} catch(error) {
+				if(this.getApplication(identifier)) {
+					this.getApplication(identifier).quit();
 				}
 				new LFAlert({
-					message: `"${_title}" unable to launch.`,
-					information: _error.name+': '+_error.message
+					message: `"${title}" unable to launch.`,
+					information: error.name+': '+error.message
 				});
 
-				throw _error;
+				throw error;
 			}
 		} else {
-			this.getApplication(_identifier).focus();
+			this.getApplication(identifier).focus();
 		}
 	}
 
-	getApplication(_identifier) {
-		return this.launchedApplications.filter(v => v.identifier == _identifier)[0]
+	getApplication(identifier) {
+		return this.launchedApplications.filter(v => v.identifier == identifier)[0]
 	}
 });

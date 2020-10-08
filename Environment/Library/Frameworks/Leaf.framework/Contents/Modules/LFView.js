@@ -155,13 +155,13 @@ return class extends LFResponder {
 	remove() {
 		super.remove();
 
-		for(var v of this.subviews) {
+		for(let v of this.subviews) {
 			v.remove();
 		}
 	}
 
 	destroy() {
-		for(var v of this.subviews) {
+		for(let v of this.subviews) {
 			v.superview = undefined;
 		//	v.destroy();
 		}

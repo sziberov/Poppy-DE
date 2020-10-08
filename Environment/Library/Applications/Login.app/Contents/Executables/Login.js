@@ -175,5 +175,6 @@ return class {
 	deconstructor() {
 		new CGCursor().remove();
 		new LFWorkspace().remove();
+	//	_request('relaunch');
 	}
 }
