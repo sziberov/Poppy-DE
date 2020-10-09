@@ -17,6 +17,7 @@
 					reserved: ['psListChanged'],
 					catchers: []
 				}
+				this.timers = []
 				this.environments = [
 					{
 						...window,
@@ -183,6 +184,8 @@
 					} else {
 						this.kdbAdd(`eventCatch: Successfully set catcher: "${event}"`);
 					}
+
+					return _function;
 				} else {
 					if(process) {
 						this.kdbAdd(`
@@ -216,6 +219,52 @@
 							eventCatchRemove: ${ v.process ? 'Cannot remove catcher set by another process' : 'Event catchers blacklisted for removing by processes' }:
 							    "${event}"@${process.path}
 						`);
+					}
+				}
+			}
+
+			timerCreate(process, type, _function, time, ..._arguments) {
+				let a = this.timers.filter(v => v.type == type && v.function == _function);
+
+				if(a.length == 0) {
+					if(['once', 'multi'].includes(type)) {
+						if(type == 'once') {
+							var timer = setTimeout(() => {
+								_function(..._arguments);
+								this.timerRemove(process, type, _function);
+							}, time);
+						} else {
+							var timer = setInterval(_function, time, ..._arguments);
+						}
+						this.timers.push({
+							process: process || undefined,
+							type: type,
+							function: _function,
+							timer: timer
+						});
+						this.kdbAdd(`timerCreate: Successfully set timer: ${ (process ? process.id+': ' : '')+type }`);
+					} else {
+						this.kdbAdd(`timerCreate: Type incorrect: "${type}"`);
+					}
+				} else {
+					this.kdbAdd(`timerCreate: Same timer already set: ${ (a[0].process?.id+': ' || '')+type }`);
+				}
+			}
+
+			timerRemove(process, type, _function) {
+				let a = this.timers.filter(v => v.type == type && v.function == _function);
+
+				for(let v of a) {
+					if(!process || process && v.process == process) {
+						if(v.type == 'once') {
+							clearTimeout(v.timer);
+						} else {
+							clearInterval(v.timer);
+						}
+						this.timers = this.timers.filter(v => v.type !== type && v.function !== _function);
+						this.kdbAdd(`timerRemove: Successfully removed timer: ${ (v.process.id+': ' || '')+type }`);
+					} else {
+						this.kdbAdd(`timerRemove: ${ v.process ? 'Cannot remove catcher set by another process' : 'Timer cannot be removed by processes' }: ${ (v.process.id+': ' || '')+type }`);
 					}
 				}
 			}
@@ -259,6 +308,8 @@
 					throw: (a, ...b) => this.eventThrow(process, a, ...b),
 					catch: (a, b) => this.eventCatch(process, a, b),
 					catchRemove: (a, b) => this.eventCatchRemove(process, a, b),
+					timerCreate: (...a) => this.timerCreate(process, ...a),
+					timerRemove: (...a) => this.timerRemove(process, ...a),
 					exec: (a, b, c, d, ...e) => this.psExec(process.id, a, b, c, d, ...e),
 					list: () => this.psList(),
 					info: (a) => this.psInfo(a || process.id, true),
@@ -384,8 +435,11 @@
 						b = error;
 					}
 
-					for(let v of this.events.catchers.filter(vv => vv.process.id == processId)) {
+					for(let v of this.events.catchers.filter(v => v.process.id == processId)) {
 						this.eventCatchRemove(v.process, v.event, v.function);
+					}
+					for(let v of this.timers.filter(v => v.process.id == processId)) {
+						this.timerRemove(v.process, v.type, v.function);
 					}
 					this.processes.splice(a, 1);    //.indexOf(processId)
 					this.kdbAdd(`psKill: Process removed: ${processId}`);

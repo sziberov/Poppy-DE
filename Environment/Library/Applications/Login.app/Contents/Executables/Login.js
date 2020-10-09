@@ -65,7 +65,7 @@ return class {
 						this.title = time;
 					}
 					update();
-					setInterval(update, 30000);
+					_request('timerCreate', 'multi', update, 30000);
 				},
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: 'View as Analog' }),

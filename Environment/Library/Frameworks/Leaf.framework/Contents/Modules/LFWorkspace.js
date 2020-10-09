@@ -15,12 +15,14 @@ return _fork('@Title') || _single(class extends LFView {
 		CFEventEmitter.addHandler('psListChanged', (a) => {
 			if(a.event == 'removed') {
 				let application = this.launchedApplications.filter(v => v.processIdentifier == a.value)[0],
-					focused = new LFMenubar().applicationMenu.application;
+					menu = new LFMenubar().applicationMenu,
+					focused = menu.application;
 
 				this.launchedApplications.remove(application);
-
-				new LFMenubar().applicationMenu.items = []
-				new LFMenubar().applicationMenu.application = undefined;
+				if(focused == application) {
+					menu.items = []
+					menu.application = undefined;
+				}
 				for(let v of this.subviews.filter(v => v.application == application)) {
 					v.destroy();
 				}

@@ -34,81 +34,81 @@ return class extends LFView {
 		return this._.autoactivatesItems;
 	}
 
-	set activated(_value) {
-		this.attributes['activated'] = _value == true ? '' : undefined;
+	set activated(value) {
+		this.attributes['activated'] = value == true ? '' : undefined;
 	}
 
-	set origin(_value) {
-		this._.x = _value.x;
-		this._.y = _value.y;
-		this.style['transform'] = 'translate('+_value.x+'px, '+_value.y+'px)';
-		for(let v of _value.corners) {
+	set origin(value) {
+		this._.x = value.x;
+		this._.y = value.y;
+		this.style['transform'] = 'translate('+value.x+'px, '+value.y+'px)';
+		for(let v of value.corners) {
 			this.attributes[v] = ['topLeft', 'topRight', 'bottomLeft', 'bottomRight'].includes(v) ? '' : undefined;
 		}
 	}
 
-	set items(_value) {
-		_value = _value.filter(v => v.class == 'LFMenuItem');
+	set items(value) {
+		value = value.filter(v => v.class == 'LFMenuItem');
 
-		this._.items = _value;
-		this.subviews = _value;
+		this._.items = value;
+		this.subviews = value;
 	}
 
-	set autoactivatesItems(_value) {
-		if([false, true].includes(_value)) {
-			this._.autoactivatesItems = _value;
+	set autoactivatesItems(value) {
+		if([false, true].includes(value)) {
+			this._.autoactivatesItems = value;
 		}
 	}
 
-	mousedown(_event) {
-		_event.stopPropagation();
+	mousedown(event) {
+		event.stopPropagation();
 	}
 
-	add(_view) {
-		super.add(_view?.class == 'LFMenubar' ? _view : new LFWorkspace());
+	add(view) {
+		super.add(view?.class == 'LFMenubar' ? view : new LFWorkspace());
 
 		return this;
 	}
 
-	setActivated(_mode, _view) {
-		this.target = _view ? _view : this.target;
+	setActivated(mode, view) {
+		this.target = view ? view : this.target;
 
-		if((_mode == true || _mode == 'Toggle') && this.activated == false) {
-			let _topDepth = 0,
-				_element = this.target?.element,
-				_side = this.target?.get('Superview', 'LFMenubar') ? 'Bottom' : 'TopRight',
-				_origin = {
+		if((mode == true || mode == 'Toggle') && this.activated == false) {
+			let topDepth = 0,
+				element = this.target?.element,
+				side = this.target?.get('Superview', 'LFMenubar') ? 'Bottom' : 'TopRight',
+				origin = {
 					Default: () => {
 						return { x: this._.x, y: this._.y, corners: [] }
 					},
 					Bottom: () => {
-						let _offsetX = Math.round(_element.offset().left) || this._.x,
-							_offsetY = Math.round(_element.offset().top+_element.outerHeight()) || this._.y;
+						let _offsetX = Math.round(element.offset().left) || this._.x,
+							_offsetY = Math.round(element.offset().top+element.outerHeight()) || this._.y;
 
 						return { x: _offsetX, y: _offsetY, corners: ['topLeft', 'topRight'] }
 					},
 					TopRight: () => {
-						let _offsetX = Math.round(_element.offset().left+_element.outerWidth()) || this._.x,
-							_offsetY = Math.round(_element.offset().top)-4 || this._.y;
+						let _offsetX = Math.round(element.offset().left+element.outerWidth()) || this._.x,
+							_offsetY = Math.round(element.offset().top)-4 || this._.y;
 
 						return { x: _offsetX, y: _offsetY, corners: ['topLeft'] }
 					}
-				}[_element ? _side : 'Default']();
+				}[element ? side : 'Default']();
 
 			for(let v of [...new LFWorkspace().get('Subviews', this.class), ...new LFWorkspace().get('Subviews', 'LFWindow')]) {
-				_topDepth = v.element ? Math.max(_topDepth, Number.parseInt(v.element.css('z-index'))) : 0;
+				topDepth = v.element ? Math.max(topDepth, Number.parseInt(v.element.css('z-index'))) : 0;
 			}
-			this.style['z-index'] = _topDepth+1;
+			this.style['z-index'] = topDepth+1;
 			if(['LFButton', 'LFMenuItem'].includes(this.target?.class)) {
 				if(this.target?.class == 'LFButton') {
 					this.target.menu = this;
 				}
 				this.target.activated = true;
 			}
-			this.origin = _origin;
+			this.origin = origin;
 			this.activated = true;
 		} else
-		if((_mode == false || _mode == 'Toggle') && this.activated == true) {
+		if((mode == false || mode == 'Toggle') && this.activated == true) {
 			if(['LFButton', 'LFMenuItem'].includes(this.target?.class)) {
 				this.target.activated = false;
 			}
@@ -132,27 +132,27 @@ return class extends LFView {
 		super.destroy();
 	}
 
-	static deactivateAll(_view) {
-		let _exceptList = [],
-			_exceptCheck = () => {
-				if(_view) {
-					if(_view.class == 'LFMenu') {
-						_exceptList.push(_view);
+	static deactivateAll(view) {
+		let exceptList = [],
+			exceptCheck = () => {
+				if(view) {
+					if(view.class == 'LFMenu') {
+						exceptList.push(view);
 
-						_view = _view.target;
+						view = view.target;
 					} else
-					if(_view.class == 'LFMenuItem') {
-						_view = _view.superview;
+					if(view.class == 'LFMenuItem') {
+						view = view.superview;
 					} else {
-						_view = undefined;
+						view = undefined;
 					}
-					_exceptCheck();
+					exceptCheck();
 				}
 			}
 
-		_exceptCheck();
+		exceptCheck();
 		for(let v of new LFWorkspace().get('Subviews', '@Title')) {
-			if(!_exceptList.includes(v)) {
+			if(!exceptList.includes(v)) {
 				v.setActivated(false);
 			}
 		}

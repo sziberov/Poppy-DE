@@ -87,27 +87,27 @@ return _single(class {
 		return this.bundle.properties.CFBundleIcon && this.bundle.resources+'/'+this.bundle.properties.CFBundleIcon;
 	}
 
-	set menuItems(_value) {
-		_value = _value.filter(v => v.class == 'LFMenuItem');
+	set menuItems(value) {
+		value = value.filter(v => v.class == 'LFMenuItem');
 
-		this.#menuItems.removeAll().add(..._value);
+		this.#menuItems.removeAll().add(...value);
 	}
 
-	set focusingPolicy(_value) {
-		if([0, 1, 2].includes(_value)) {
-			this.#focusingPolicy = _value;
+	set focusingPolicy(value) {
+		if([0, 1, 2].includes(value)) {
+			this.#focusingPolicy = value;
 		}
 		this.update('MenuItems');
 		this.update('Windows');
 	}
 
-	set quitableBySingleWindow(_value) {
-		if([false, true].includes(_value)) {
-			this.#quitableBySingleWindow = _value;
+	set quitableBySingleWindow(value) {
+		if([false, true].includes(value)) {
+			this.#quitableBySingleWindow = value;
 		}
 	}
 
-	update(_mode) {
+	update(mode) {
 		return {
 			MenuItems: () => {
 				if(this.focusingPolicy < 1 && new LFWorkspace().getApplication(this.identifier)) {
@@ -123,10 +123,10 @@ return _single(class {
 					]
 					new LFMenubar().applicationMenu.application = new LFLaunchedApplication();
 				} else {
-					let _applications = new LFWorkspace().launchedApplications;
+					let applications = new LFWorkspace().launchedApplications;
 
-					if(_applications.length > 1) {
-						_applications[1].focus('Menu');
+					if(applications.length > 1) {
+						applications[1].focus('Menu');
 					}
 				}
 			},
@@ -139,27 +139,27 @@ return _single(class {
 					}
 				}
 			}
-		}[_mode]();
+		}[mode]();
 	}
 
-	focus(_mode) {
-		if(!_mode || _mode == 'Menu') {
+	focus(mode) {
+		if(!mode || mode == 'Menu') {
 			if(this.focusingPolicy < 1 && new LFMenubar().applicationMenu.application !== new LFLaunchedApplication()) {
 				this.update('MenuItems');
 			}
 		}
-		if(!_mode || _mode == 'Window') {
-			let _windows = this.windows;
+		if(!mode || mode == 'Window') {
+			let windows = this.windows;
 
-			if(this.focusingPolicy < 2 && _windows.filter(v => v.attributes['focused'] == undefined).length == _windows.length && _windows.length > 0) {
-				_windows.filter(v => v.main == true)[0]?.focus();
+			if(this.focusingPolicy < 2 && windows.length > 0 && windows.filter(v => v.attributes['focused'] == '').length == 0) {
+				windows.filter(v => v.main == true)[0]?.focus();
 			}
 		}
 	}
 
-	cautiously(_method, ..._arguments) {
+	cautiously(method, ..._arguments) {
 		try {
-			this.application[_method](..._arguments);
+			this.application[method](..._arguments);
 		} catch(error) {
 			new LFAlert({
 				message: `"${this.title}"'s method returned exception.`,
@@ -172,22 +172,19 @@ return _single(class {
 		if(typeof this.application.about === 'function') {
 			this.application.about();
 		} else {
-			let _window = this.windows.filter(v => v.tag == 'about')[0];
+			let window = this.windows.filter(v => v.tag == 'about')[0];
 
-			if(!_window) {
-				let _about =
-					new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 256, style: ['titled', 'closable', 'minimizable'], title: undefined, view:
-						new LFView({ type: 'vertical', yAlign: 'center', subviews: [
-							...this.icon ? [new LFImage({ width: 64, height: 64, url: this.icon })] : [],
-							new LFText({ string: this.title, weight: 'bold' }),
-							...this.version ? [new LFText({ string: 'Version '+this.version, size: 'small' })] : [],
-							...this.license ? [new LFText({ string: this.license, size: 'small' })] : []
-						] })
-					});
-
-				this.windows.push(_about);
+			if(!window) {
+				new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 256, style: ['titled', 'closable', 'minimizable'], title: undefined, view:
+					new LFView({ type: 'vertical', yAlign: 'center', subviews: [
+						...this.icon ? [new LFImage({ width: 64, height: 64, url: this.icon })] : [],
+						new LFText({ string: this.title, weight: 'bold' }),
+						...this.version ? [new LFText({ string: 'Version '+this.version, size: 'small' })] : [],
+						...this.license ? [new LFText({ string: this.license, size: 'small' })] : []
+					] })
+				});
 			} else {
-				_window.focus();
+				window.focus();
 			}
 		}
 	}

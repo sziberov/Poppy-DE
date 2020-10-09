@@ -14,14 +14,14 @@ return class extends LFButton {
 		return this._.menu;
 	}
 
-	set menu(_value) {
+	set menu(value) {
 		this.menu?.destroy();
-		if(_value && _value.class == 'LFMenu') {
-			this._.menu = _value;
+		if(value && value.class == 'LFMenu') {
+			this._.menu = value;
 			this.attributes['enabled'] = '';
 			this.attributes['menu'] = '';
 			this.click = undefined;
-			this.addSubviews([_value]);
+			this.addSubviews([value]);
 		} else {
 			this._.menu = undefined;
 			if(!this.action) {
@@ -35,32 +35,32 @@ return class extends LFButton {
 	click() {}
 
 	mouseover() {
-		let _shouldActivate = false;
+		let shouldActivate = false;
 
 		this.highlighted = true;
 		if(this.menu) {
 			if(this.superview.autoactivatesItems) {
-				_shouldActivate = true;
+				shouldActivate = true;
 			} else {
 				for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
 					if(v.activated) {
-						_shouldActivate = true;
+						shouldActivate = true;
 					}
 				}
 			}
 		}
-		if(_shouldActivate) {
+		if(shouldActivate) {
 			this.menu.setActivated(true, this);
 		}
-		if(this.superview.autoactivatesItems && this.action || _shouldActivate) {
+		if(this.superview.autoactivatesItems && this.action || shouldActivate) {
 			for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
 				v.menu.setActivated(false);
 			}
 		}
 	}
 
-	mousedown(_event) {
-		if(_event.button == 0) {
+	mousedown(event) {
+		if(event.button == 0) {
 			if(this.action && !this.menu) {
 				this.activated = true;
 				for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
