@@ -1,6 +1,6 @@
 @keyframes LFWorkspace {
-	0%		{ opacity: 0; transform: scale(0.875); }
-	100%	{ opacity: 1; transform: scale(1); }
+	0%		{ opacity: 0; transform: scale3d(0.875,0.875,1); }
+	100%	{ opacity: 1; transform: scale3d(1,1,1); }
 }
 
 LFWorkspace {
@@ -138,12 +138,11 @@ LFMenubar {
 		inset 0 1px rgba(100%,100%,100%,1),
 		inset 0 -1px #404040;
 
-	transform: translateY(0);
 	transition: 0.5s ease transform;
 }
 
 LFMenubar[hidden] {
-	transform: translateY(-48px);
+	transform: translate3d(0, -200%, 0);
 }
 
 LFMenubar:after {
@@ -383,7 +382,7 @@ LFWindow[fullscreen] {
 	width: 100%;
 	height: calc(100% - 24px);
 
-	transform: translate(0px, 24px)!important;
+	transform: translate3d(0px, 24px, 0)!important;
 }
 
 LFWindow[borderless] {

@@ -120,7 +120,7 @@ return class extends LFView {
 		if(typeof _value.x === 'number' && typeof _value.y === 'number') {
 			this._.x = _value.x;
 			this._.y = _value.y;
-			this.style['transform'] = 'translate('+_value.x+'px, '+_value.y+'px)';
+			this.style['transform'] = 'translate3d('+_value.x+'px, '+_value.y+'px, 0)';
 		}
 	}
 
@@ -213,12 +213,12 @@ return class extends LFView {
 				this.attributes['animatedResizeIn'] = '';
 				this.style['width'] = new LFWorkspace().element.outerWidth()+'px';
 				this.style['height'] = new LFWorkspace().element.outerHeight()-24+'px';
-				this.style['transform'] = 'translate(0px, 24px)';
+				this.style['transform'] = 'translate3d(0px, 24px, 0)';
 			} else {
 				this.attributes['animatedResizeOut'] = '';
 				this.style['width'] = this._.width+'px';
 				this.style['height'] = this._.height+'px';
-				this.style['transform'] = 'translate('+this._.x+'px, '+this._.y+'px)';
+				this.style['transform'] = 'translate3d('+this._.x+'px, '+this._.y+'px, 0)';
 			}
 			_request('timerCreate', 'single', 250, () => {
 				this.attributes['animatedResizeIn'] = undefined;
