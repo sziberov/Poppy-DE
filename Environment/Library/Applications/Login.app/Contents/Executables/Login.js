@@ -60,12 +60,13 @@ return class {
 				action: function() {
 					let update = () => {
 						let date = new Date(),
-							time = ('0'+date.getHours()).substr(-2)+':'+('0'+date.getMinutes()).substr(-2);
+							time = ('0'+date.getHours()).substr(-2)+':'+('0'+date.getMinutes()).substr(-2)/*+':'+('0'+date.getSeconds()).substr(-2)*/;
 
 						this.title = time;
 					}
 					update();
-					_request('timerCreate', 'multi', update, 30000);
+					CFEventEmitter.addHandler('dateChanged', update);
+				//	_request('timerCreate', 'multiple', 1000, update);
 				},
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: 'View as Analog' }),

@@ -15,10 +15,10 @@ return class {
 	}
 
 	static addHandler(event, _function) {
-		_request('catch', event, _function);
+		return _request('catch', event, _function);
 	}
 
-	static removeHandler(event, _function) {
-		_request('catchRemove', event, _function);
+	static removeHandler(handler) {
+		_request('catchRemove', handler);
 	}
 }

@@ -196,9 +196,9 @@ return class extends LFView {
 			} else {
 				this.attributes['minimized'] = undefined;
 			}
-			setTimeout(() => {
+			_request('timerCreate', 'single', 250, () => {
 				this.attributes['animatedResize'] = undefined;
-			}, 250);
+			});
 		}
 
 		return this;
@@ -220,10 +220,10 @@ return class extends LFView {
 				this.style['height'] = this._.height+'px';
 				this.style['transform'] = 'translate('+this._.x+'px, '+this._.y+'px)';
 			}
-			setTimeout(() => {
+			_request('timerCreate', 'single', 250, () => {
 				this.attributes['animatedResizeIn'] = undefined;
 				this.attributes['animatedResizeOut'] = undefined;
-			}, 250);
+			});
 		}
 
 		return this;
