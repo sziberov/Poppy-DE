@@ -171,7 +171,7 @@ return class extends LFResponder {
 			this.remove();
 			this.superview.subviews.remove(this);
 		//	this.superview.subviews = this.superview.subviews.filter(v => v !== this);
-			window[this.class].remove;
+			window[this.class].destroyInstance?.();
 		}
 	}
 }

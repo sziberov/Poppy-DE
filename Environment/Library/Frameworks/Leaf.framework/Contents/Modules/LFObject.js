@@ -88,7 +88,7 @@ return class {
 
 	destroy() {
 		this.remove();
-		window[this.class].remove;
+		window[this.class].destroyInstance?.();
 		for(let v in window) {
 			if(window.hasOwnProperty(v) && window[v] == this) {
 				delete window[v]

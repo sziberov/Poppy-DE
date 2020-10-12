@@ -378,6 +378,10 @@ LFWindow:not([focused]) {
 		0 8px 8px rgba(0%,0%,0%,0.25);
 }
 
+LFWindow[hidden] {
+	visibility: hidden;
+}
+
 LFWindow[fullscreen] {
 	width: 100%;
 	height: calc(100% - 24px);

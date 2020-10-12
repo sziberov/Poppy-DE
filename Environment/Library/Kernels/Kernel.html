@@ -17,22 +17,18 @@
 					reserved: ['dateChanged', 'psListChanged']
 				}
 				this.handlers = []
-				this.environments = [
-					{
-						...window,
-						Array: Array,
-						console: console,
-						Date: Date,
-						JSON: JSON,
-						Math: Math,
-						Number: Number,
-						Object: Object,
-						parseInt: parseInt,
-						Proxy: Proxy
-					},
-					{ console: console },
-					{}
-				]
+				this.environment = {
+					...window,
+					Array: Array,
+					console: console,
+					Date: Date,
+					JSON: JSON,
+					Math: Math,
+					Number: Number,
+					Object: Object,
+					parseInt: parseInt,
+					Proxy: Proxy
+				}
 				this.processes = []
 
 				/*
@@ -191,8 +187,8 @@
 				return id;
 			}
 
-			eventCatchRemove(process, id) {
-				let handler = this.handlers.filter(v => v.id == id && v.type == 'event')[0]
+			eventCatchRemove(process, catchId) {
+				let handler = this.handlers.filter(v => v.id == catchId && v.type == 'event')[0]
 
 				if(!handler) {
 					this.kdbAdd(`eventCatchRemove${process ? '@'+process.id : ''}: Unable to find handler`);
@@ -206,7 +202,7 @@
 				}
 
 				this.events.emitter.removeListener(handler.event, handler.function);
-			//	this.handlers.splice(this.handlers.findIndex(v => v.id == handler.id), 1);
+			//	this.handlers.splice(this.handlers.findIndex(v => v == handler), 1);
 				this.handlers = this.handlers.filter(v => v !== handler);
 				this.kdbAdd(`
 					eventCatchRemove${process ? '@'+process.id : ''}: Successfully removed handler:
@@ -259,8 +255,8 @@
 				return id;
 			}
 
-			timerRemove(process, id) {
-				let handler = this.handlers.filter(v => v.id == id && v.type == 'timer')[0]
+			timerRemove(process, timerId) {
+				let handler = this.handlers.filter(v => v.id == timerId && v.type == 'timer')[0]
 
 				if(!handler) {
 					this.kdbAdd(`timerRemove${process ? '@'+process.id : ''}: Unable to find handler`);
@@ -283,6 +279,95 @@
 					timerRemove${process ? '@'+process.id : ''}: Successfully removed handler:
 					    ID: ${handler.id}
 					    Variant: ${handler.variant}
+				`);
+			}
+
+			seCreate(process, access) {
+				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1;
+
+				if(!['read', 'readWrite'].includes(access)) {
+					this.kdbAdd(`seCreate${process ? '@'+process.id : ''}: Access incorrect`);
+
+					return;
+				}
+
+				this.handlers.push({
+					id: id,
+					process: process || undefined,
+					type: 'se',
+					access: access,
+					environment: {}
+				});
+				this.kdbAdd(`
+					seCreate${process ? '@'+process.id : ''}: Successfully set handler:
+					    ID: ${id}
+					    Access: ${access}
+				`);
+
+				return id;
+			}
+
+			seList(processId) {
+				let a = []
+
+				for(let v of this.handlers.filter(v => v.process?.id == processId && v.type == 'se')) {
+					a.push(v.id);
+				}
+
+				return a;
+			}
+
+			seGet(process, environmentId) {
+				let handler = this.handlers.filter(v => v.id == environmentId && v.type == 'se')[0]
+
+				if(!handler) {
+					this.kdbAdd(`seGet${process ? '@'+process.id : ''}: Unable to find handler`);
+
+					return;
+				}
+
+				let validator = {
+					get: (target, property) => {
+						if(this.handlers.filter(v => v == handler)[0]) {
+							if(process && handler.process !== process && handler.access == 'read' && typeof target[property] === 'object') {
+								return new Proxy(target[property], validator);
+							}
+
+							return target[property]
+						}
+					},
+					set: (target, property, value) => {
+						if(this.handlers.filter(v => v == handler)[0]) {
+							if(process && handler.process !== process && handler.access == 'read') {
+								return;
+							}
+
+							target[property] = value;
+						}
+					}
+				}
+
+				return new Proxy(handler.environment, validator);
+			}
+
+			seRemove(process, environmentId) {
+				let handler = this.handlers.filter(v => v.id == environmentId && v.type == 'se')[0]
+
+				if(!handler) {
+					this.kdbAdd(`seRemove${process ? '@'+process.id : ''}: Unable to find handler`);
+
+					return;
+				}
+				if(process && handler.process !== process) {
+					this.kdbAdd(`seRemove@${process.id}: Processes aren't allowed to remove not owned handlers`);
+
+					return;
+				}
+
+				this.handlers = this.handlers.filter(v => v !== handler);
+				this.kdbAdd(`
+					seRemove${process ? '@'+process.id : ''}: Successfully removed handler:
+					    ID: ${handler.id}
 				`);
 			}
 
@@ -327,16 +412,21 @@
 					catchRemove: (a) => this.eventCatchRemove(process, a),
 					timerCreate: (...a) => this.timerCreate(process, ...a),
 					timerRemove: (a) => this.timerRemove(process, a),
+					seCreate: (a) => this.seCreate(process, a),
+					seList: (a) => this.seList(a || process.id),
+					seGet: (a) => this.seGet(process, a),
+					seRemove: (a) => this.seRemove(process, a),
 					exec: (...a) => this.psExec(process.id, ...a),
 					list: () => this.psList(),
-					info: (a) => this.psInfo(a || process.id, true),
-					fork: (a) => this.psFork(process.id, a),
-					kill: () => this.psKill(process.id),
+					info: (a) => this.psInfo(a || process.id),
+					arguments: () => this.psArguments(process),
+				//	fork: (a) => this.psFork(process.id, a),
+					kill: (a) => this.psKill(a || process.id),
 					import: (...a) => this.classImport(process, ...a),
 					single: (a) => this.classSingle(a),
 					system: () => this.system(),
-					relaunch: () => this.etRelaunch(),
-					quit: () => this.etQuit()
+					relaunch: () => this.etRelaunch(process),
+					quit: () => this.etQuit(process)
 				}[method](..._arguments);
 			}
 
@@ -360,25 +450,24 @@
 						parentId: processId || undefined,
 						user: user.login,
 						path: path,
-						environment: undefined,
-						executable: undefined
+						arguments: _arguments,
+						environment: undefined
 					}
 					process.environment = this.sbCreate(new Proxy({
-						_arguments: _arguments,
 						_request: (...a) => this.psRequest(process, ...a),
-						_fork: (...a) => this.psRequest(process, 'fork', ...a),
+						_arguments: (...a) => this.psRequest(process, 'arguments', ...a),
+					//	_fork: (...a) => this.psRequest(process, 'fork', ...a),
 						_import: (...a) => this.psRequest(process, 'import', ...a),
 						_single: (...a) => this.psRequest(process, 'single', ...a)
 					}, {
 						get: (target, property) => {
-							return property == 'window' ? target : property == 'require' ? undefined : target[property] || this.environments[user.group][property]
+							return property == 'window' ? target : property == 'require' ? undefined : target[property] || this.environment[property]
 						}
 					}));
 
 				this.processes.push(process);
 				try {
-					this.sbExec(`var _executable = (() => { ${executable} })(); _executable = new _executable(..._arguments);`, process.environment);
-					process.executable = process.environment._executable;
+					this.sbExec(`var _executable = (() => { ${executable} })(); _executable = new _executable(..._arguments());`, process.environment);
 					this.kdbAdd(`
 						psExec: Process started:
 						    ID: ${process.id}
@@ -389,7 +478,7 @@
 					return this.psInfo(process.id);
 				} catch(error) {
 					error.fileName = process.path;
-					this.processes.splice(this.processes.indexOf(process), 1);
+					this.processes = this.processes.filter(v => v !== process);
 					this.kdbAdd(`psExec: Process stopped: "${error.name}: ${error.message}":`, error.stack);
 					this.eventThrow(undefined, 'psListChanged', { event: 'removed', value: process.id });
 
@@ -416,6 +505,7 @@
 				for(let v of this.processes) {
 					let b = Object.assign({}, v);
 
+					delete b.arguments;
 					delete b.environment;
 					a.push(b);
 				}
@@ -423,10 +513,22 @@
 				return a;
 			}
 
-			psInfo(processId, sandboxed) {
-				return (sandboxed ? this.psList() : this.processes).filter(v => v.id == processId)[0];
+			psInfo(processSearch) {
+				let list = this.psList();
+
+				if(typeof processSearch == 'number') {
+					return list.filter(v => v.id == processSearch)[0]
+				} else
+				if(typeof processSearch == 'string') {
+					return list.filter(v => v.path.endsWith(processSearch));
+				}
 			}
 
+			psArguments(process) {
+				return [...process.arguments]
+			}
+
+			/*
 			psFork(processId, property) {
 				let a = (b) => {
 						b = this.psInfo(b);
@@ -447,86 +549,95 @@
 
 				return a(this.psInfo(processId).parentId);
 			}
+			*/
 
 			psKill(processId) {
-				let a = this.processes.findIndex(v => v.id == processId),
+				let process = this.processes.filter(v => v.id == processId)[0],
 					b;
 
-				if(a < 0) {
+				if(!process) {
 					this.kdbAdd(`psKill: Unable to find process`);
 
 					return;
 				}
 
 				try {
-					this.processes[a].environment._executable.deconstructor?.();
+					process.environment._executable.deconstructor?.();
 				} catch(error) {
 					b = error;
 				}
-				for(let v of this.handlers.filter(v => v.process?.id == processId)) {
+				for(let v of this.handlers.filter(v => v.process == process)) {
 					if(v.type == 'event') {
-						this.eventCatchRemove(undefined, v.id);
+						this.eventCatchRemove(process, v.id);
 					} else
 					if(v.type == 'timer') {
-						this.timerRemove(undefined, v.id);
+						this.timerRemove(process, v.id);
+					} else
+					if(v.type == 'se') {
+						this.seRemove(process, v.id);
 					}
 				}
-				this.processes.splice(a, 1); //.indexOf(processId)
+				this.processes = this.processes.filter(v => v !== process);
 				this.kdbAdd(`
 					psKill: Process removed:
-					    ID: ${processId}
+					    ID: ${process.id}
 				`);
 				/*
 				if(b) {
 					this.kdbAdd(`    Deconstructor did failed:`, error.stack)
 				}
 				*/
-				this.eventThrow(undefined, 'psListChanged', { event: 'removed', value: processId });
+				this.eventThrow(undefined, 'psListChanged', { event: 'removed', value: process.id });
 			}
 
-			classImport(process, a, b) {
-				let d = (b ? b : a),
-					e = [
+			classImport(process, fwTitle, moduleTitle) {
+				moduleTitle = moduleTitle || fwTitle;
+
+				let a = [
 						'/Environment',
-						'/Library/Frameworks/'+a+'.framework/Contents',
-						'/Modules/'+d+'.js',
+						'/Library/Frameworks/'+fwTitle+'.framework/Contents',
+						'/Modules/'+moduleTitle+'.js',
 						'/Resources'
 					],
-					f = this.fsRead(e[1]+e[2]) ? e[1] : this.fsRead(e[0]+e[1]+e[2]) ? e[0]+e[1] : undefined,
-					g = this.fsRead(e[1]+e[2]) || this.fsRead(e[0]+e[1]+e[2]) || undefined;
+					b = this.fsRead(a[1]+a[2]) ? a[1] : this.fsRead(a[0]+a[1]+a[2]) ? a[0]+a[1] : undefined,
+					c = this.fsRead(a[1]+a[2]) || this.fsRead(a[0]+a[1]+a[2]) || undefined;
 
-				if(g) {
-					try {
-						g = g
-							.replace(/@(Resources)/g, f+e[3])
-							.replace(/@(Title)/g, d);
+				if(!c) {
+					this.kdbAdd(`classImport: Unable to access requested ${fwTitle !== moduleTitle ? moduleTitle+' module of ' : ''}${fwTitle} framework`);
 
-						this.sbExec(`var ${d} = (() => { ${g} })();`, process.environment);
+					return;
+				}
 
-						if(a == d) {
-							this.kdbAdd(`classImport: Successfully imported main module of ${a} framework into process: ${process.id}`);
-						}
-					} catch(error) {
-						this.kdbAdd(`classImport: Failed to import requested ${a !== d ? d+' module in ' : ''}${a} framework: "${error.name}: ${error.message}"`, error.stack);
+				try {
+					c = c
+						.replace(/@(Resources)/g, b+a[3])
+						.replace(/@(Title)/g, moduleTitle);
+
+					this.sbExec(`var ${moduleTitle} = (() => { ${c} })();`, process.environment);
+
+					if(fwTitle == moduleTitle) {
+						this.kdbAdd(`classImport: Successfully imported main module of ${fwTitle} framework into process: ${process.id}`);
 					}
-				} else {
-					this.kdbAdd(`classImport: Unable to access requested ${a !== d ? d+' module in ' : ''}${a} framework`);
+				} catch(error) {
+					this.kdbAdd(`classImport: Failed to import requested ${fwTitle !== moduleTitle ? moduleTitle+' module of ' : ''}${fwTitle} framework: "${error.name}: ${error.message}"`, error.stack);
 				}
 			}
 
 			classSingle(a) {
 				return new Proxy(a, {
 					instance: undefined,
-					construct: function(target, args) {
+					construct: function(target, _arguments) {
 						if(!this.instance) {
-							this.instance = new target(...args);
+							this.instance = new target(..._arguments);
 						}
 
 						return this.instance;
 					},
 					get: function(target, property) {
-						if(property == 'remove') {
-							this.instance = undefined;
+						if(property == 'destroyInstance') {
+							return () => {
+								this.instance = undefined;
+							}
 						}
 
 						return target.property;
@@ -538,12 +649,20 @@
 				return require('os');
 			}
 
-			etRelaunch() {
-				chrome.runtime.reload();
+			etRelaunch(process) {
+				let group = this.fsReadPref('ru.poppy.login').users.filter(v => v.login == process.user)[0]?.group;
+
+				if(group == 0) {
+					chrome.runtime.reload();
+				}
 			}
 
-			etQuit() {
-				require('nw.gui').App.quit();
+			etQuit(process) {
+				let group = this.fsReadPref('ru.poppy.login').users.filter(v => v.login == process.user)[0]?.group;
+
+				if(group == 0) {
+					require('nw.gui').App.quit();
+				}
 			}
 		}
 	</script>
@@ -737,7 +856,7 @@
 	</boot>
 	<script>
 		try {
-			Opium.verbose(true);
+		//	Opium.verbose(true);
 			/*
 			Opium.wtExec(`
 				e.data.Opium.psExec(undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');

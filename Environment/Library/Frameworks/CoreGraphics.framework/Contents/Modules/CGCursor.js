@@ -1,4 +1,4 @@
-return _fork('@Title') || _single(class {
+return _MainSE.@Title || _single(class {
 	#element;
 	#event;
 	#type;

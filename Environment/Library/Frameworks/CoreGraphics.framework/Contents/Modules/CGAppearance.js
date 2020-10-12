@@ -1,4 +1,4 @@
-return _fork('@Title') || class {
+return _MainSE.@Title || class {
 	static #URLs = []
 
 	constructor(URL) {

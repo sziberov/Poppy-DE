@@ -91,21 +91,21 @@ return class extends LFView {
 		return new LFLaunchedApplication();
 	}
 
-	set hidden(_value) {
-		if([false, true].includes(_value)) {
-			this.#hidden = _value;
-			if(!_value) {
-				this.attributes['hidden'] = '';
-			} else {
+	set hidden(value) {
+		if([false, true].includes(value)) {
+			this.#hidden = value;
+			if(!value) {
 				this.attributes['hidden'] = undefined;
+			} else {
+				this.attributes['hidden'] = '';
 			}
 		}
 	}
 
-	set main(_value) {
-		if([false, true].includes(_value)) {
-			this.#main = _value;
-			if(_value) {
+	set main(value) {
+		if([false, true].includes(value)) {
+			this.#main = value;
+			if(value) {
 				for(let v of this.get('Siblings', this.class).filter(v => v.application == this.application)) {
 					v.main = false;
 				}
@@ -113,22 +113,22 @@ return class extends LFView {
 		}
 	}
 
-	set origin(_value) {
-		_value.x = this.element && _value.x == 'center' ? Math.round(new LFWorkspace().element.outerWidth()/2-this.element.outerWidth()/2) : Math.round(_value.x);
-		_value.y = this.element && _value.y == 'center' ? Math.round(new LFWorkspace().element.outerHeight()/2-this.element.outerHeight()/2) : Math.round(_value.y);
+	set origin(value) {
+		value.x = this.element && value.x == 'center' ? Math.round(new LFWorkspace().element.outerWidth()/2-this.element.outerWidth()/2) : Math.round(value.x);
+		value.y = this.element && value.y == 'center' ? Math.round(new LFWorkspace().element.outerHeight()/2-this.element.outerHeight()/2) : Math.round(value.y);
 
-		if(typeof _value.x === 'number' && typeof _value.y === 'number') {
-			this._.x = _value.x;
-			this._.y = _value.y;
-			this.style['transform'] = 'translate3d('+_value.x+'px, '+_value.y+'px, 0)';
+		if(typeof value.x === 'number' && typeof value.y === 'number') {
+			this._.x = value.x;
+			this._.y = value.y;
+			this.style['transform'] = 'translate3d('+value.x+'px, '+value.y+'px, 0)';
 		}
 	}
 
-	set frame(_value) {
-		this._.width = _value.width;
-		this._.height = _value.height;
-		this.style['width'] = _value.width+'px';
-		this.style['height'] = _value.height+'px';
+	set frame(value) {
+		this._.width = value.width;
+		this._.height = value.height;
+		this.style['width'] = value.width+'px';
+		this.style['height'] = value.height+'px';
 	}
 
 	mousedown() {
@@ -158,20 +158,20 @@ return class extends LFView {
 
 	focus() {
 		if(this.element) {
-			let _topDepth = 0;
+			let topDepth = 0;
 
 			for(let v of this.get('Siblings', this.class)) {
-				let _depth = v.element ? Number.parseInt(v.element.css('z-index')) : 0;
+				let depth = v.element ? Number.parseInt(v.element.css('z-index')) : 0;
 
 				if(v.level <= this.level) {
-					_topDepth = Math.max(_topDepth, _depth);
+					topDepth = Math.max(topDepth, depth);
 				}
 				if(v.level > this.level) {
-					v.style['z-index'] = _depth+1;
+					v.style['z-index'] = depth+1;
 				}
 				v.attributes['focused'] = undefined;
 			}
-			this.style['z-index'] = _topDepth+1;
+			this.style['z-index'] = topDepth+1;
 			this.attributes['focused'] = '';
 		}
 		if(this.application) {
@@ -232,10 +232,10 @@ return class extends LFView {
 	destroy() {
 		super.destroy();
 
-		let _application = this.#application;
+		let application = this.#application;
 
-		if(_application.quitableBySingleWindow && _application.windows.length == 0) {
-			_application.quit();
+		if(application.quitableBySingleWindow && application.windows.length == 0) {
+			application.quit();
 		}
 	}
 }

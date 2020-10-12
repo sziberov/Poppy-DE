@@ -1,6 +1,6 @@
 /*
 	CoreFoundation Framework v0.1:
-		Contains files management tools.
+		Contains files and current process management tools.
 */
 
 _import('@Title', 'CFProcessInfo');
