@@ -1,4 +1,4 @@
-return _MainSE.@Title || _single(class {
+return _CFShared.@Title || _single(class {
 	#element;
 	#event;
 	#type;

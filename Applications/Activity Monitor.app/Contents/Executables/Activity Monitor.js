@@ -61,10 +61,12 @@ return class {
 					view: new LFView({ type: 'vertical', subviews: [
 						new LFView({ subviews: [
 							new LFView({ type: 'vertical', tight: true, subviews: [
+								new LFText({ string: 'Process ID', size: 'small', weight: 'bold' }),
 								new LFText({ string: 'Bundle', size: 'small', weight: 'bold' }),
 								new LFText({ string: 'Identifier', size: 'small', weight: 'bold' })
 							] }),
 							new LFView({ type: 'vertical', tight: true, subviews: [
+								new LFText({ string: application.processIdentifier, size: 'small' }),
 								new LFText({ string: application.bundle.URL, size: 'small' }),
 								new LFText({ string: application.identifier, size: 'small' })
 							] })

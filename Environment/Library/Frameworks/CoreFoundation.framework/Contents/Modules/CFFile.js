@@ -1,6 +1,6 @@
 return class {
 	static create(URL) {
-		_request('create', URL);
+		_request('write', URL, '');
 	}
 
 	static content(URL, content) {

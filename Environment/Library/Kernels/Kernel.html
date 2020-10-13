@@ -141,6 +141,12 @@
 				}
 			}
 
+			fsWrite(a, b) {
+				return require('fs').writeFile('.'+a, b.toString(), { flag: 'w' }, (error) => {
+					return undefined;
+				});
+			}
+
 			fsReadDir(a) {
 				return require('fs').readdirSync('.'+a, { withFileTypes: true });
 			}
@@ -157,7 +163,7 @@
 				if(process && this.events.reserved.includes(event)) {
 					this.kdbAdd(`
 						eventThrow@${process.id}: Processes aren't allowed to throw reserved events:
-						    Event: ${event}
+						    Event: ${'"'+event+'"'}
 					`);
 
 					return;
@@ -181,14 +187,14 @@
 				this.kdbAdd(`
 					eventCatch${process ? '@'+process.id : ''}: Successfully set handler:
 					    ID: ${id}
-					    Event: ${event}
+					    Event: ${'"'+event+'"'}
 				`);
 
 				return id;
 			}
 
-			eventCatchRemove(process, catchId) {
-				let handler = this.handlers.filter(v => v.id == catchId && v.type == 'event')[0]
+			eventCatchRemove(process, handlerId) {
+				let handler = this.handlers.filter(v => v.id == handlerId && v.type == 'event')[0]
 
 				if(!handler) {
 					this.kdbAdd(`eventCatchRemove${process ? '@'+process.id : ''}: Unable to find handler`);
@@ -202,12 +208,11 @@
 				}
 
 				this.events.emitter.removeListener(handler.event, handler.function);
-			//	this.handlers.splice(this.handlers.findIndex(v => v == handler), 1);
 				this.handlers = this.handlers.filter(v => v !== handler);
 				this.kdbAdd(`
 					eventCatchRemove${process ? '@'+process.id : ''}: Successfully removed handler:
 					    ID: ${handler.id}
-					    Event: ${handler.event}
+					    Event: ${'"'+handler.event+'"'}
 				`);
 			}
 
@@ -255,8 +260,8 @@
 				return id;
 			}
 
-			timerRemove(process, timerId) {
-				let handler = this.handlers.filter(v => v.id == timerId && v.type == 'timer')[0]
+			timerRemove(process, handlerId) {
+				let handler = this.handlers.filter(v => v.id == handlerId && v.type == 'timer')[0]
 
 				if(!handler) {
 					this.kdbAdd(`timerRemove${process ? '@'+process.id : ''}: Unable to find handler`);
@@ -282,11 +287,16 @@
 				`);
 			}
 
-			seCreate(process, access) {
+			seCreate(process, access, title) {
 				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1;
 
 				if(!['read', 'readWrite'].includes(access)) {
 					this.kdbAdd(`seCreate${process ? '@'+process.id : ''}: Access incorrect`);
+
+					return;
+				}
+				if(title && this.handlers.filter(v => v.title == title && v.type == 'se')[0]) {
+					this.kdbAdd(`seCreate${process ? '@'+process.id : ''}: Handler with same title already set`);
 
 					return;
 				}
@@ -296,32 +306,36 @@
 					process: process || undefined,
 					type: 'se',
 					access: access,
+					title: title || undefined,
 					environment: {}
 				});
 				this.kdbAdd(`
 					seCreate${process ? '@'+process.id : ''}: Successfully set handler:
 					    ID: ${id}
 					    Access: ${access}
+					    Title: ${'"'+title+'"' || 'Not set'}
 				`);
 
 				return id;
 			}
 
 			seList(processId) {
-				let a = []
-
-				for(let v of this.handlers.filter(v => v.process?.id == processId && v.type == 'se')) {
-					a.push(v.id);
-				}
-
-				return a;
+				return this.handlers.filter(v => (!processId || v.process?.id == processId) && v.type == 'se').map(v => v.id);
 			}
 
-			seGet(process, environmentId) {
-				let handler = this.handlers.filter(v => v.id == environmentId && v.type == 'se')[0]
+			seInfo(process, handlerSearch) {
+				let handler =
+						typeof handlerSearch == 'number' ? this.handlers.filter(v => v.id == handlerSearch && v.type == 'se')[0] :
+						typeof handlerSearch == 'string' ? this.handlers.filter(v => v.title == handlerSearch && v.type == 'se')[0] :
+						undefined;
 
+				if(!['number', 'string'].includes(typeof handlerSearch)) {
+					this.kdbAdd(`seInfo${process ? '@'+process.id : ''}: Search incorrect`);
+
+					return;
+				}
 				if(!handler) {
-					this.kdbAdd(`seGet${process ? '@'+process.id : ''}: Unable to find handler`);
+					this.kdbAdd(`seInfo${process ? '@'+process.id : ''}: Unable to find handler`);
 
 					return;
 				}
@@ -347,12 +361,26 @@
 					}
 				}
 
-				return new Proxy(handler.environment, validator);
+				return {
+					id: handler.id,
+					processId: handler.process?.id,
+					access: handler.access,
+					title: handler.title,
+					environment: new Proxy(handler.environment, validator)
+				}
 			}
 
-			seRemove(process, environmentId) {
-				let handler = this.handlers.filter(v => v.id == environmentId && v.type == 'se')[0]
+			seRemove(process, handlerSearch) {
+				let handler =
+						typeof handlerSearch == 'number' ? this.handlers.filter(v => v.id == handlerSearch && v.type == 'se')[0] :
+						typeof handlerSearch == 'string' ? this.handlers.filter(v => v.title == handlerSearch && v.type == 'se')[0] :
+						undefined;
 
+				if(!['number', 'string'].includes(typeof handlerSearch)) {
+					this.kdbAdd(`seInfo${process ? '@'+process.id : ''}: Search incorrect`);
+
+					return;
+				}
 				if(!handler) {
 					this.kdbAdd(`seRemove${process ? '@'+process.id : ''}: Unable to find handler`);
 
@@ -400,26 +428,24 @@
 			psRequest(process, method, ..._arguments) {
 				return {
 					version: (a) => this.version[a],
-					create: () => {},
-					createDir: () => {},
 					read: (a) => this.fsRead(a),
+					write: (...a) => this.fsWrite(...a),
+					remove: (a) => this.fsRemove(a),
+					createDir: () => {},
 					readDir: (a) => this.fsReadDir(a),
-					write: () => {},
-					remove: () => {},
 					removeDir: () => {},
 					throw: (...a) => this.eventThrow(process, ...a),
 					catch: (...a) => this.eventCatch(process, ...a),
 					catchRemove: (a) => this.eventCatchRemove(process, a),
 					timerCreate: (...a) => this.timerCreate(process, ...a),
 					timerRemove: (a) => this.timerRemove(process, a),
-					seCreate: (a) => this.seCreate(process, a),
+					seCreate: (...a) => this.seCreate(process, ...a),
 					seList: (a) => this.seList(a || process.id),
-					seGet: (a) => this.seGet(process, a),
+					seInfo: (a) => this.seInfo(process, a),
 					seRemove: (a) => this.seRemove(process, a),
 					exec: (...a) => this.psExec(process.id, ...a),
 					list: () => this.psList(),
 					info: (a) => this.psInfo(a || process.id),
-					arguments: () => this.psArguments(process),
 				//	fork: (a) => this.psFork(process.id, a),
 					kill: (a) => this.psKill(a || process.id),
 					import: (...a) => this.classImport(process, ...a),
@@ -450,24 +476,23 @@
 						parentId: processId || undefined,
 						user: user.login,
 						path: path,
-						arguments: _arguments,
+						arguments: _arguments.filter(v => typeof v === 'string'),
 						environment: undefined
 					}
 					process.environment = this.sbCreate(new Proxy({
 						_request: (...a) => this.psRequest(process, ...a),
-						_arguments: (...a) => this.psRequest(process, 'arguments', ...a),
 					//	_fork: (...a) => this.psRequest(process, 'fork', ...a),
 						_import: (...a) => this.psRequest(process, 'import', ...a),
 						_single: (...a) => this.psRequest(process, 'single', ...a)
 					}, {
 						get: (target, property) => {
-							return property == 'window' ? target : property == 'require' ? undefined : target[property] || this.environment[property]
+							return property == '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(property) ? target : property == 'require' ? undefined : target[property] || this.environment[property]
 						}
 					}));
 
 				this.processes.push(process);
 				try {
-					this.sbExec(`var _executable = (() => { ${executable} })(); _executable = new _executable(..._arguments());`, process.environment);
+					this.sbExec(`var _executable = new ((() => { ${executable} })())(..._arguments);`, process.environment);
 					this.kdbAdd(`
 						psExec: Process started:
 						    ID: ${process.id}
@@ -500,32 +525,38 @@
 			*/
 
 			psList() {
-				let a = []
-
-				for(let v of this.processes) {
-					let b = Object.assign({}, v);
-
-					delete b.arguments;
-					delete b.environment;
-					a.push(b);
-				}
-
-				return a;
+				return this.processes.map(v => v.id);
 			}
 
 			psInfo(processSearch) {
-				let list = this.psList();
+				let infos = [],
+					processes =
+						typeof processSearch == 'number' ? this.processes.filter(v => v.id == processSearch) :
+						typeof processSearch == 'string' ? this.processes.filter(v => v.path.endsWith(processSearch)) :
+						undefined;
 
-				if(typeof processSearch == 'number') {
-					return list.filter(v => v.id == processSearch)[0]
-				} else
-				if(typeof processSearch == 'string') {
-					return list.filter(v => v.path.endsWith(processSearch));
+				if(!['number', 'string'].includes(typeof processSearch)) {
+					this.kdbAdd(`psInfo${process ? '@'+process.id : ''}: Search incorrect`);
+
+					return;
 				}
-			}
+				if(processes.length == 0) {
+					this.kdbAdd(`psInfo${process ? '@'+process.id : ''}: Unable to find processes`);
 
-			psArguments(process) {
-				return [...process.arguments]
+					return;
+				}
+
+				for(let process of processes) {
+					infos.push({
+						id: process.id,
+						parentId: process.parentId,
+						user: process.user,
+						path: process.path,
+						arguments: [...process.arguments]
+					});
+				}
+
+				return typeof processSearch == 'number' ? infos[0] : infos;
 			}
 
 			/*

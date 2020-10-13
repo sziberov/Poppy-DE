@@ -1,4 +1,4 @@
-return _MainSE.@Title || _single(class extends LFView {
+return _CFShared.@Title || _single(class extends LFView {
 	#launchedApplications = new CFArray();
 
 	constructor(_) {

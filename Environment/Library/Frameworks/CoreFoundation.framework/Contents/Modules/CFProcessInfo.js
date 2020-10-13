@@ -6,12 +6,11 @@ return _single(class {
 		this.parentIdentifier = this.#info.parentId;
 		this.user = this.#info.user;
 		this.path = this.#info.path;
-		this.environment = window;
-		this.arguments = window._arguments;
-		this.executable = new Proxy({}, {
-			get(target, property) {
-				return window._executable[property]
-			}
-		});
+		this.arguments = _arguments;
+		this.environment = _environment;
+	}
+
+	get executable() {
+		return this.environment._executable;
 	}
 });

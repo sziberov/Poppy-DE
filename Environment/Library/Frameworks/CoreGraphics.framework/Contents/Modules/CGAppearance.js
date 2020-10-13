@@ -1,4 +1,4 @@
-return _MainSE.@Title || class {
+return _CFShared.@Title || class {
 	static #URLs = []
 
 	constructor(URL) {

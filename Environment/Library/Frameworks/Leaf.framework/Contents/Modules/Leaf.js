@@ -32,5 +32,5 @@ _import('@Title', 'LFAlert');
 new LFApplication();
 new CFProcessInfo().environment._LFAppearance = new CGAppearance('@Resources/Appearance.less').add();
 
-_MainSE.LFMenubar = LFMenubar;
-_MainSE.LFWorkspace = LFWorkspace;
+_CFShared.LFMenubar = LFMenubar;
+_CFShared.LFWorkspace = LFWorkspace;
