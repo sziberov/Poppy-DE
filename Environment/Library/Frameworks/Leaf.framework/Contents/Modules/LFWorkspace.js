@@ -74,7 +74,9 @@ return _CFShared.@Title || _single(class extends LFView {
 
 		if(!this.getApplication(identifier)) {
 			try {
-				_request('exec', 'root', 'root', bundle.executables+'/'+bundle.properties.CFBundleExecutable+'.js', ..._arguments);
+				let user = new CFDefaults('ru.poppy.login').get('users').filter(v => v.group == 1)[0]
+
+				_request('exec', user.login, user.password, bundle.executables+'/'+bundle.properties.CFBundleExecutable+'.js', ..._arguments);
 
 				return this.getApplication(identifier);
 			} catch(error) {
