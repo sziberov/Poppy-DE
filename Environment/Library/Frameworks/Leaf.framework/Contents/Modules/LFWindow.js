@@ -67,6 +67,20 @@ return class extends LFView {
 		return this.#main;
 	}
 
+	get frame() {
+		if(!this.element) {
+			return {
+				width: this._.width,
+				height: this._.height
+			}
+		} else {
+			return {
+				width: Math.round(this.element.outerWidth()),
+				height: Math.round(this.element.outerHeight())
+			}
+		}
+	}
+
 	get minimized() {
 		return this.attributes['minimized'] == '' ? true : false;
 	}
@@ -138,6 +152,7 @@ return class extends LFView {
 
 	didAddSubview() {
 		this.origin = this._;
+		this.frame = this.frame;
 
 		this.hidden = false;
 		this.focus();
