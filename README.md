@@ -1,4 +1,8 @@
-Poppy DE - is a free cross-platform OS X-like user interface and applications implementation.
+Poppy DE
+--
+Free cross-platform OS X-like user interface and applications implementation.
+
+Свободная кроссплатформенная реализация OS X-подобного пользовательского интерфейса и приложений.
 
 Architecture:
 
