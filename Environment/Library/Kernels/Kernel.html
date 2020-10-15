@@ -148,7 +148,11 @@
 			}
 
 			fsReadDir(a) {
-				return require('fs').readdirSync('.'+a, { withFileTypes: true });
+				try {
+					return require('fs').readdirSync('.'+a, { withFileTypes: true });
+				} catch(error) {
+					return []
+				}
 			}
 
 			fsReadPref(a) {
@@ -457,7 +461,7 @@
 			}
 
 			psExec(processId, login, password, path, ..._arguments) {
-				let user = this.fsReadPref('ru.poppy.login').users.filter(v => v.login == login && v.password == password)[0],
+				let user = this.fsReadPref('Global').Users.filter(v => v.Login == login && v.Password == password)[0],
 					executable = this.fsRead(path);
 
 				if(!user) {
@@ -474,7 +478,7 @@
 				var process = {
 						id: this.processes.length > 0 ? Math.max(...this.processes.map(v => v.id))+1 : 1,
 						parentId: processId || undefined,
-						user: user.login,
+						user: user.Login,
 						path: path,
 						arguments: _arguments.filter(v => typeof v === 'string'),
 						environment: undefined
@@ -681,7 +685,7 @@
 			}
 
 			etRelaunch(process) {
-				let group = this.fsReadPref('ru.poppy.login').users.filter(v => v.login == process.user)[0]?.group;
+				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process.user)[0]?.Group;
 
 				if(group == 0) {
 					chrome.runtime.reload();
@@ -689,7 +693,7 @@
 			}
 
 			etQuit(process) {
-				let group = this.fsReadPref('ru.poppy.login').users.filter(v => v.login == process.user)[0]?.group;
+				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process.user)[0]?.Group;
 
 				if(group == 0) {
 					require('nw.gui').App.quit();

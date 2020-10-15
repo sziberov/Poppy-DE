@@ -18,8 +18,8 @@ return class {
 		}
 	}
 
-	get(value) {
-		return this.#properties[value]
+	get() {
+		return this.#properties;
 	}
 
 	set(value) {

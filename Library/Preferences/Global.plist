@@ -1,0 +1,35 @@
+{
+	"Users": [
+		{
+			"ID": 0,
+			"Login": "root",
+			"Password": "root",
+			"Group": 0,
+			"Hidden": true,
+			"Title": "Super User",
+			"Image": ""
+		},
+		{
+			"ID": 1,
+			"Login": "guest",
+			"Password": "",
+			"Group": 2,
+			"Hidden": false,
+			"Title": "Guest User",
+			"Image": ""
+		},
+		{
+			"ID": 2,
+			"Login": "dies",
+			"Password": "",
+			"Group": 1,
+			"Hidden": false,
+			"Title": "DIES",
+			"Image": "/Library/User Images/Flower.png"
+		}
+	],
+	"PreferredLanguages": [
+		"Russian",
+		"English"
+	]
+}

@@ -5,11 +5,11 @@ return class {
 		new LFApp().quitableBySingleWindow = true;
 
 		new LFApp().menuItems = [
-			new LFMenuItem({ title: 'File',
+			new LFMenuItem({ title: CFLocalizedString('File'),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: 'Quit Highlighted', action: () => this.quit() }),
-					new LFMenuItem({ title: 'Update', action: () => this.update() }),
-					new LFMenuItem({ title: 'Switch', action: () => this.switch() })
+					new LFMenuItem({ title: CFLocalizedString('Quit Highlighted'), action: () => this.quit() }),
+					new LFMenuItem({ title: CFLocalizedString('Update'), action: () => this.update() }),
+					new LFMenuItem({ title: CFLocalizedString('Switch'), action: () => this.switch() })
 				] })
 			})
 		]
@@ -74,7 +74,7 @@ return class {
 								new LFText({ string: application.identifier, size: 'small' })
 							] })
 						] }),
-						new LFButton({ title: 'Quit', action: function() {
+						new LFButton({ title: CFLocalizedString('Quit'), action: function() {
 							this.get('Superview', 'LFWindow').close();
 							application.quit();
 						} })

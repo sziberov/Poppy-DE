@@ -3,22 +3,22 @@ return class {
 		_import('Leaf');
 
 		new LFApp().menuItems = [
-			new LFMenuItem({ title: 'File',
+			new LFMenuItem({ title: CFLocalizedString('File'),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: 'New Window...', action: () => this.window() })
+					new LFMenuItem({ title: CFLocalizedString('New Window...'), action: () => this.window() })
 				] })
 			}),
-			new LFMenuItem({ title: 'Edit' }),
-			new LFMenuItem({ title: 'View',
+			new LFMenuItem({ title: CFLocalizedString('Edit') }),
+			new LFMenuItem({ title: CFLocalizedString('View'),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: 'Toggle Menubar Transparency', action: () => {
+					new LFMenuItem({ title: CFLocalizedString('Toggle Menubar Transparency'), action: () => {
 						new LFMenubar().transparent = !new LFMenubar().transparent;
 					} })
 				] })
 			}),
-			new LFMenuItem({ title: 'Go' }),
-			new LFMenuItem({ title: 'Window' }),
-			new LFMenuItem({ title: 'Help' })
+			new LFMenuItem({ title: CFLocalizedString('Go') }),
+			new LFMenuItem({ title: CFLocalizedString('Window') }),
+			new LFMenuItem({ title: CFLocalizedString('Help') })
 		]
 
 		CFArray.addObserver(new LFWorkspace().subviews, (a) => {
@@ -32,21 +32,21 @@ return class {
 				}
 				if(list.length > 0) {
 					list.unshift(new LFMenuItem().separator());
-					new LFApp().menuItems.filter(v => v.title == 'Window')[0].menu = new LFMenu({ items: [
-						new LFMenuItem({ title: 'Close', action: () => new LFApp().windows.filter(v => v.main == true)[0].close() }),
-						new LFMenuItem({ title: 'Minimize', action: () => new LFApp().windows.filter(v => v.main == true)[0].minimize() }),
-						new LFMenuItem({ title: 'Maximize', action: () => new LFApp().windows.filter(v => v.main == true)[0].maximize() }),
+					new LFApp().menuItems.filter(v => v.title == CFLocalizedString('Window'))[0].menu = new LFMenu({ items: [
+						new LFMenuItem({ title: CFLocalizedString('Close'), action: () => new LFApp().windows.filter(v => v.main == true)[0].close() }),
+						new LFMenuItem({ title: CFLocalizedString('Minimize'), action: () => new LFApp().windows.filter(v => v.main == true)[0].minimize() }),
+						new LFMenuItem({ title: CFLocalizedString('Maximize'), action: () => new LFApp().windows.filter(v => v.main == true)[0].maximize() }),
 						new LFMenuItem().separator(),
-						new LFMenuItem({ title: 'Align Windows',
+						new LFMenuItem({ title: CFLocalizedString('Align Windows'),
 							menu: new LFMenu({ items: [
-								new LFMenuItem({ title: 'Cascade' }),
-								new LFMenuItem({ title: 'Column' })
+								new LFMenuItem({ title: CFLocalizedString('Cascade') }),
+								new LFMenuItem({ title: CFLocalizedString('Column') })
 							] })
 						}),
 						...list
 					] });
 				} else {
-					new LFApp().menuItems.filter(v => v.title == 'Window')[0].menu = undefined;
+					new LFApp().menuItems.filter(v => v.title == CFLocalizedString('Window'))[0].menu = undefined;
 				}
 			}
 		});
@@ -59,7 +59,7 @@ return class {
 	window() {
 		let window = new LFWindow({ width: 384, height: 256, title: new LFApp().bundle.properties.CFBundleTitle,
 				toolbar: new LFToolbar({ subviews: [
-					new LFButton({ title: 'Alert', action: () => new LFAlert({ message: 'Clicked.' }) })
+					new LFButton({ title: CFLocalizedString('Alert'), action: () => new LFAlert({ message: 'Clicked.' }) })
 				] }),
 				view: new LFView({ type: 'horizontal', tight: true, subviews: [
 					new LFSidebar(),

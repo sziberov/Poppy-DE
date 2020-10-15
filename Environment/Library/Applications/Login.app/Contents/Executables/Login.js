@@ -25,10 +25,10 @@ return class {
 		new LFMenubar().mainMenu.items = [
 			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateLogo' }),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: 'About This Poppy', action: () => this.about() }),
+					new LFMenuItem({ title: CFLocalizedString('About This Poppy'), action: () => this.about() }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: 'Environment Preferences', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') }),
-					new LFMenuItem({ title: 'Dock',
+					new LFMenuItem({ title: CFLocalizedString('Environment Preferences'), action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') }),
+					new LFMenuItem({ title: CFLocalizedString('Dock'),
 						menu: new LFMenu({ items: [
 							new LFMenuItem({ title: 'Test Alert', action: () => new LFAlert() }),
 							new LFMenuItem({ title: 'Submenu',
@@ -40,11 +40,11 @@ return class {
 						] })
 					}),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: 'Force Quit', action: () => this.forceQuit() }),
-					new LFMenuItem({ title: 'Activity Monitor', action: () => new LFWorkspace().launchApplication('/Applications/Activity Monitor') }),
+					new LFMenuItem({ title: CFLocalizedString('Force Quit'), action: () => this.forceQuit() }),
+					new LFMenuItem({ title: CFLocalizedString('Activity Monitor'), action: () => new LFWorkspace().launchApplication('/Applications/Activity Monitor') }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: 'Relaunch', action: () => _request('relaunch') }),
-					new LFMenuItem({ title: 'Quit', action: () => _request('quit') })
+					new LFMenuItem({ title: CFLocalizedString('Relaunch'), action: () => _request('relaunch') }),
+					new LFMenuItem({ title: CFLocalizedString('Quit'), action: () => _request('quit') })
 				] })
 			})
 		]
@@ -130,7 +130,7 @@ return class {
 			window = new LFApp().windows.filter(v => v.tag == 'about')[0]
 
 		if(!window) {
-			new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: 'About This Poppy', view:
+			new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
 				new LFView({ yAlign: 'center', subviews: [
 					new LFImage({ width: 128, height: 128, shared: 'Monoblock' }),
 					new LFView({ type: 'vertical', subviews: [
