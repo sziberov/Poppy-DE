@@ -1,6 +1,6 @@
-return (string) => {
+return (string, URL) => {
 	var language = new CFPreferences('Global').get().PreferredLanguages[0],
-		localizedStrings = new CFBundle(new CFProcessInfo().path.split('.app')[0]+'.app').localizations[language].Localized
+		localizedStrings = new CFBundle(CFString.splitByLast(URL || new CFProcessInfo().path, '/Contents/')[0]).localizations[language]?.Localized
 
 	return language && localizedStrings ? localizedStrings[string] || string : string
 }

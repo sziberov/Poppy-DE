@@ -7,11 +7,18 @@ return class {
 		new LFApp().menuItems = [
 			new LFMenuItem({ title: CFLocalizedString('File'),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: CFLocalizedString('Quit Highlighted'), action: () => this.quit() }),
-					new LFMenuItem({ title: CFLocalizedString('Update'), action: () => this.update() }),
-					new LFMenuItem({ title: CFLocalizedString('Switch'), action: () => this.switch() })
+					new LFMenuItem({ title: CFLocalizedString('Switch'), action: () => this.switch() }),
+					new LFMenuItem({ title: CFLocalizedString('Quit'), action: () => this.quit() })
 				] })
-			})
+			}),
+			new LFMenuItem({ title: CFLocalizedString('Edit') }),
+			new LFMenuItem({ title: CFLocalizedString('View'),
+				menu: new LFMenu({ items: [
+					new LFMenuItem({ title: CFLocalizedString('Update'), action: () => this.update() })
+				] })
+			}),
+			new LFMenuItem({ title: CFLocalizedString('Window') }),
+			new LFMenuItem({ title: CFLocalizedString('Help') })
 		]
 
 		new LFWindow({ x: 'center', y: 'center', width: 512, height: 256, title: new LFApp().title,

@@ -114,9 +114,15 @@ return _single(class {
 					new LFMenubar().applicationMenu.items = [
 						new LFMenuItem({ title: this.title,
 							menu: new LFMenu({ items: [
-								new LFMenuItem({ title: 'About '+this.title, action: () => this.about() }),
+								new LFMenuItem({ title: CFLocalizedString('About', '@Resources')+' '+this.title, action: () => this.about() }),
 								new LFMenuItem().separator(),
-								new LFMenuItem({ title: 'Quit', action: () => this.quit() })
+								new LFMenuItem({ title: CFLocalizedString('Services', '@Resources') }),
+								new LFMenuItem().separator(),
+								new LFMenuItem({ title: CFLocalizedString('Hide', '@Resources')+' '+this.title }),
+								new LFMenuItem({ title: CFLocalizedString('Hide Others', '@Resources') }),
+								new LFMenuItem({ title: CFLocalizedString('Show All', '@Resources') }),
+								new LFMenuItem().separator(),
+								new LFMenuItem({ title: CFLocalizedString('Quit', '@Resources')+' '+this.title, action: () => this.quit() })
 							] })
 						}),
 						...this.menuItems

@@ -33,12 +33,15 @@ return class {
 				}
 			}
 
-			let language = new CFPreferences('Global').get().PreferredLanguages[0],
+			let properties = CFFile.content(this.contents+'/Info.plist'),
+				language = new CFPreferences('Global').get().PreferredLanguages[0],
 				localizedStrings = this.localizations[language]?.InfoPlist
 
-			this.properties = {
-				...JSON.parse(CFFile.content(this.contents+'/Info.plist')),
-				...localizedStrings ? localizedStrings : {}
+			if(properties) {
+				this.properties = {
+					...JSON.parse(properties),
+					...localizedStrings ? localizedStrings : {}
+				}
 			}
 		}
 	}

@@ -52,7 +52,7 @@ return class {
 			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateNotifications' }), action: () => alert('HUHU') }),
 			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateSearch' }),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: 'Search...' })
+					new LFMenuItem({ title: CFLocalizedString('Search...') })
 				] })
 			}),
 			new LFMenuItem({ title: 'DIES', action: function() { this.title = 'Random Title' } }),
@@ -69,10 +69,10 @@ return class {
 				//	_request('timerCreate', 'multiple', 1000, update);
 				},
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: 'View as Analog' }),
-					new LFMenuItem({ title: 'View as Digital' }),
+					new LFMenuItem({ title: CFLocalizedString('View as Analog') }),
+					new LFMenuItem({ title: CFLocalizedString('View as Digital') }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: 'Date & Time Preferences...', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') })
+					new LFMenuItem({ title: CFLocalizedString('Date & Time Preferences...'), action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') })
 				] })
 			}),
 			new LFMenuItem({ title: '', image: new LFImage({ width: 24, shared: 'TemplateBatteryConnected' }),
@@ -163,9 +163,9 @@ return class {
 		let window = new LFApp().windows.filter(v => v.tag == 'forceQuit')[0];
 
 		if(!window) {
-			new LFWindow({ tag: 'forceQuit', width: 384, style: ['titled', 'closable', 'resizable'], title: 'Force Quit Applications',
+			new LFWindow({ tag: 'forceQuit', width: 384, style: ['titled', 'closable', 'resizable'], title: CFLocalizedString('Force Quit Applications'),
 				view: new LFView({ type: 'vertical', subviews: [
-					new LFText({ string: 'If an application doesn\'t respond for a while, select it\'s title and click Force Quit.', size: 'small' })
+					new LFText({ string: CFLocalizedString('Force Quit Applications_Description'), size: 'small' })
 				] })
 			});
 		} else {

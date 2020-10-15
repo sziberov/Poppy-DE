@@ -12,6 +12,7 @@ _import('@Title', 'CFEventEmitter');
 _import('@Title', 'CFArray');
 _import('@Title', 'CFObject');
 _import('@Title', 'CFBundle');
+_import('@Title', 'CFString');
 _import('@Title', 'CFLocalizedString');
 
 if(!_request('seInfo', '@Title')) {
