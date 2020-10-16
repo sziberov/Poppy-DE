@@ -60,7 +60,7 @@ return _single(class {
 	}
 
 	get bundle() {
-		return new CFBundle(this.process.path.split('.app')[0]+'.app');
+		return new CFBundle();
 	}
 
 	get identifier() {

@@ -1,6 +1,7 @@
-return (string, URL) => {
-	var language = new CFPreferences('Global').get().PreferredLanguages[0],
-		localizedStrings = new CFBundle(CFString.splitByLast(URL || new CFProcessInfo().path, '/Contents/')[0]).localizations[language]?.Localized
+return (key, URL/*, { bundle, value } = {}*/) => {
+	var bundle = URL ? new CFBundle(CFString.splitByLast(URL, '/Contents/')[0]) : new CFBundle()/*bundle ? bundle : new CFBundle()*/,
+		language = new CFPreferences('Global').get().PreferredLanguages[0],
+		localizedStrings = bundle.localizations[language]?.Localized
 
-	return language && localizedStrings ? localizedStrings[string] || string : string
+	return language && localizedStrings ? localizedStrings[key] || value || key : value || key
 }

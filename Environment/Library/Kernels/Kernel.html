@@ -12,10 +12,7 @@
 			constructor() {
 				this.extensionExec();
 
-				this.events = {
-					emitter: new (require('events'))(),
-					reserved: ['dateChanged', 'psListChanged']
-				}
+				this.eventsReserved = ['dateChanged', 'psListChanged']
 				this.handlers = []
 				this.environment = {
 					...window,
@@ -164,7 +161,7 @@
 			}
 
 			eventThrow(process, event, ..._arguments) {
-				if(process && this.events.reserved.includes(event)) {
+				if(process && this.eventsReserved.includes(event)) {
 					this.kdbAdd(`
 						eventThrow@${process.id}: Processes aren't allowed to throw reserved events:
 						    Event: ${'"'+event+'"'}
@@ -173,20 +170,28 @@
 					return;
 				}
 
-				this.events.emitter.emit(event, ..._arguments);
+				for(let handler of this.handlers.filter(v => v.event == event && v.type == 'event')) {
+					try {
+						handler.function(..._arguments);
+					} catch(error) {
+						error.fileName = handler.process.path;
+						this.kdbAdd(`
+							eventThrow@${process.id}: Handler failed to execute:
+							    Event: ${'"'+event+'"'}
+						`, error.stack);
+					}
+				}
 			}
 
 			eventCatch(process, event, _function) {
-				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1,
-					__function = (...a) => _function(...a);
+				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1;
 
-				this.events.emitter.on(event, __function);
 				this.handlers.push({
 					id: id,
 					type: 'event',
 					process: process || undefined,
 					event: event,
-					function: __function,
+					function: _function,
 				});
 				this.kdbAdd(`
 					eventCatch${process ? '@'+process.id : ''}: Successfully set handler:
@@ -211,7 +216,6 @@
 					return;
 				}
 
-				this.events.emitter.removeListener(handler.event, handler.function);
 				this.handlers = this.handlers.filter(v => v !== handler);
 				this.kdbAdd(`
 					eventCatchRemove${process ? '@'+process.id : ''}: Successfully removed handler:

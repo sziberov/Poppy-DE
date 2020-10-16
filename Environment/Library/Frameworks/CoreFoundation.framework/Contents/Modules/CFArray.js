@@ -1,6 +1,4 @@
 return class extends Array {
-	#tag = Date.now().toString().split('').sort(() => (Math.random()-0.5)).join('');
-
 	constructor(..._arguments) {
 		super(..._arguments);
 
@@ -9,17 +7,13 @@ return class extends Array {
 		delete this.includes;
 	}
 
-	get tag() {
-		return this.#tag;
-	}
-
 	set length(value) {}
 
 	add(...value) {
 		for(let v of value) {
 			super.push(v);
 
-			CFEventEmitter.dispatch('arrayChanged.'+this.tag, { event: 'added', value: v });
+			CFEventEmitter.dispatch('arrayChanged', this, { event: 'added', value: v });
 		}
 
 		return this;
@@ -30,7 +24,7 @@ return class extends Array {
 			if(this.contains(v)) {
 				super.splice(this.indexOf(v), 1);
 
-				CFEventEmitter.dispatch('arrayChanged.'+this.tag, { event: 'removed', value: v });
+				CFEventEmitter.dispatch('arrayChanged', this, { event: 'removed', value: v });
 			}
 		}
 
@@ -41,7 +35,7 @@ return class extends Array {
 		/*
 		super.length = 0;
 
-		CFEventEmitter.dispatch('arrayChanged.'+this.tag, { event: 'removedAll' });
+		CFEventEmitter.dispatch('arrayChanged', this, { event: 'removedAll' });
 		*/
 		this.remove(...this);
 
@@ -89,14 +83,16 @@ return class extends Array {
 	}
 
 	static addObserver(array, _function) {
-		if(typeof _function === 'function') {
-			CFEventEmitter.addHandler('arrayChanged.'+array.tag, _function);
+		if(super.isArray(array) && typeof _function === 'function') {
+			return CFEventEmitter.addHandler('arrayChanged', (_array, ..._arguments) => {
+				if(_array == array) {
+					_function(..._arguments);
+				}
+			});
 		}
-
-		return _function;
 	}
 
-	static removeObserver(array, _function) {
-		CFEventEmitter.removeHandler('arrayChanged.'+array.tag, _function);
+	static removeObserver(array, observerId) {
+		CFEventEmitter.removeHandler('arrayChanged', observerId);
 	}
 }
