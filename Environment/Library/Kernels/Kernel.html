@@ -481,7 +481,7 @@
 
 				var process = {
 						id: this.processes.length > 0 ? Math.max(...this.processes.map(v => v.id))+1 : 1,
-						parentId: processId || undefined,
+						parentId: processId || 0,
 						user: user.Login,
 						path: path,
 						arguments: _arguments.filter(v => typeof v === 'string'),
@@ -504,6 +504,8 @@
 					this.kdbAdd(`
 						psExec: Process started:
 						    ID: ${process.id}
+						    Parent ID: ${process.parentId}
+						    User: ${process.user}
 						    Path: ${process.path}
 					`);
 					this.eventThrow(undefined, 'psListChanged', { event: 'added', value: process.id });
@@ -827,8 +829,8 @@
 		}
 
 		boot {
-			display: flex;
-			flex-direction: column;
+			display: grid;
+			grid-template-rows: 1fr min-content 1fr;
 
 			position: absolute;
 
@@ -836,8 +838,6 @@
 			height: 100%;
 
 			background: #bfbfbf;
-
-			cursor: none;
 		}
 
 		boot[verbose] {
@@ -848,15 +848,15 @@
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			flex: 1;
-		}
-
-		boot logo {
-			flex: 0;
 		}
 
 		boot svg {
 			margin: auto;
+		}
+
+		boot logo svg {
+			-width: 96px;
+			-height: 96px;
 		}
 
 		boot load {

@@ -84,7 +84,7 @@ return _single(class {
 	}
 
 	get icon() {
-		return this.bundle.properties.CFBundleIcon && this.bundle.resources+'/'+this.bundle.properties.CFBundleIcon;
+		return this.bundle.properties.CFBundleIcon && this.bundle.resourcesURL+'/'+this.bundle.properties.CFBundleIcon;
 	}
 
 	set menuItems(value) {
@@ -185,7 +185,7 @@ return _single(class {
 					new LFView({ type: 'vertical', yAlign: 'center', subviews: [
 						...this.icon ? [new LFImage({ width: 64, height: 64, url: this.icon })] : [],
 						new LFText({ string: this.title, weight: 'bold' }),
-						...this.version ? [new LFText({ string: 'Version '+this.version, size: 'small' })] : [],
+						...this.version ? [new LFText({ string: CFLocalizedString('Version', '@Resources')+' '+this.version, size: 'small' })] : [],
 						...this.license ? [new LFText({ string: this.license, size: 'small' })] : []
 					] })
 				});

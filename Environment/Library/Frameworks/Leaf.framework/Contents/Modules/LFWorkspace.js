@@ -76,7 +76,7 @@ return _CFShared.@Title || _single(class extends LFView {
 			try {
 				let user = new CFPreferences('Global').get().Users.filter(v => v.Group == 1)[0]
 
-				_request('exec', user.Login, user.Password, bundle.executables+'/'+bundle.properties.CFBundleExecutable+'.js', ..._arguments);
+				_request('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ..._arguments);
 
 				return this.getApplication(identifier);
 			} catch(error) {

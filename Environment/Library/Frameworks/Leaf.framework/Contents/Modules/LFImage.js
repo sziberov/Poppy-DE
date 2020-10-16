@@ -10,7 +10,7 @@ return class extends LFView {
 			shared: '',
 			..._
 		}
-		this._.url = this._.shared ? new CFBundle('/Environment/Library/Frameworks/CoreTypes.bundle').resources+'/'+this._.shared+'.icns' : this._.url;
+		this._.url = this._.shared ? new CFBundle('/Environment/Library/Frameworks/CoreTypes.bundle').resourcesURL+'/'+this._.shared+'.icns' : this._.url;
 		this._.url = this._.url.endsWith('.icns') ? this._.url+='/'+this._.width+'x'+this._.height+'.svg' : this._.url;
 	}
 

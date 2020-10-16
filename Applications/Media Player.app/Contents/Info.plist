@@ -1,6 +1,8 @@
 {
-	"CFBundleIdentifier": "ru.poppy.environment-preferences",
-	"CFBundleExecutable": "Environment Preferences",
-	"CFBundleTitle": "Environment Preferences",
-	"CFBundleIcon": "Environment Preferences.icns"
+	"CFBundleIdentifier": "ru.poppy.media-player",
+	"CFBundleExecutable": "Media Player",
+	"CFBundleTitle": "Media Player",
+	"CFBundleVersion": "0.1",
+	"CFBundleLicense": "CC BY-NC-ND © Poppy.",
+	"CFBundleIcon": "Media Player.icns"
 }

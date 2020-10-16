@@ -2,5 +2,7 @@
 	"CFBundleIdentifier": "ru.poppy.dock",
 	"CFBundleExecutable": "Dock",
 	"CFBundleTitle": "Dock",
+	"CFBundleVersion": "0.1",
+	"CFBundleLicense": "CC BY-NC-ND © Poppy.",
 	"CFBundleIcon": "Dock.icns"
 }
