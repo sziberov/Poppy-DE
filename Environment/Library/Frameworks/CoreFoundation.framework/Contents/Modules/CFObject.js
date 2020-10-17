@@ -5,21 +5,22 @@ return class extends Object {
 		super(..._arguments);
 
 		this.#proxy = new Proxy(this, {
-			get: (target, key) => {
-				CFEventEmitter.dispatch('@TitleChanged', this.#proxy, { event: 'get', key: key });
-
-				return target[key]
-			},
 			set: (target, key, value) => {
+				let event = target[key] ? 'changed' : 'added';
+
 				target[key] = value;
 
-				CFEventEmitter.dispatch('@TitleChanged', this.#proxy, { event: 'set', key: key, value: value });
+				CFEventEmitter.dispatch('@TitleChanged', this.#proxy, { event: event, key: key, value: value });
+
+				return true;
 			},
 			deleteProperty: (target, key) => {
 				if(key in target) {
 					delete target[key]
 
 					CFEventEmitter.dispatch('@TitleChanged', this.#proxy, { event: 'removed', key: key });
+
+					return true;
 				}
 			}
 		})
@@ -41,7 +42,7 @@ return class extends Object {
 		CFEventEmitter.removeHandler('@TitleChanged', observerId);
 	}
 
-	static observe(object = {}, _function) {
+	static observable(object = {}, _function) {
 		return new Proxy(object, {
 			set: (target, key, value) => {
 				target[key] = value;

@@ -1,11 +1,11 @@
 return class {
 	#properties = {
-		style: CFObject.observe({}, (k, v) => {
+		style: CFObject.observable({}, (k, v) => {
 			if(this.element) {
 				this.element.css(k, v);
 			}
 		}),
-		attributes: CFObject.observe({}, (k, v) => {
+		attributes: CFObject.observable({}, (k, v) => {
 			if(this.element) {
 				if(v !== undefined) {
 					this.element.attr(k, v);
@@ -17,10 +17,39 @@ return class {
 		text: ''
 	}
 
+	/*
+	#properties = {
+		style: new CFObject(),
+		attributes: new CFObject(),
+		text: ''
+	}
+	*/
+
 	constructor() {
 		this.class = '@Title';
 
 		this.element;
+
+		/*
+		CFObject.addObserver(this.style, (_) => {
+			if(this.element) {
+				if(['added', 'changed'].includes(_.event)) {
+					this.element.css(_.key, _.value);
+				} else {
+					this.element.css(_.key, undefined);
+				}
+			}
+		});
+		CFObject.addObserver(this.attributes, (_) => {
+			if(this.element) {
+				if(['added', 'changed'].includes(_.event) && _.value !== undefined) {
+					this.element.attr(_.key, _.value);
+				} else {
+					this.element.removeAttr(_.key);
+				}
+			}
+		});
+		*/
 	}
 
 	get style() {
