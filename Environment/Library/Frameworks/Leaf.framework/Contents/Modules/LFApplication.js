@@ -7,20 +7,20 @@ return _single(class {
 		this.process.environment.LFApp = @Title;
 		/*
 		this.application = new Proxy(this.process.executable, {
-			get: (target, property, receiver) => {
-				let that = this;
-
-				return function(...args) {
-					try {
-						let result = target[property].apply(this, args);
-					} catch(error) {
-						new LFAlert({
-							message: `"${that.title}"'s method returned exception.`,
-							information: error.name+': '+error.message
-						});
+			get: (target, key) => {
+				if(typeof target[key] === 'function') {
+					return (..._arguments) => {
+						try {
+							return target[key](..._arguments);
+						} catch(error) {
+							new LFAlert({
+								message: `"${this.title}"'s method returned exception.`,
+								information: error.name+': '+error.message
+							});
+						}
 					}
-
-					return result;
+				} else {
+					return target[key]
 				}
 			}
 		});

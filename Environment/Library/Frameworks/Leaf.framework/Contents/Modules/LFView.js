@@ -1,4 +1,5 @@
 return class extends LFResponder {
+	#constraints = new CFArray();
 	#subviews = new CFArray();
 
 	constructor(_) {

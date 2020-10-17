@@ -13,7 +13,7 @@ return class extends Array {
 		for(let v of value) {
 			super.push(v);
 
-			CFEventEmitter.dispatch('arrayChanged', this, { event: 'added', value: v });
+			CFEventEmitter.dispatch('@TitleChanged', this, { event: 'added', value: v });
 		}
 
 		return this;
@@ -24,7 +24,7 @@ return class extends Array {
 			if(this.contains(v)) {
 				super.splice(this.indexOf(v), 1);
 
-				CFEventEmitter.dispatch('arrayChanged', this, { event: 'removed', value: v });
+				CFEventEmitter.dispatch('@TitleChanged', this, { event: 'removed', value: v });
 			}
 		}
 
@@ -35,7 +35,7 @@ return class extends Array {
 		/*
 		super.length = 0;
 
-		CFEventEmitter.dispatch('arrayChanged', this, { event: 'removedAll' });
+		CFEventEmitter.dispatch('@TitleChanged', this, { event: 'removedAll' });
 		*/
 		this.remove(...this);
 
@@ -84,7 +84,7 @@ return class extends Array {
 
 	static addObserver(array, _function) {
 		if(super.isArray(array) && typeof _function === 'function') {
-			return CFEventEmitter.addHandler('arrayChanged', (_array, ..._arguments) => {
+			return CFEventEmitter.addHandler('@TitleChanged', (_array, ..._arguments) => {
 				if(_array == array) {
 					_function(..._arguments);
 				}
@@ -93,6 +93,6 @@ return class extends Array {
 	}
 
 	static removeObserver(array, observerId) {
-		CFEventEmitter.removeHandler('arrayChanged', observerId);
+		CFEventEmitter.removeHandler('@TitleChanged', observerId);
 	}
 }

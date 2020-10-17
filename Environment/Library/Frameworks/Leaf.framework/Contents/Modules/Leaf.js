@@ -9,6 +9,7 @@ _import('CoreGraphics');
 _import('@Title', 'LFObject');
 _import('@Title', 'LFResponder');
 _import('@Title', 'LFView');
+_import('@Title', 'LFConstraint');
 _import('@Title', 'LFControl');
 _import('@Title', 'LFButton');
 _import('@Title', 'LFMenubar');

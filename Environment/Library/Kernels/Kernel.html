@@ -224,14 +224,14 @@
 				`);
 			}
 
-			timerCreate(process, variant, time, _function, ..._arguments) {
+			timerCreate(process, variant, delay, _function, ..._arguments) {
 				if(!['single', 'multiple'].includes(variant)) {
 					this.kdbAdd(`timerCreate${process ? '@'+process.id : ''}: Variant incorrect`);
 
 					return;
 				}
-				if(typeof time !== 'number') {
-					this.kdbAdd(`timerCreate${process ? '@'+process.id : ''}: Time incorrect`);
+				if(typeof delay !== 'number') {
+					this.kdbAdd(`timerCreate${process ? '@'+process.id : ''}: Delay incorrect`);
 
 					return;
 				}
@@ -248,9 +248,9 @@
 					timer = setTimeout(() => {
 						_function(..._arguments);
 						this.timerRemove(process, id);
-					}, time);
+					}, delay);
 				} else {
-					timer = setInterval(_function, time, ..._arguments);
+					timer = setInterval(_function, delay, ..._arguments);
 				}
 				this.handlers.push({
 					id: id,
@@ -349,22 +349,22 @@
 				}
 
 				let validator = {
-					get: (target, property) => {
+					get: (target, key) => {
 						if(this.handlers.filter(v => v == handler)[0]) {
-							if(process && handler.process !== process && handler.access == 'read' && typeof target[property] === 'object') {
-								return new Proxy(target[property], validator);
+							if(process && handler.process !== process && handler.access == 'read' && typeof target[key] === 'object') {
+								return new Proxy(target[key], validator);
 							}
 
-							return target[property]
+							return target[key]
 						}
 					},
-					set: (target, property, value) => {
+					set: (target, key, value) => {
 						if(this.handlers.filter(v => v == handler)[0]) {
 							if(process && handler.process !== process && handler.access == 'read') {
 								return;
 							}
 
-							target[property] = value;
+							target[key] = value;
 						}
 					}
 				}
@@ -493,8 +493,8 @@
 						_import: (...a) => this.psRequest(process, 'import', ...a),
 						_single: (...a) => this.psRequest(process, 'single', ...a)
 					}, {
-						get: (target, property) => {
-							return property == '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(property) ? target : property == 'require' ? undefined : target[property] || this.environment[property]
+						get: (target, key) => {
+							return key == '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key == 'require' ? undefined : target[key] || this.environment[key]
 						}
 					}));
 
@@ -570,15 +570,15 @@
 			}
 
 			/*
-			psFork(processId, property) {
+			psFork(processId, key) {
 				let a = (b) => {
 						b = this.psInfo(b);
 
 						if(b && b.environment) {
-							if(b.environment[property]) {
-								this.kdbAdd(`psFork: Successfully forked "${property}" into child process: ${b.id} -> ${processId}`);
+							if(b.environment[key]) {
+								this.kdbAdd(`psFork: Successfully forked "${key}" into child process: ${b.id} -> ${processId}`);
 
-								return b.environment[property]
+								return b.environment[key]
 							} else
 							if(b.parentId) {
 								return a(b.parentId);
@@ -674,14 +674,14 @@
 
 						return this.instance;
 					},
-					get: function(target, property) {
-						if(property == 'destroyInstance') {
+					get: function(target, key) {
+						if(key == 'destroyInstance') {
 							return () => {
 								this.instance = undefined;
 							}
 						}
 
-						return target.property;
+						return target.key;
 					}
 				});
 			}
