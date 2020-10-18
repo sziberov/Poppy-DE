@@ -89,8 +89,11 @@ return class extends LFResponder {
 
 		if(mode && add[mode]()) {
 			this.addSubviews(this.subviews);
-			if(typeof this.didAddSubview === 'function') {
-				this.didAddSubview();
+			if(typeof this.didAdd === 'function') {
+				this.didAdd();
+			}
+			if(typeof this.superview?.didAddSubview === 'function') {
+				this.superview.didAddSubview();
 			}
 		}
 

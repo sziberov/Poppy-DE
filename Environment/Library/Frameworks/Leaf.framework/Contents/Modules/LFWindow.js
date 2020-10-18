@@ -139,10 +139,12 @@ return class extends LFView {
 	}
 
 	set frame(value) {
-		this._.width = value.width;
-		this._.height = value.height;
-		this.style['width'] = value.width+'px';
-		this.style['height'] = value.height+'px';
+		if(typeof value.width === 'number' && typeof value.height === 'number') {
+			this._.width = value.width;
+			this._.height = value.height;
+			this.style['width'] = value.width+'px';
+			this.style['height'] = value.height+'px';
+		}
 	}
 
 	mousedown() {
@@ -150,7 +152,7 @@ return class extends LFView {
 		this.focus();
 	}
 
-	didAddSubview() {
+	didAdd() {
 		this.origin = this._;
 		this.frame = this.frame;
 

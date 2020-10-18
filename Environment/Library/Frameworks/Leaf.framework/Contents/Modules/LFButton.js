@@ -95,7 +95,7 @@ return class extends LFControl {
 		}
 	}
 
-	didAddSubview() {
+	didAdd() {
 		this.menu = this.menu;
 	}
 

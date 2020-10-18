@@ -623,11 +623,9 @@
 					psKill: Process removed:
 					    ID: ${process.id}
 				`);
-				/*
 				if(b) {
-					this.kdbAdd(`    Deconstructor did failed:`, error.stack)
+					this.kdbAdd(`    Deconstructor failed:`, error.stack)
 				}
-				*/
 				this.eventThrow(undefined, 'psListChanged', { event: 'removed', value: process.id });
 			}
 
@@ -681,7 +679,7 @@
 							}
 						}
 
-						return target.key;
+						return target[key]
 					}
 				});
 			}
