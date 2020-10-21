@@ -12,8 +12,14 @@
 			constructor() {
 				this.extensionExec();
 
-				this.eventsReserved = ['dateChanged', 'psListChanged']
+				this.framebuffer = {
+					canvas: undefined,
+					frame: undefined
+				}
 				this.handlers = []
+				this.eventsReserved = ['dateChanged', 'psListChanged']
+				this.terminals = []
+				this.processes = []
 				this.environment = {
 					...window,
 					Array: Array,
@@ -26,7 +32,6 @@
 					parseInt: parseInt,
 					Proxy: Proxy
 				}
-				this.processes = []
 
 				/*
 				Function.prototype.callAsWorker = function (...args) {
@@ -40,11 +45,13 @@
 					});
 				}
 				*/
-				$(() => {
+				document.addEventListener('DOMContentLoaded', () => {
+					this.framebuffer.canvas = document.getElementsByTagName('canvas')[0]
+					this.framebuffer.frame = this.framebuffer.canvas.getContext('2d');
 					this.timerCreate(undefined, 'multiple', 1000, () => {
 						this.eventThrow(undefined, 'dateChanged');
 					});
-				})
+				});
 			}
 
 			get version() {
@@ -139,9 +146,26 @@
 			}
 
 			fsWrite(a, b) {
-				return require('fs').writeFile('.'+a, b.toString(), { flag: 'w' }, (error) => {
+				try {
+					let event = this.fsRead(a) ? 'written' : 'created';
+
+					require('fs').writeFileSync('.'+a, b.toString(), { flag: 'w' });
+					this.eventThrow(undefined, 'fsChanged', { event: event, value: a });
+
+					return true;
+				} catch(error) {
+					return error;
+				}
+			}
+
+			fsRemove(a) {
+				try {
+					require('fs').unlinkSync('.'+a);
+
+					return true;
+				} catch(error) {
 					return undefined;
-				});
+				}
 			}
 
 			fsReadDir(a) {
@@ -158,6 +182,19 @@
 						undefined;
 
 				return b ? JSON.parse(b) : undefined;
+			}
+
+			terminalCreate(process) {
+				let id = this.terminals.length > 0 ? Math.max(...this.terminals.map(v => v.id))+1 : 1;
+
+				this.terminals.push({
+					id: id,
+					parentId: process?.terminalId || 0,
+					mode: 'text',	// 'graphics'
+					current: this.terminals.some(v => v.current) ? false : true
+				});
+
+				return id;
 			}
 
 			eventThrow(process, event, ..._arguments) {
@@ -451,7 +488,7 @@
 					seList: (a) => this.seList(a || process.id),
 					seInfo: (a) => this.seInfo(process, a),
 					seRemove: (a) => this.seRemove(process, a),
-					exec: (...a) => this.psExec(process.id, ...a),
+					exec: (...a) => this.psExec(process.terminalId, process.id, ...a),
 					list: () => this.psList(),
 					info: (a) => this.psInfo(a || process.id),
 				//	fork: (a) => this.psFork(process.id, a),
@@ -464,10 +501,18 @@
 				}[method](..._arguments);
 			}
 
-			psExec(processId, login, password, path, ..._arguments) {
+			psExec(terminalId, processId, login, password, path, ..._arguments) {
 				let user = this.fsReadPref('Global').Users.filter(v => v.Login == login && v.Password == password)[0],
 					executable = this.fsRead(path);
 
+				if(terminalId && !this.terminals.filter(v => v.id == terminalId)[0]) {
+					this.kdbAdd(`psExec${processId ? '@'+processId : ''}: Terminal incorrect`);
+
+					return;
+				}
+				if(!terminalId) {
+					terminalId = this.terminalCreate();
+				}
 				if(!user) {
 					this.kdbAdd(`psExec${processId ? '@'+processId : ''}: Authorization incorrect`);
 
@@ -482,6 +527,7 @@
 				var process = {
 						id: this.processes.length > 0 ? Math.max(...this.processes.map(v => v.id))+1 : 1,
 						parentId: processId || 0,
+						terminalId: terminalId,
 						user: user.Login,
 						path: path,
 						arguments: _arguments.filter(v => typeof v === 'string'),
@@ -505,6 +551,7 @@
 						psExec: Process started:
 						    ID: ${process.id}
 						    Parent ID: ${process.parentId}
+						    Terminal ID: ${process.terminalId}
 						    User: ${process.user}
 						    Path: ${process.path}
 					`);
@@ -560,6 +607,7 @@
 					infos.push({
 						id: process.id,
 						parentId: process.parentId,
+						terminalId: process.terminalId,
 						user: process.user,
 						path: process.path,
 						arguments: [...process.arguments]
@@ -873,6 +921,34 @@
 		boot load svg {
 			animation: boot_load_svg 1s steps(12) infinite;
 		}
+
+		wormhole,
+		canvas {
+			position: absolute;
+			top: 0;
+			left: 0;
+
+			width: 100%;
+			height: 100%;
+		}
+
+		wormhole > *:not([visible]) {
+			display: none;
+		}
+
+		wormhole div {
+			display: block;
+
+			position: absolute;
+			top: 64px;
+			left: 64px;
+
+			width: 64px;
+			height: 64px;
+
+			background: rgba(50%,50%,50%,1);
+			border-radius: 16px;
+		}
 	</style>
 </head>
 <body>
@@ -891,6 +967,12 @@
 			<svg xmlns:dc="http://purl.org/dc/elements/1.1/"xmlns:cc="http://creativecommons.org/ns#"xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"xmlns:svg="http://www.w3.org/2000/svg"xmlns="http://www.w3.org/2000/svg"width="32"height="32"viewBox="0 0 32 32"version="1.1"id="svg8"> <defs id="defs2" /> <metadata id="metadata5"> <rdf:RDF> <cc:Work rdf:about=""> <dc:format>image/svg+xml</dc:format> <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" /> <dc:title></dc:title> </cc:Work> </rdf:RDF> </metadata> <g id="layer1"transform="translate(0,-1324)"> <g transform="translate(-944,-3674)"id="g1902"> <rect ry="1.5"rx="1.5"y="4998"x="960"height="8"width="3"id="rect1797"style="opacity:1;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal" /> <rect style="opacity:0.55;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal"id="rect1799"width="3"height="8"x="957"y="5022"rx="1.5"ry="1.5" /> <rect transform="rotate(90)"style="opacity:0.325;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal"id="rect1801"width="3"height="8"x="5014"y="-976"rx="1.5"ry="1.5" /> <rect transform="rotate(90)"ry="1.5"rx="1.5"y="-952"x="5011"height="8"width="3"id="rect1803"style="opacity:0.775;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal" /> <rect transform="rotate(30)"style="opacity:0.175;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal"id="rect1805"width="3"height="8"x="3338.3843"y="3846.251"rx="1.5"ry="1.5" /> <rect transform="rotate(30)"ry="1.5"rx="1.5"y="3870.251"x="3335.3843"height="8"width="3"id="rect1807"style="opacity:0.625;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal" /> <rect ry="1.5"rx="1.5"y="-3354.3843"x="3862.251"height="8"width="3"id="rect1809"style="opacity:0.4;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal"transform="rotate(120)" /> <rect style="opacity:0.85;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal"id="rect1811"width="3"height="8"x="3859.251"y="-3330.3843"rx="1.5"ry="1.5"transform="rotate(120)" /> <rect ry="1.5"rx="1.5"y="1659.6155"x="4822.251"height="8"width="3"id="rect1813"style="opacity:0.25;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal"transform="rotate(60)" /> <rect style="opacity:0.7;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal"id="rect1815"width="3"height="8"x="4819.251"y="1683.6155"rx="1.5"ry="1.5"transform="rotate(60)" /> <rect transform="rotate(150)"style="opacity:0.475;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal"id="rect1817"width="3"height="8"x="1675.6155"y="-4838.251"rx="1.5"ry="1.5" /> <rect transform="rotate(150)"ry="1.5"rx="1.5"y="-4814.251"x="1672.6155"height="8"width="3"id="rect1819"style="opacity:0.925;fill:#808080;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:normal" /> </g> </g> </svg>
 		</load>
 	</boot>
+	<!--
+	<wormhole>
+		<div></div>
+	</wormhole>
+	-->
+	<canvas></canvas>
 	<script>
 		try {
 		//	Opium.verbose(true);
@@ -899,7 +981,7 @@
 				e.data.Opium.psExec(undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
 			`);
 			*/
-			Opium.psExec(undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
+			Opium.psExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
 
 			Opium.bootLoad(false);
 		} catch(error) {

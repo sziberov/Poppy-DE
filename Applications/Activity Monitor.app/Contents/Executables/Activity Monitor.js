@@ -70,12 +70,14 @@ return class {
 						new LFView({ subviews: [
 							new LFView({ type: 'vertical', tight: true, subviews: [
 								new LFText({ string: 'Process', size: 'small', weight: 'bold' }),
+								new LFText({ string: 'Terminal', size: 'small', weight: 'bold' }),
 								new LFText({ string: 'User', size: 'small', weight: 'bold' }),
 								new LFText({ string: 'Bundle', size: 'small', weight: 'bold' }),
 								new LFText({ string: 'Identifier', size: 'small', weight: 'bold' })
 							] }),
 							new LFView({ type: 'vertical', tight: true, subviews: [
 								new LFText({ string: process.path.split('/').pop()+' ('+process.id+')', size: 'small' }),
+								new LFText({ string: process.terminalId, size: 'small' }),
 								new LFText({ string: process.user, size: 'small' }),
 								new LFText({ string: application.bundle.URL, size: 'small' }),
 								new LFText({ string: application.identifier, size: 'small' })
