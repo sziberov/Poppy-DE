@@ -12,26 +12,24 @@
 			constructor() {
 				this.extensionExec();
 
-				this.framebuffer = {
-					frame: undefined,
-					colors: {
-						black:		'rgb(0%,0%,0%)',
-						darkGray:	'rgb(25%,25%,25%)',
-						gray:		'rgb(50%,50%,50%)',
-						lightGray:	'rgb(75%,75%,75%)',
-						white:		'rgb(100%,100%,100%)',
-						yellow:		'rgb(100%,100%,0%)',
-						orange:		'rgb(100%,50%,0%)',
-						red:		'rgb(100%,0%,0%)',
-						magenta:	'rgb(100%,0%,100%)',
-						purple:		'rgb(50%,0%,50%)',
-						blue:		'rgb(0%,0%,100%)',
-						cyan:		'rgb(0%,50%,100%)',
-						green:		'rgb(0%,75%,0%)',
-						darkGreen:	'rgb(0%,25%,0%)',
-						brown:		'rgb(50%,25%,0%)',
-						tan:		'rgb(75%,50%,25%)'
-					}
+				this.framebuffer;
+				this.colors = {
+					black:		'rgb(0%,0%,0%)',
+					darkGray:	'rgb(25%,25%,25%)',
+					gray:		'rgb(50%,50%,50%)',
+					lightGray:	'rgb(75%,75%,75%)',
+					white:		'rgb(100%,100%,100%)',
+					yellow:		'rgb(100%,100%,0%)',
+					orange:		'rgb(100%,50%,0%)',
+					red:		'rgb(100%,0%,0%)',
+					magenta:	'rgb(100%,0%,100%)',
+					purple:		'rgb(50%,0%,50%)',
+					blue:		'rgb(0%,0%,100%)',
+					cyan:		'rgb(0%,50%,100%)',
+					green:		'rgb(0%,75%,0%)',
+					darkGreen:	'rgb(0%,25%,0%)',
+					brown:		'rgb(50%,25%,0%)',
+					tan:		'rgb(75%,50%,25%)'
 				}
 				this.handlers = []
 				this.eventsReserved = ['dateChanged', 'processListChanged']
@@ -62,9 +60,9 @@
 					});
 				}
 				*/
-				document.addEventListener('DOMContentLoaded', () => {
-					this.framebuffer.frame = document.getElementsByTagName('canvas')[0].getContext('2d');
-				//	this.fbClear();
+				$(() => {
+					this.framebuffer = $('framebuffer img');
+					this.fbFrameWrite('');
 					this.timerCreate(undefined, 'multiple', 1000, () => {
 						this.eventThrow(undefined, 'dateChanged');
 					});
@@ -154,91 +152,13 @@
 				}
 			}
 
-			get fbDimensions() {
-				return {
-					width: this.framebuffer.frame.canvas.clientWidth,
-					height: this.framebuffer.frame.canvas.clientHeight
-				}
-			}
-
-			get fbFrame() {
-				return this.framebuffer.frame.toDataURL('png');
-			}
-
-			set fbFrame(value) {
-			//	imageElem.src = 'data:image/jpeg;base64,' + buf.toString('base64');
-			}
-
-			/*
-			get fbStyle() {
-				let a = {}
-
-				for(let k in this.framebuffer.frame) {
-					if([
-						'direction',
-						'fillStyle',
-						'filter',
-						'font',
-						'globalAlpha',
-						'globalCompositeOperation',
-						'imageSmoothingEnabled',
-						'imageSmoothingQuality',
-						'lineCap',
-						'lineDashOffset',
-						'lineJoin',
-						'lineWidth',
-						'miterLimit',
-						'shadowBlur',
-						'shadowColor',
-						'shadowOffsetX',
-						'shadowOffsetY',
-						'strokeStyle',
-						'textAlign',
-						'textBaseline'
-					].includes(k)) {
-						a[k] = this.framebuffer.frame[k]
-					}
-				}
-
-				return a;
-			}
-
-			fbDraw(type, ..._arguments) {
-				return {
-					rectangle: (x, y, width, height, color) => {
-						this.framebuffer.frame.fillStyle = color;
-						this.framebuffer.frame.fillRect(x, y, width, height);
-					},
-					image: (x, y, path) => {
-						this.framebuffer.frame.drawImage(path, x, y);
-					},
-					text: (x, y, string, fontSize, fontPath) => {
-
-					}
-				}[type](..._arguments);
-			}
-
-			fbPaste(type, x, y, width, height, toX, toY) {
-				if(!['copy', 'move'].includes(type)) {
-					return;
-				}
-
-				let data = this.framebuffer.frame.getImageData(x, y, width, height);
-
-				if(type == 'move') {
-					this.fbDraw('rectangle', x, y, width, height, 'rgba(0%,0%,0%,1)');
-				}
-				this.framebuffer.frame.putImageData(data, toX, toY);
-			}
-			*/
-
-			fbClear() {
-				this.fbDraw('rectangle', 0, 0, this.fbDimensions.width, this.fbDimensions.height, 'rgba(0%,0%,0%,1)');
-			}
-
 			fsRead(a) {
 				try {
-					return require('fs').readFileSync('.'+a, 'utf8');
+					if(a.endsWith('.png')) {
+						return require('fs').readFileSync('.'+a);
+					} else {
+						return require('fs').readFileSync('.'+a).toString();
+					}
 				} catch(error) {
 					return undefined;
 				}
@@ -248,7 +168,7 @@
 				try {
 					let event = this.fsRead(a) ? 'written' : 'created';
 
-					require('fs').writeFileSync('.'+a, b.toString(), { flag: 'w' });
+					require('fs').writeFileSync('.'+a, b, { flag: 'w' });	// b.toString();
 					this.eventThrow(undefined, 'fsChanged', { event: event, value: a });
 
 					return true;
@@ -301,6 +221,103 @@
 				}
 			}
 
+			get fbDimensions() {
+				let a = this.framebuffer.getBoundingClientRect();
+
+				return {
+					width: a.width,
+					height: a.height
+				}
+			}
+
+			fbFrameRead() {
+				return Buffer.from(this.framebuffer.attr('src').replace('data:image/png;base64,', ''), 'base64');
+			}
+
+			fbFrameWrite(value) {
+				if(value == undefined) {
+					return;
+				}
+
+				if(value == '') {
+					value = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+				} else
+				if(value instanceof Buffer) {
+					value = value.toString('base64');
+				}
+
+			//	value = this.fbFrameRead();
+
+				this.framebuffer.attr('src', 'data:image/png;base64,'+value);
+			}
+
+			/*
+			get fbStyle() {
+				let a = {}
+
+				for(let k in this.framebuffer) {
+					if([
+						'direction',
+						'fillStyle',
+						'filter',
+						'font',
+						'globalAlpha',
+						'globalCompositeOperation',
+						'imageSmoothingEnabled',
+						'imageSmoothingQuality',
+						'lineCap',
+						'lineDashOffset',
+						'lineJoin',
+						'lineWidth',
+						'miterLimit',
+						'shadowBlur',
+						'shadowColor',
+						'shadowOffsetX',
+						'shadowOffsetY',
+						'strokeStyle',
+						'textAlign',
+						'textBaseline'
+					].includes(k)) {
+						a[k] = this.framebuffer[k]
+					}
+				}
+
+				return a;
+			}
+
+			fbDraw(type, ..._arguments) {
+				return {
+					rectangle: (x, y, width, height, color) => {
+						this.framebuffer.fillStyle = color;
+						this.framebuffer.fillRect(x, y, width, height);
+					},
+					image: (x, y, path) => {
+						this.framebuffer.drawImage(path, x, y);
+					},
+					text: (x, y, string, fontSize, fontPath) => {
+
+					}
+				}[type](..._arguments);
+			}
+
+			fbPaste(type, x, y, width, height, toX, toY) {
+				if(!['copy', 'move'].includes(type)) {
+					return;
+				}
+
+				let data = this.framebuffer.getImageData(x, y, width, height);
+
+				if(type == 'move') {
+					this.fbDraw('rectangle', x, y, width, height, 'rgba(0%,0%,0%,1)');
+				}
+				this.framebuffer.putImageData(data, toX, toY);
+			}
+
+			fbClear() {
+				this.fbDraw('rectangle', 0, 0, this.fbDimensions.width, this.fbDimensions.height, 'rgba(0%,0%,0%,1)');
+			}
+			*/
+
 			eventThrow(process, event, ..._arguments) {
 				if(process && this.eventsReserved.includes(event)) {
 					this.kdbAdd(`
@@ -332,7 +349,7 @@
 					type: 'event',
 					process: process || undefined,
 					event: event,
-					function: _function,
+					function: _function
 				});
 				this.kdbAdd(`
 					eventCatch${process ? '@'+process.id : ''}: Successfully set handler:
@@ -545,6 +562,102 @@
 				this.kdbAdd(`
 					seRemove${process ? '@'+process.id : ''}: Successfully removed handler:
 					    ID: ${handler.id}
+				`);
+			}
+
+			drCreate(width, height) {
+				if(typeof width !== 'number' || typeof height !== 'number') {
+					this.kdbAdd(`drCreate${process ? '@'+process.id : ''}: Dimensions incorrect`);
+
+					return;
+				}
+
+				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1,
+					canvas = $('<canvas/>')[0];
+
+				canvas.width = width;
+				canvas.height = height;
+				this.handlers.push({
+					id: id,
+					type: 'dr',
+					process: process || undefined,
+					canvas: canvas
+				});
+				this.kdbAdd(`
+					drCreate${process ? '@'+process.id : ''}: Successfully set handler:
+					    ID: ${id}
+					    Width: ${'"'+width+'"'}
+					    Height: ${'"'+height+'"'}
+				`);
+
+				return id;
+			}
+
+			drGet(process, handlerId) {
+				let handler = this.handlers.filter(v => v.id == handlerId && v.type == 'dr')[0]
+
+				if(!handler) {
+					this.kdbAdd(`drGet${process ? '@'+process.id : ''}: Unable to find handler`);
+
+					return;
+				}
+				if(process && handler.process !== process) {
+					this.kdbAdd(`drGet@${process.id}: Processes aren't allowed to get not owned handlers`);
+
+					return;
+				}
+
+				let context = handler.canvas.getContext('2d');
+
+				return {
+					drawRectangle: (x, y, width, height, color) => {
+						context.fillStyle = color;
+						context.fillRect(x, y, width, height);
+					},
+					drawImage: (x, y, path) => {
+						context.drawImage(this.drOpen(path), x, y);
+					},
+					drawText: (x, y, string, fontWeight, fontSize, fontPath) => {
+
+					},
+					getRaw: () => {
+						return Buffer.from(handler.canvas.toDataURL('png').replace('data:image/png;base64,', ''), 'base64');
+					}
+				}
+			}
+
+			drOpen(a) {
+				if(!a instanceof Buffer) {
+					return;
+				}
+
+				let image = new Image();
+
+				image.src = 'data:image/png;base64,'+a.toString('base64');
+
+				return image;
+			}
+
+			drRemove(process, handlerId) {
+				let handler = this.handlers.filter(v => v.id == handlerId && v.type == 'dr')[0]
+
+				if(!handler) {
+					this.kdbAdd(`drRemove${process ? '@'+process.id : ''}: Unable to find handler`);
+
+					return;
+				}
+				if(process && handler.process !== process) {
+					this.kdbAdd(`drRemove@${process.id}: Processes aren't allowed to remove not owned handlers`);
+
+					return;
+				}
+
+				this.handlers = this.handlers.filter(v => v !== handler);
+				this.kdbAdd(`
+					drRemove${process ? '@'+process.id : ''}: Successfully removed handler:
+					    ID: ${handler.id}
+					    Width: ${'"'+handler.canvas.width+'"'}
+					    Height: ${'"'+handler.canvas.height+'"'}
 				`);
 			}
 
@@ -804,6 +917,9 @@
 					} else
 					if(v.type == 'se') {
 						this.seRemove(process, v.id);
+					} else
+					if(v.type == 'dr') {
+						this.drRemove(process, v.id);
 					}
 				}
 				this.processes = this.processes.filter(v => v !== process);
@@ -1063,7 +1179,9 @@
 		}
 
 		wormhole,
-		canvas {
+		canvas,
+		framebuffer,
+		framebuffer img {
 			position: absolute;
 			top: 0;
 			left: 0;
@@ -1111,8 +1229,11 @@
 	<wormhole>
 		<div></div>
 	</wormhole>
-	-->
 	<canvas></canvas>
+	-->
+	<framebuffer>
+		<img>
+	</framebuffer>
 	<script>
 		try {
 		//	Opium.verbose(true);
