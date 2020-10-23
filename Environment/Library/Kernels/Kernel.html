@@ -13,11 +13,28 @@
 				this.extensionExec();
 
 				this.framebuffer = {
-					canvas: undefined,
-					frame: undefined
+					frame: undefined,
+					colors: {
+						black:		'rgb(0%,0%,0%)',
+						darkGray:	'rgb(25%,25%,25%)',
+						gray:		'rgb(50%,50%,50%)',
+						lightGray:	'rgb(75%,75%,75%)',
+						white:		'rgb(100%,100%,100%)',
+						yellow:		'rgb(100%,100%,0%)',
+						orange:		'rgb(100%,50%,0%)',
+						red:		'rgb(100%,0%,0%)',
+						magenta:	'rgb(100%,0%,100%)',
+						purple:		'rgb(50%,0%,50%)',
+						blue:		'rgb(0%,0%,100%)',
+						cyan:		'rgb(0%,50%,100%)',
+						green:		'rgb(0%,75%,0%)',
+						darkGreen:	'rgb(0%,25%,0%)',
+						brown:		'rgb(50%,25%,0%)',
+						tan:		'rgb(75%,50%,25%)'
+					}
 				}
 				this.handlers = []
-				this.eventsReserved = ['dateChanged', 'psListChanged']
+				this.eventsReserved = ['dateChanged', 'processListChanged']
 				this.terminals = []
 				this.processes = []
 				this.environment = {
@@ -46,8 +63,8 @@
 				}
 				*/
 				document.addEventListener('DOMContentLoaded', () => {
-					this.framebuffer.canvas = document.getElementsByTagName('canvas')[0]
-					this.framebuffer.frame = this.framebuffer.canvas.getContext('2d');
+					this.framebuffer.frame = document.getElementsByTagName('canvas')[0].getContext('2d');
+				//	this.fbClear();
 					this.timerCreate(undefined, 'multiple', 1000, () => {
 						this.eventThrow(undefined, 'dateChanged');
 					});
@@ -137,6 +154,88 @@
 				}
 			}
 
+			get fbDimensions() {
+				return {
+					width: this.framebuffer.frame.canvas.clientWidth,
+					height: this.framebuffer.frame.canvas.clientHeight
+				}
+			}
+
+			get fbFrame() {
+				return this.framebuffer.frame.toDataURL('png');
+			}
+
+			set fbFrame(value) {
+			//	imageElem.src = 'data:image/jpeg;base64,' + buf.toString('base64');
+			}
+
+			/*
+			get fbStyle() {
+				let a = {}
+
+				for(let k in this.framebuffer.frame) {
+					if([
+						'direction',
+						'fillStyle',
+						'filter',
+						'font',
+						'globalAlpha',
+						'globalCompositeOperation',
+						'imageSmoothingEnabled',
+						'imageSmoothingQuality',
+						'lineCap',
+						'lineDashOffset',
+						'lineJoin',
+						'lineWidth',
+						'miterLimit',
+						'shadowBlur',
+						'shadowColor',
+						'shadowOffsetX',
+						'shadowOffsetY',
+						'strokeStyle',
+						'textAlign',
+						'textBaseline'
+					].includes(k)) {
+						a[k] = this.framebuffer.frame[k]
+					}
+				}
+
+				return a;
+			}
+
+			fbDraw(type, ..._arguments) {
+				return {
+					rectangle: (x, y, width, height, color) => {
+						this.framebuffer.frame.fillStyle = color;
+						this.framebuffer.frame.fillRect(x, y, width, height);
+					},
+					image: (x, y, path) => {
+						this.framebuffer.frame.drawImage(path, x, y);
+					},
+					text: (x, y, string, fontSize, fontPath) => {
+
+					}
+				}[type](..._arguments);
+			}
+
+			fbPaste(type, x, y, width, height, toX, toY) {
+				if(!['copy', 'move'].includes(type)) {
+					return;
+				}
+
+				let data = this.framebuffer.frame.getImageData(x, y, width, height);
+
+				if(type == 'move') {
+					this.fbDraw('rectangle', x, y, width, height, 'rgba(0%,0%,0%,1)');
+				}
+				this.framebuffer.frame.putImageData(data, toX, toY);
+			}
+			*/
+
+			fbClear() {
+				this.fbDraw('rectangle', 0, 0, this.fbDimensions.width, this.fbDimensions.height, 'rgba(0%,0%,0%,1)');
+			}
+
 			fsRead(a) {
 				try {
 					return require('fs').readFileSync('.'+a, 'utf8');
@@ -184,17 +283,22 @@
 				return b ? JSON.parse(b) : undefined;
 			}
 
-			terminalCreate(process) {
-				let id = this.terminals.length > 0 ? Math.max(...this.terminals.map(v => v.id))+1 : 1;
+			extensionExec(...a) {
+				var a = Array.isArray(a) ? a : []
 
-				this.terminals.push({
-					id: id,
-					parentId: process?.terminalId || 0,
-					mode: 'text',	// 'graphics'
-					current: this.terminals.some(v => v.current) ? false : true
-				});
+				if(a.length == 0) {
+					for(let v of this.fsReadDir('/Environment/Library/Extensions')) {
+						a.push(v.name.replace('.kext', ''));
+					}
+				}
+				for(let v of a) {
+					let b = `/Environment/Library/Extensions/${v}.kext/Contents/Executables/${v}.js`;
 
-				return id;
+					if(this.fsRead(b)) {
+					//  window[v] = require(`../Extensions/${v}.kext/Contents/Modules/${v}.js`);
+						new Function(this.fsRead(b))();
+					}
+				}
 			}
 
 			eventThrow(process, event, ..._arguments) {
@@ -444,22 +548,58 @@
 				`);
 			}
 
-			extensionExec(...a) {
-				var a = Array.isArray(a) ? a : []
+			terminalCreate(process) {
+				let id = this.terminals.length > 0 ? Math.max(...this.terminals.map(v => v.id))+1 : 1;
 
-				if(a.length == 0) {
-					for(let v of this.fsReadDir('/Environment/Library/Extensions')) {
-						a.push(v.name.replace('.kext', ''));
-					}
-				}
-				for(let v of a) {
-					let b = `/Environment/Library/Extensions/${v}.kext/Contents/Executables/${v}.js`;
+				this.terminals.push({
+					id: id,
+					parentId: process?.terminalId || 0,
+					mode: 'text',	// 'graphics'
+					current: this.terminals.some(v => v.current) ? false : true,
+					strings: []
+				});
 
-					if(this.fsRead(b)) {
-					//  window[v] = require(`../Extensions/${v}.kext/Contents/Modules/${v}.js`);
-						new Function(this.fsRead(b))();
-					}
+				return id;
+			}
+
+			terminalRemove(process, terminalId) {
+				let terminal = this.terminals.filter(v => v.id == terminalId)[0]
+
+				if(!terminal) {
+					this.kdbAdd(`terminalRemove${process ? '@'+process.id : ''}: Unable to find terminal`);
+
+					return;
 				}
+				if(process && process.terminalId !== terminalId) {
+					this.kdbAdd(`terminalRemove@${process.id}: Processes aren't allowed to do output into non-parent terminals`);
+
+					return;
+				}
+			}
+
+			terminalOutput(process, terminalId, string) {
+				let terminal = this.terminals.filter(v => v.id == terminalId)[0]
+
+				if(!terminal) {
+					this.kdbAdd(`terminalOutput${process ? '@'+process.id : ''}: Unable to find terminal`);
+
+					return;
+				}
+				if(process && process.terminalId !== terminalId) {
+					this.kdbAdd(`terminalOutput@${process.id}: Processes aren't allowed to do output into non-parent terminals`);
+
+					return;
+				}
+
+				let id = terminal.strings.length > 0 ? Math.max(...terminal.strings.map(v => v.id))+1 : 1
+
+				terminal.strings.push({
+					id: id,
+					process: process || undefined,
+					value: string
+				});
+
+				return id;
 			}
 
 			sbCreate(a) {
@@ -470,7 +610,7 @@
 				return require('vm').runInContext(a, b);
 			}
 
-			psRequest(process, method, ..._arguments) {
+			processRequest(process, method, ..._arguments) {
 				return {
 					version: (a) => this.version[a],
 					read: (a) => this.fsRead(a),
@@ -488,25 +628,25 @@
 					seList: (a) => this.seList(a || process.id),
 					seInfo: (a) => this.seInfo(process, a),
 					seRemove: (a) => this.seRemove(process, a),
-					exec: (...a) => this.psExec(process.terminalId, process.id, ...a),
-					list: () => this.psList(),
-					info: (a) => this.psInfo(a || process.id),
-				//	fork: (a) => this.psFork(process.id, a),
-					kill: (a) => this.psKill(a || process.id),
+					exec: (...a) => this.processExec(process.terminalId, process.id, ...a),
+					list: () => this.processList(),
+					info: (a) => this.processInfo(a || process.id),
+				//	fork: (a) => this.processFork(process.id, a),
+					kill: (a) => this.processKill(a || process.id),
 					import: (...a) => this.classImport(process, ...a),
 					single: (a) => this.classSingle(a),
 					system: () => this.system(),
-					relaunch: () => this.etRelaunch(process),
-					quit: () => this.etQuit(process)
+					relaunch: () => this.environmentRelaunch(process),
+					quit: () => this.environmentQuit(process)
 				}[method](..._arguments);
 			}
 
-			psExec(terminalId, processId, login, password, path, ..._arguments) {
+			processExec(terminalId, processId, login, password, path, ..._arguments) {
 				let user = this.fsReadPref('Global').Users.filter(v => v.Login == login && v.Password == password)[0],
 					executable = this.fsRead(path);
 
 				if(terminalId && !this.terminals.filter(v => v.id == terminalId)[0]) {
-					this.kdbAdd(`psExec${processId ? '@'+processId : ''}: Terminal incorrect`);
+					this.kdbAdd(`processExec${processId ? '@'+processId : ''}: Terminal incorrect`);
 
 					return;
 				}
@@ -514,12 +654,12 @@
 					terminalId = this.terminalCreate();
 				}
 				if(!user) {
-					this.kdbAdd(`psExec${processId ? '@'+processId : ''}: Authorization incorrect`);
+					this.kdbAdd(`processExec${processId ? '@'+processId : ''}: Authorization incorrect`);
 
 					return;
 				}
 				if(!executable.startsWith('return class {') || !executable.endsWith('}')) {
-					this.kdbAdd(`psExec${processId ? '@'+processId : ''}: Nonexecutable format`);
+					this.kdbAdd(`processExec${processId ? '@'+processId : ''}: Non-executable format`);
 
 					return;
 				}
@@ -534,10 +674,10 @@
 						environment: undefined
 					}
 					process.environment = this.sbCreate(new Proxy({
-						_request: (...a) => this.psRequest(process, ...a),
-					//	_fork: (...a) => this.psRequest(process, 'fork', ...a),
-						_import: (...a) => this.psRequest(process, 'import', ...a),
-						_single: (...a) => this.psRequest(process, 'single', ...a)
+						_request: (...a) => this.processRequest(process, ...a),
+					//	_fork: (...a) => this.processRequest(process, 'fork', ...a),
+						_import: (...a) => this.processRequest(process, 'import', ...a),
+						_single: (...a) => this.processRequest(process, 'single', ...a)
 					}, {
 						get: (target, key) => {
 							return key == '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key == 'require' ? undefined : target[key] || this.environment[key]
@@ -548,21 +688,21 @@
 				try {
 					this.sbExec(`var _executable = new ((() => { ${executable} })())(..._arguments);`, process.environment);
 					this.kdbAdd(`
-						psExec: Process started:
+						processExec: Process started:
 						    ID: ${process.id}
 						    Parent ID: ${process.parentId}
 						    Terminal ID: ${process.terminalId}
 						    User: ${process.user}
 						    Path: ${process.path}
 					`);
-					this.eventThrow(undefined, 'psListChanged', { event: 'added', value: process.id });
+					this.eventThrow(undefined, 'processListChanged', { event: 'added', value: process.id });
 
-					return this.psInfo(process.id);
+					return this.processInfo(process.id);
 				} catch(error) {
 					error.fileName = process.path;
 					this.processes = this.processes.filter(v => v !== process);
-					this.kdbAdd(`psExec: Process stopped: "${error.name}: ${error.message}":`, error.stack);
-					this.eventThrow(undefined, 'psListChanged', { event: 'removed', value: process.id });
+					this.kdbAdd(`processExec: Process stopped: "${error.name}: ${error.message}":`, error.stack);
+					this.eventThrow(undefined, 'processListChanged', { event: 'removed', value: process.id });
 
 					throw error;
 				}
@@ -581,11 +721,11 @@
 			}
 			*/
 
-			psList() {
+			processList() {
 				return this.processes.map(v => v.id);
 			}
 
-			psInfo(processSearch) {
+			processInfo(processSearch) {
 				let infos = [],
 					processes =
 						typeof processSearch == 'number' ? this.processes.filter(v => v.id == processSearch) :
@@ -593,12 +733,12 @@
 						undefined;
 
 				if(!['number', 'string'].includes(typeof processSearch)) {
-					this.kdbAdd(`psInfo${process ? '@'+process.id : ''}: Search incorrect`);
+					this.kdbAdd(`processInfo${process ? '@'+process.id : ''}: Search incorrect`);
 
 					return;
 				}
 				if(processes.length == 0) {
-					this.kdbAdd(`psInfo${process ? '@'+process.id : ''}: Unable to find processes`);
+					this.kdbAdd(`processInfo${process ? '@'+process.id : ''}: Unable to find processes`);
 
 					return;
 				}
@@ -618,13 +758,13 @@
 			}
 
 			/*
-			psFork(processId, key) {
+			processFork(processId, key) {
 				let a = (b) => {
-						b = this.psInfo(b);
+						b = this.processInfo(b);
 
 						if(b && b.environment) {
 							if(b.environment[key]) {
-								this.kdbAdd(`psFork: Successfully forked "${key}" into child process: ${b.id} -> ${processId}`);
+								this.kdbAdd(`processFork: Successfully forked "${key}" into child process: ${b.id} -> ${processId}`);
 
 								return b.environment[key]
 							} else
@@ -636,16 +776,16 @@
 						}
 					}
 
-				return a(this.psInfo(processId).parentId);
+				return a(this.processInfo(processId).parentId);
 			}
 			*/
 
-			psKill(processId) {
+			processKill(processId) {
 				let process = this.processes.filter(v => v.id == processId)[0],
 					b;
 
 				if(!process) {
-					this.kdbAdd(`psKill: Unable to find process`);
+					this.kdbAdd(`processKill: Unable to find process`);
 
 					return;
 				}
@@ -668,13 +808,13 @@
 				}
 				this.processes = this.processes.filter(v => v !== process);
 				this.kdbAdd(`
-					psKill: Process removed:
+					processKill: Process removed:
 					    ID: ${process.id}
 				`);
 				if(b) {
 					this.kdbAdd(`    Deconstructor failed:`, error.stack)
 				}
-				this.eventThrow(undefined, 'psListChanged', { event: 'removed', value: process.id });
+				this.eventThrow(undefined, 'processListChanged', { event: 'removed', value: process.id });
 			}
 
 			classImport(process, fwTitle, moduleTitle) {
@@ -736,7 +876,7 @@
 				return require('os');
 			}
 
-			etRelaunch(process) {
+			environmentRelaunch(process) {
 				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process.user)[0]?.Group;
 
 				if(group == 0) {
@@ -744,7 +884,7 @@
 				}
 			}
 
-			etQuit(process) {
+			environmentQuit(process) {
 				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process.user)[0]?.Group;
 
 				if(group == 0) {
@@ -978,10 +1118,10 @@
 		//	Opium.verbose(true);
 			/*
 			Opium.wtExec(`
-				e.data.Opium.psExec(undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
+				e.data.Opium.processExec(undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
 			`);
 			*/
-			Opium.psExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
+			Opium.processExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
 
 			Opium.bootLoad(false);
 		} catch(error) {

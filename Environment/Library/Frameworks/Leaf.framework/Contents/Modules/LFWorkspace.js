@@ -12,7 +12,7 @@ return _CFShared.@Title || _single(class extends LFView {
 		this.desktopImage = this.desktopImage;
 
 		this.subviews.add(new LFMenubar({ transparent: true }));
-		CFEventEmitter.addHandler('psListChanged', (a) => {
+		CFEventEmitter.addHandler('processListChanged', (a) => {
 			if(a.event == 'removed') {
 				let application = this.launchedApplications.filter(v => v.processIdentifier == a.value)[0],
 					menu = new LFMenubar().applicationMenu,
