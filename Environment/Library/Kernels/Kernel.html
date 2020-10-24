@@ -62,7 +62,7 @@
 				*/
 				$(() => {
 					this.framebuffer = $('framebuffer img');
-					this.fbFrameWrite('');
+					this.fbWrite('');
 					this.timerCreate(undefined, 'multiple', 1000, () => {
 						this.eventThrow(undefined, 'dateChanged');
 					});
@@ -230,11 +230,11 @@
 				}
 			}
 
-			fbFrameRead() {
+			fbRead() {
 				return Buffer.from(this.framebuffer.attr('src').replace('data:image/png;base64,', ''), 'base64');
 			}
 
-			fbFrameWrite(value) {
+			fbWrite(value) {
 				if(value == undefined) {
 					return;
 				}
@@ -245,8 +245,6 @@
 				if(value instanceof Buffer) {
 					value = value.toString('base64');
 				}
-
-			//	value = this.fbFrameRead();
 
 				this.framebuffer.attr('src', 'data:image/png;base64,'+value);
 			}
@@ -283,21 +281,6 @@
 				}
 
 				return a;
-			}
-
-			fbDraw(type, ..._arguments) {
-				return {
-					rectangle: (x, y, width, height, color) => {
-						this.framebuffer.fillStyle = color;
-						this.framebuffer.fillRect(x, y, width, height);
-					},
-					image: (x, y, path) => {
-						this.framebuffer.drawImage(path, x, y);
-					},
-					text: (x, y, string, fontSize, fontPath) => {
-
-					}
-				}[type](..._arguments);
 			}
 
 			fbPaste(type, x, y, width, height, toX, toY) {
@@ -565,7 +548,7 @@
 				`);
 			}
 
-			drCreate(width, height) {
+			drCreate(process, width, height) {
 				if(typeof width !== 'number' || typeof height !== 'number') {
 					this.kdbAdd(`drCreate${process ? '@'+process.id : ''}: Dimensions incorrect`);
 
@@ -622,6 +605,10 @@
 					},
 					getRaw: () => {
 						return Buffer.from(handler.canvas.toDataURL('png').replace('data:image/png;base64,', ''), 'base64');
+					},
+					setDimensions: (width, height) => {
+						handler.canvas.width = width;
+						handler.canvas.height = height;
 					}
 				}
 			}
