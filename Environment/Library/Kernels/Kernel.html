@@ -109,8 +109,8 @@
 				}
 			}
 
-			verbose(a) {
-				if(a == true) {
+			set verbose(value) {
+				if(value == true) {
 					$('kdb, boot').attr('verbose', '');
 				} else {
 					$('kdb, boot').removeAttr('verbose');
@@ -303,7 +303,10 @@
 
 				if(data instanceof Buffer) {
 					data = data.toString('base64');
-					format = format == 'png' ? 'png' : format == 'svg' ? 'svg+xml' : 'png';
+					format =
+						format == 'png' ? 'png' :
+						format == 'svg' ? 'svg+xml' :
+						'png';
 				} else {
 					format = [...data.matchAll(regex)][0][1]
 					data = data.replace(regex, '');
@@ -376,7 +379,7 @@
 			}
 
 			drClear(canvas, x, y, width, height) {
-				if(!x && !y && !width && !height) {
+				if(!(x && y && width && height)) {
 					x =
 					y = 0;
 					width = canvas.width;
@@ -1272,10 +1275,10 @@
 	</framebuffer>
 	<script>
 		try {
-		//	Opium.verbose(true);
+		//	Opium.verbose = true;
 			/*
 			Opium.wtExec(`
-				e.data.Opium.processExec(undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
+				e.data.Opium.processExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
 			`);
 			*/
 			Opium.processExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
