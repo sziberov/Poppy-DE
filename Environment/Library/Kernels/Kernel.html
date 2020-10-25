@@ -60,9 +60,18 @@
 					});
 				}
 				*/
-				$(() => {
+				$(async () => {
 					this.framebuffer = $('framebuffer img');
-					this.fbWrite('');
+				//	await this.fbWrite('');
+
+				//	let canvas = this.drCreate(this.display.width, this.display.height),
+				//		image = await this.drOpen(this.fsRead('/drawing.png'));
+
+				//	this.drDraw(canvas, 'image', image, 0, 0, '100', '100');
+				//	await this.fbWrite(this.drRaw(canvas));
+				//	this.drDraw(canvas, 'rectangle', 60, 50, 50, 50, this.colors.yellow);
+				//	await this.fbWrite(this.drRaw(canvas));
+
 					this.timerCreate(undefined, 'multiple', 1000, () => {
 						this.eventThrow(undefined, 'dateChanged');
 					});
@@ -84,6 +93,15 @@
 
 			get uptime() {
 				return new Date(Date.now()-this.#uptime).getTime();
+			}
+
+			get display() {
+				let a = require('nw.gui').Window.get();
+
+				return {
+					width: a.width,
+					height: a.height
+				}
 			}
 
 			verbose(a) {
@@ -221,39 +239,152 @@
 				}
 			}
 
-			get fbDimensions() {
-				let a = this.framebuffer.getBoundingClientRect();
-
-				return {
-					width: a.width,
-					height: a.height
-				}
-			}
-
 			fbRead() {
-				return Buffer.from(this.framebuffer.attr('src').replace('data:image/png;base64,', ''), 'base64');
+				let a;
+
+				if(this.framebuffer.attr('src')?.length > 0) {
+					a = Buffer.from(Buffer.from(this.framebuffer.attr('src').replace('data:image/png;base64,', ''), 'base64'));
+				} else {
+					a = this.drRaw(this.drCreate(this.display.width, this.display.height));
+				}
+
+				return a;
 			}
 
-			fbWrite(value) {
-				if(value == undefined) {
+			async fbWrite(value) {
+				if(value !== '' && !value instanceof Buffer) {
 					return;
 				}
 
+				let canvas = await this.drOpen(this.fbRead());
+
 				if(value == '') {
-					value = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-				} else
+					this.drDraw(canvas, 'rectangle', 0, 0, canvas.width, canvas.height, this.colors.black);
+				}
 				if(value instanceof Buffer) {
-					value = value.toString('base64');
+					this.drDraw(canvas, 'image', await this.drOpen(value));
 				}
 
-				this.framebuffer.attr('src', 'data:image/png;base64,'+value);
+				this.framebuffer.attr('src', 'data:image/png;base64,'+this.drRaw(canvas).toString('base64'));
+				this.eventThrow(undefined, 'fbChanged');
 			}
 
-			/*
-			get fbStyle() {
-				let a = {}
+			drCreate(width, height) {
+				if(typeof width !== 'number' || typeof height !== 'number') {
+					return;
+				}
 
-				for(let k in this.framebuffer) {
+				let canvas = $('<canvas/>')[0]
+
+				canvas.width = width;
+				canvas.height = height;
+
+				return canvas;
+			}
+
+			async drOpen(file) {
+				if(!file instanceof Buffer) {
+					return;
+				}
+
+				/*
+				let imageDimensions = {
+						width: file.toString('ascii', 12, 16) === 'CgBI' ? file.readUInt32BE(32) : file.readUInt32BE(16),
+						height: file.toString('ascii', 12, 16) === 'CgBI' ? file.readUInt32BE(36) : file.readUInt32BE(20)
+					},
+					image = new ImageData(new Uint8ClampedArray(file), imageDimensions.width, imageDimensions.height),
+					canvas = this.drCreate(imageDimensions.width, imageDimensions.height);
+				*/
+
+				let image,
+					canvas;
+
+				await (async () => new Promise((resolved) => {
+					image = $('<img>')[0]
+
+					image.onload = () => resolved(image);
+					image.src = 'data:image/png;base64,'+file.toString('base64');
+				}))();
+
+				canvas = this.drCreate(image.width, image.height);
+
+				canvas.getContext('2d').drawImage(image, 0, 0);
+
+				return canvas;
+			}
+
+			drDraw(canvas, type, ..._arguments) {
+				let context = canvas.getContext('2d');
+
+				return {
+					rectangle: (x, y, width, height, color) => {
+						context.fillStyle = color;
+						context.fillRect(x, y, width, height);
+					},
+					image: (_canvas, x, y, width, height) => {
+						let _context = _canvas.getContext('2d');
+
+						if(typeof width == 'string') {
+							width = parseInt(width)/100*canvas.width;
+						}
+						if(typeof height == 'string') {
+							height = parseInt(height)/100*canvas.height;
+						}
+
+						context.drawImage(_canvas, 0, 0, _canvas.width, _canvas.height, x || 0, y || 0, width || _canvas.width, height || _canvas.height);
+					},
+					text: (x, y, string, fontWeight, fontSize, fontPath) => {
+
+					}
+				}[type](..._arguments);
+			}
+
+			drMove(canvas, type, x, y, width, height, toX, toY) {
+				if(!['cut', 'copy'].includes(type) || [
+					typeof x,
+					typeof y,
+					typeof width,
+					typeof height,
+					typeof toX,
+					typeof toY
+				].some(v => v !== 'number')) {
+					return;
+				}
+
+				let context = canvas.getContext('2d'),
+					data = context.getImageData(x, y, width, height);
+
+				if(type == 'cut') {
+					this.drClear(canvas, x, y, width, height);
+
+				}
+				context.putImageData(data, toX, toY);
+			}
+
+			drClear(canvas, x, y, width, height) {
+				if(!x && !y && !width && !height) {
+					x =
+					y = 0;
+					width = canvas.width;
+					height = canvas.height;
+				} else
+				if([
+					typeof x,
+					typeof y,
+					typeof width,
+					typeof height
+				].some(v => v !== 'number')) {
+					return;
+				}
+
+				canvas.getContext('2d').clearRect(x, y, width, height);
+			}
+
+			drStyle(canvas) {
+				let context = canvas.getContext('2d'),
+					a = {}
+
+				for(let k in context) {
 					if([
 						'direction',
 						'fillStyle',
@@ -276,30 +407,16 @@
 						'textAlign',
 						'textBaseline'
 					].includes(k)) {
-						a[k] = this.framebuffer[k]
+						a[k] = context[k]
 					}
 				}
 
 				return a;
 			}
 
-			fbPaste(type, x, y, width, height, toX, toY) {
-				if(!['copy', 'move'].includes(type)) {
-					return;
-				}
-
-				let data = this.framebuffer.getImageData(x, y, width, height);
-
-				if(type == 'move') {
-					this.fbDraw('rectangle', x, y, width, height, 'rgba(0%,0%,0%,1)');
-				}
-				this.framebuffer.putImageData(data, toX, toY);
+			drRaw(canvas) {
+				return Buffer.from(Buffer.from(canvas.toDataURL('png').replace('data:image/png;base64,', ''), 'base64'));
 			}
-
-			fbClear() {
-				this.fbDraw('rectangle', 0, 0, this.fbDimensions.width, this.fbDimensions.height, 'rgba(0%,0%,0%,1)');
-			}
-			*/
 
 			eventThrow(process, event, ..._arguments) {
 				if(process && this.eventsReserved.includes(event)) {
@@ -545,106 +662,6 @@
 				this.kdbAdd(`
 					seRemove${process ? '@'+process.id : ''}: Successfully removed handler:
 					    ID: ${handler.id}
-				`);
-			}
-
-			drCreate(process, width, height) {
-				if(typeof width !== 'number' || typeof height !== 'number') {
-					this.kdbAdd(`drCreate${process ? '@'+process.id : ''}: Dimensions incorrect`);
-
-					return;
-				}
-
-				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1,
-					canvas = $('<canvas/>')[0];
-
-				canvas.width = width;
-				canvas.height = height;
-				this.handlers.push({
-					id: id,
-					type: 'dr',
-					process: process || undefined,
-					canvas: canvas
-				});
-				this.kdbAdd(`
-					drCreate${process ? '@'+process.id : ''}: Successfully set handler:
-					    ID: ${id}
-					    Width: ${'"'+width+'"'}
-					    Height: ${'"'+height+'"'}
-				`);
-
-				return id;
-			}
-
-			drGet(process, handlerId) {
-				let handler = this.handlers.filter(v => v.id == handlerId && v.type == 'dr')[0]
-
-				if(!handler) {
-					this.kdbAdd(`drGet${process ? '@'+process.id : ''}: Unable to find handler`);
-
-					return;
-				}
-				if(process && handler.process !== process) {
-					this.kdbAdd(`drGet@${process.id}: Processes aren't allowed to get not owned handlers`);
-
-					return;
-				}
-
-				let context = handler.canvas.getContext('2d');
-
-				return {
-					drawRectangle: (x, y, width, height, color) => {
-						context.fillStyle = color;
-						context.fillRect(x, y, width, height);
-					},
-					drawImage: (x, y, path) => {
-						context.drawImage(this.drOpen(path), x, y);
-					},
-					drawText: (x, y, string, fontWeight, fontSize, fontPath) => {
-
-					},
-					getRaw: () => {
-						return Buffer.from(handler.canvas.toDataURL('png').replace('data:image/png;base64,', ''), 'base64');
-					},
-					setDimensions: (width, height) => {
-						handler.canvas.width = width;
-						handler.canvas.height = height;
-					}
-				}
-			}
-
-			drOpen(a) {
-				if(!a instanceof Buffer) {
-					return;
-				}
-
-				let image = new Image();
-
-				image.src = 'data:image/png;base64,'+a.toString('base64');
-
-				return image;
-			}
-
-			drRemove(process, handlerId) {
-				let handler = this.handlers.filter(v => v.id == handlerId && v.type == 'dr')[0]
-
-				if(!handler) {
-					this.kdbAdd(`drRemove${process ? '@'+process.id : ''}: Unable to find handler`);
-
-					return;
-				}
-				if(process && handler.process !== process) {
-					this.kdbAdd(`drRemove@${process.id}: Processes aren't allowed to remove not owned handlers`);
-
-					return;
-				}
-
-				this.handlers = this.handlers.filter(v => v !== handler);
-				this.kdbAdd(`
-					drRemove${process ? '@'+process.id : ''}: Successfully removed handler:
-					    ID: ${handler.id}
-					    Width: ${'"'+handler.canvas.width+'"'}
-					    Height: ${'"'+handler.canvas.height+'"'}
 				`);
 			}
 
@@ -1166,7 +1183,6 @@
 		}
 
 		wormhole,
-		canvas,
 		framebuffer,
 		framebuffer img {
 			position: absolute;
@@ -1216,7 +1232,6 @@
 	<wormhole>
 		<div></div>
 	</wormhole>
-	<canvas></canvas>
 	-->
 	<framebuffer>
 		<img>
