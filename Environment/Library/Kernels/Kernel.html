@@ -77,9 +77,48 @@
 				//	this.drDraw(canvas, 'rectangle', this.colors.yellow, 60, 50, 50, 50);
 				//	await this.fbWrite(this.drClose(canvas));
 
+					this.eventCatch(undefined, 'terminalChanged', async (_) => {
+						let terminal = this.terminals.filter(v => v.id == _.terminalId)[0],
+							string = {
+								id: _.stringId,
+								processId: _.processId,
+								value: _.value
+							},
+							process = this.processes.filter(v => v.id == _.processId)[0]
+
+						string.value = process ? process.path.split('/').pop()+': '+string.value : string.value;
+
+						if(_.event == 'output' && terminal.mode == 'text') {
+							let canvas = this.drCreate(this.screen.width, this.screen.height),
+							//	image = await this.drOpen(this.images.font),
+								size = 16;
+
+							this.drDraw(canvas, 'rectangle', this.colors.black, 0, string.id*size-size, string.value.length*size, size);
+							for(let i in string.value) {
+								this.drDraw(canvas, 'text', string.value[i], { x: i*size, y: string.id*size-size, color: this.colors.white, size: size });
+							}
+							await this.fbWrite(this.drClose(canvas));
+						}
+					});
+
 					this.timerCreate(undefined, 'multiple', 1000, () => {
 						this.eventThrow(undefined, 'dateChanged');
 					});
+
+					try {
+					//	this.verbose = true;
+						/*
+						this.wtExec(`
+							e.data.this.processExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
+						`);
+						*/
+						this.processExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
+
+						this.bootLoad(false);
+					} catch(error) {
+						this.bootLoad('mixed');
+						this.kdbPanic(error);
+					}
 				});
 			}
 
@@ -171,7 +210,7 @@
 			//	await this.fbWrite(this.drClose(canvas));
 			}
 
-			bootLoad(a) {
+			async bootLoad(a) {
 				if(a == true) {
 					$('boot').attr('load', '');
 				} else
@@ -180,6 +219,13 @@
 				} else {
 					$('boot').removeAttr('load');
 				}
+
+				let canvas = this.drCreate(this.screen.width, this.screen.height),
+					image = await this.drOpen(this.images.logo);
+
+				this.drDraw(canvas, 'rectangle', 'rgb(75%,75%,75%)', 0, 0, canvas.width, canvas.height);
+				this.drDraw(canvas, 'image', image, canvas.width/2-image.width/2, canvas.height/2-image.height/2);
+				await this.fbWrite(this.drClose(canvas));
 			}
 
 			fsRead(a) {
@@ -254,7 +300,7 @@
 			fbRead() {
 				let a;
 
-				if(this.framebuffer.attr('src')?.length > 0) {
+				if(this.framebuffer?.attr('src')?.length > 0) {
 					a = Buffer.from(Buffer.from(this.framebuffer.attr('src').replace('data:image/png;base64,', ''), 'base64'));
 				} else {
 					a = this.drClose(this.drCreate(this.screen.width, this.screen.height));
@@ -312,8 +358,7 @@
 					data = data.replace(regex, '');
 				}
 
-				let image,
-					canvas;
+				let image;
 
 				await (async () => new Promise((resolved) => {
 					image = $('<img>')[0]
@@ -322,7 +367,7 @@
 					image.src = 'data:image/'+format+';base64,'+data;
 				}))();
 
-				canvas = this.drCreate(image.naturalWidth, image.naturalHeight);
+				let canvas = this.drCreate(image.naturalWidth, image.naturalHeight);
 
 				canvas.getContext('2d').drawImage(image, 0, 0);
 
@@ -350,8 +395,11 @@
 						context.imageSmoothingEnabled = width || height ? true : false;
 						context.drawImage(_canvas, 0, 0, _canvas.width, _canvas.height, x || 0, y || 0, width || _canvas.width, height || _canvas.height);
 					},
-					text: (x, y, string, fontWeight, fontSize, fontPath) => {
-
+					text: (value, { x = 0, y = 0, color = this.colors.black, size = 16, weight = 'regular', style = 'regular' }) => {
+						context.font = size+'px Arial';
+						context.textBaseline = 'top';
+						context.fillStyle = color;
+						context.fillText(value, x, y);
 					}
 				}[type](..._arguments);
 			}
@@ -397,38 +445,41 @@
 				canvas.getContext('2d').clearRect(x, y, width, height);
 			}
 
-			drStyle(canvas) {
-				let context = canvas.getContext('2d'),
-					a = {}
+			drIterate(canvas, _function) {
+				let width = canvas.width,
+					height = canvas.height,
+					context = canvas.getContext('2d'),
+					data = context.getImageData(0, 0, width, height),
+					pixels = data.data;
 
-				for(let k in context) {
-					if([
-						'direction',
-						'fillStyle',
-						'filter',
-						'font',
-						'globalAlpha',
-						'globalCompositeOperation',
-						'imageSmoothingEnabled',
-						'imageSmoothingQuality',
-						'lineCap',
-						'lineDashOffset',
-						'lineJoin',
-						'lineWidth',
-						'miterLimit',
-						'shadowBlur',
-						'shadowColor',
-						'shadowOffsetX',
-						'shadowOffsetY',
-						'strokeStyle',
-						'textAlign',
-						'textBaseline'
-					].includes(k)) {
-						a[k] = context[k]
+				for(let y = 0; y < height; ++y) {
+					for(let x = 0; x < width; ++x) {
+						let i = (y*width+x)*4;
+
+						_function(new Proxy(pixels, {
+							get: (target, key) => {
+								return {
+									x: x,
+									y: y,
+									red: target[i],
+									green: target[i+1],
+									blue: target[i+2],
+									alpha: target[i+3]
+								}[key]
+							},
+							set: (target, key, value) => {
+								return {
+									red: () => { target[i] = value; return true; },
+									green: () => { target[i+1] = value; return true; },
+									blue: () => { target[i+2] = value; return true; },
+									alpha: () => { target[i+3] = value; return true; }
+								}[key]();
+							}
+						}));
 					}
 				}
 
-				return a;
+				context.putImageData(data, 0, 0);
 			}
 
 			drClose(data) {
@@ -693,15 +744,16 @@
 			}
 
 			terminalCreate(process) {
-				let id = this.terminals.length > 0 ? Math.max(...this.terminals.map(v => v.id))+1 : 1;
+				let id = this.terminals.length > 0 ? Math.max(...this.terminals.map(v => v.id))+1 : 1,
+					terminal = {
+						id: id,
+						parentId: process?.terminalId || 0,
+						mode: 'text',
+						current: this.terminals.some(v => v.current) ? false : true,
+						strings: []
+					}
 
-				this.terminals.push({
-					id: id,
-					parentId: process?.terminalId || 0,
-					mode: 'text',	// 'graphics'
-					current: this.terminals.some(v => v.current) ? false : true,
-					strings: []
-				});
+				this.terminals.push(terminal);
 				this.eventThrow(undefined, 'terminalListChanged', { event: 'added', value: id });
 
 				return id;
@@ -712,6 +764,8 @@
 			}
 
 			terminalOutput(process, value, terminalId) {
+				terminalId = terminalId || process?.terminalId;
+
 				let terminal = this.terminals.filter(v => v.id == terminalId)[0]
 
 				if(!terminal) {
@@ -719,6 +773,7 @@
 
 					return;
 				}
+
 				if(process && process.terminalId !== terminalId && process.terminalId !== terminal.parentId) {
 					this.kdbAdd(`terminalOutput@${process.id}: Processes aren't allowed to output into non-parent and not owned terminals`);
 
@@ -728,23 +783,68 @@
 				let id = terminal.strings.length > 0 ? Math.max(...terminal.strings.map(v => v.id))+1 : 1,
 					string = {
 						id: id,
-						process: process || undefined,
+						timestamp: Date.now(),
+						processId: process?.id || undefined,
 						value: value
 					}
 
 				terminal.strings.push(string);
-				this.eventThrow(undefined, 'terminalChanged', { event: 'output' });
+				this.eventThrow(undefined, 'terminalChanged', {
+					event: 'output',
+					terminalId: terminal.id,
+					stringId: id,
+					processId: process?.id,
+					value: value
+				});
 
 				return new Proxy(string, {
+				//	get: (target, key) => {
+				//		return key !== 'id' ? target[key] : undefined;
+				//	},
 					set: (target, key, value) => {
 						if(key == 'value') {
 							target[key] = value;
-							this.eventThrow(undefined, 'terminalChanged', { event: 'output' });
+							this.eventThrow(undefined, 'terminalChanged', {
+								event: 'output',
+								terminalId: terminal.id,
+								stringId: id,
+								processId: process?.id,
+								value: value
+							});
 
 							return true;
 						}
 					}
 				});
+			}
+
+			terminalMode(process, value, terminalId) {
+				terminalId = terminalId || process?.terminalId;
+
+				let terminal = this.terminals.filter(v => v.id == terminalId)[0]
+
+				if(!['text', 'graphics'].includes(value)) {
+					this.kdbAdd(`terminalMode${process ? '@'+process.id : ''}: Mode incorrect`);
+
+					return;
+				}
+				if(!terminal) {
+					this.kdbAdd(`terminalMode${process ? '@'+process.id : ''}: Unable to find terminal`);
+
+					return;
+				}
+				if(terminal.parentId) {
+					this.kdbAdd(`terminalMode${process ? '@'+process.id : ''}: Child terminals shouldn't have changeable mode`);
+
+					return;
+				}
+				if(process && process.terminalId !== terminalId) {
+					this.kdbAdd(`terminalMode@${process.id}: Processes aren't allowed to set mode of non-parent terminals`);
+
+					return;
+				}
+
+				this.terminal.mode = value;
 			}
 
 			terminalRemove(process, terminalId) {
@@ -974,9 +1074,6 @@
 					} else
 					if(v.type == 'se') {
 						this.seRemove(process, v.id);
-					} else
-					if(v.type == 'dr') {
-						this.drRemove(process, v.id);
 					}
 				}
 				this.processes = this.processes.filter(v => v !== process);
@@ -1247,7 +1344,7 @@
 		}
 
 		framebuffer {
-			z-index: 2;
+			z-index: 0;	/* 2 */
 
 			pointer-events: none;
 		}
@@ -1299,21 +1396,5 @@
 	<framebuffer>
 		<img>
 	</framebuffer>
-	<script>
-		try {
-		//	Opium.verbose = true;
-			/*
-			Opium.wtExec(`
-				e.data.Opium.processExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
-			`);
-			*/
-			Opium.processExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
-
-			Opium.bootLoad(false);
-		} catch(error) {
-			Opium.bootLoad('mixed');
-			Opium.kdbPanic(error);
-		}
-	</script>
 </body>
 </html>
