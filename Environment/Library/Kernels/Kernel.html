@@ -67,14 +67,16 @@
 				}
 				*/
 				$(async () => {
-					this.framebuffer = $('framebuffer img');
+					this.framebuffer = $('framebuffer canvas')[0]
+					this.framebuffer.width = this.screen.width;
+					this.framebuffer.height = this.screen.height;
 				//	await this.fbWrite('');
 
 				//	let canvas = this.drCreate(this.screen.width, this.screen.height),
 				//		image = await this.drOpen(this.fsRead('/drawing.png'));
 
 				//	this.drDraw(canvas, 'image', image, 0, 0, '100', '100');
-				//	await this.fbWrite(this.drClose(canvas));
+				//	await this.fbWrite(canvas);
 
 					this.eventCatch(undefined, 'terminalChanged', async (_) => {
 						let terminal = this.terminals.filter(v => v.id == _.terminalId)[0],
@@ -96,7 +98,7 @@
 							for(let i in string.value) {
 								this.drDraw(canvas, 'text', string.value[i], { x: i*size, y: string.id*size-size, color: this.colors.white, size: size });
 							}
-							await this.fbWrite(this.drClose(canvas));
+							await this.fbWrite(canvas);
 						}
 					});
 
@@ -206,7 +208,7 @@
 
 			//	this.drDraw(canvas, 'rectangle', 'rgba(0%,0%,0%,0.25)', 0, 0, canvas.width, canvas.height);
 			//	this.drDraw(canvas, 'image', image, canvas.width/2-image.width/2, canvas.height/2-image.height/2);
-			//	await this.fbWrite(this.drClose(canvas));
+			//	await this.fbWrite(canvas);
 			}
 
 			async bootLoad(a) {
@@ -224,12 +226,12 @@
 
 				this.drDraw(canvas, 'rectangle', 'rgb(75%,75%,75%)', 0, 0, canvas.width, canvas.height);
 				this.drDraw(canvas, 'image', image, canvas.width/2-image.width/2, canvas.height/2-image.height/2);
-				await this.fbWrite(this.drClose(canvas));
+				await this.fbWrite(canvas);
 			}
 
 			fsRead(a) {
 				try {
-					if(a.endsWith('.png')) {
+					if(/\.(png|jpe?g|gif)$/gi.test(a)) {
 						return require('fs').readFileSync('.'+a);
 					} else {
 						return require('fs').readFileSync('.'+a).toString();
@@ -297,32 +299,25 @@
 			}
 
 			fbRead() {
-				let a;
-
-				if(this.framebuffer?.attr('src')?.length > 0) {
-					a = Buffer.from(Buffer.from(this.framebuffer.attr('src').replace('data:image/png;base64,', ''), 'base64'));
-				} else {
-					a = this.drClose(this.drCreate(this.screen.width, this.screen.height));
-				}
-
-				return a;
+				return this.drClose(this.framebuffer);
 			}
 
 			async fbWrite(value) {
-				if(value !== '' && !value instanceof Buffer) {
+				if(value !== '' && !value instanceof Buffer && !value instanceof HTMLCanvasElement) {
 					return;
 				}
 
-				let canvas = await this.drOpen(this.fbRead());
+				let canvas = this.framebuffer;
 
 				if(value == '') {
 					this.drDraw(canvas, 'rectangle', this.colors.black, 0, 0, canvas.width, canvas.height);
-				}
+				} else
 				if(value instanceof Buffer) {
 					this.drDraw(canvas, 'image', await this.drOpen(value));
+				} else
+				if(value instanceof HTMLCanvasElement) {
+					this.drDraw(canvas, 'image', value);
 				}
-
-				this.framebuffer.attr('src', 'data:image/png;base64,'+this.drClose(canvas).toString('base64'));
 				this.eventThrow(undefined, 'fbChanged');
 			}
 
@@ -1345,23 +1340,19 @@
 
 		wormhole,
 		framebuffer,
-		framebuffer img {
+		framebuffer canvas {
 			position: absolute;
 			top: 0;
 			left: 0;
 
-			width: 100%;
-			height: 100%;
+			-width: 100%;
+			-height: 100%;
 		}
 
 		framebuffer {
 			z-index: 0;	/* 2 */
 
 			pointer-events: none;
-		}
-
-		framebuffer img:not([src]) {
-			visibility: hidden;
 		}
 
 		wormhole > *:not([visible]) {
@@ -1405,7 +1396,7 @@
 	</wormhole>
 	-->
 	<framebuffer>
-		<img>
+		<canvas></canvas>
 	</framebuffer>
 </body>
 </html>
