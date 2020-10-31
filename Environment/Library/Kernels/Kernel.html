@@ -92,11 +92,20 @@
 						if(_.event == 'output' && terminal.current && terminal.mode == 'text') {
 							let canvas = this.drCreate(this.screen.width, this.screen.height),
 								font = await this.drOpen(this.images.font),
-								size = 16;
+								alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~',
+								width = 8,
+								height = 16;
 
-							this.drDraw(canvas, 'rectangle', this.colors.black, 0, string.id*size-size, string.value.length*size, size);
+							this.drDraw(canvas, 'rectangle', this.colors.white, 0, string.id*height-height, string.value.length*width, height);
 							for(let i in string.value) {
-								this.drDraw(canvas, 'text', string.value[i], { x: i*size, y: string.id*size-size, color: this.colors.white, size: size });
+								let position = alphabet.indexOf(string.value[i]);
+
+								if(position > -1) {
+									let symbol = this.drCreate(width, height);
+
+									this.drMove(font, 'copy', position*width, 0, width, height, 0, 0, symbol);
+									this.drDraw(canvas, 'image', symbol, i*width, string.id*height-height);
+								}
 							}
 							await this.fbWrite(canvas);
 						}
@@ -398,7 +407,7 @@
 				}[type](..._arguments);
 			}
 
-			drMove(canvas, type, x, y, width, height, toX, toY) {
+			drMove(canvas, type, x = 0, y = 0, width, height, toX = 0, toY = 0, toCanvas) {
 				if(!['cut', 'copy'].includes(type) || [
 					typeof x,
 					typeof y,
@@ -415,9 +424,12 @@
 
 				if(type == 'cut') {
 					this.drClear(canvas, x, y, width, height);
-
 				}
-				context.putImageData(data, toX, toY);
+				if(!toCanvas instanceof HTMLCanvasElement) {
+					context.putImageData(data, toX, toY);
+				} else {
+					toCanvas.getContext('2d').putImageData(data, toX, toY);
+				}
 			}
 
 			drClear(canvas, x, y, width, height) {
