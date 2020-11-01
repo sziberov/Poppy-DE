@@ -1,3 +1,9 @@
+window.Math.isEven = (n) => {
+   return n % 2 == 0;
+}
+window.Math.isOdd = (n) => {
+   return Math.abs(n % 2) == 1;
+}
 window.Math.randomArbitrary = (min, max) => {
 	return Math.random()*(max-min)+min;
 }
