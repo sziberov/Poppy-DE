@@ -215,7 +215,7 @@
 			}
 
 			async bootState(value) {
-				if(value == true) {
+				if(value == true && !this.#boot) {
 					let canvas = this.drCreate(this.screen.width, this.screen.height),
 						logo = await this.drOpen(this.images.logo),
 						load = await this.drOpen(this.images.load),
@@ -236,6 +236,8 @@
 				} else
 				if(value == 'stopped' && this.#boot) {
 					this.timerRemove(undefined, this.#boot);
+
+					this.#boot = undefined;
 				} else
 				if(value == false && this.#boot) {
 					let canvas = this.drCreate(this.screen.width, this.screen.height),
@@ -246,6 +248,8 @@
 					this.drDraw(canvas, 'rectangle', 'rgb(75%,75%,75%)', 0, 0, canvas.width, canvas.height);
 					this.drDraw(canvas, 'image', logo, canvas.width/2-logo.width/2, canvas.height/2-logo.height/2);
 					await this.fbWrite(canvas);
+
+					this.#boot = undefined;
 				}
 			}
 
