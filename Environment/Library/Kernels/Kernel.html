@@ -13,7 +13,7 @@
 			constructor() {
 				this.extensionExec();
 
-				this.framebuffer;
+				this.framebuffer = this.drCreate(this.screen.width, this.screen.height);
 				this.colors = {
 					black:		'rgb(0%,0%,0%)',
 					darkGray:	'rgb(25%,25%,25%)',
@@ -56,19 +56,17 @@
 				}
 
 				$(async () => {
-					this.framebuffer = $('framebuffer canvas')[0]
-					this.framebuffer.width = this.screen.width;
-					this.framebuffer.height = this.screen.height;
-
 					try {
-						await this.fbWrite('');
+						document.querySelectorAll('framebuffer')[0].appendChild(this.framebuffer);
+
+						await this.fbWrite(undefined, '');
 						await this.bootState(true);
 					//	this.verbose = true;
 
 					//	let canvas = this.drCreate(this.screen.width, this.screen.height);
 
 					//	this.drDraw(canvas, 'image', await this.drOpen(this.fsRead('/drawing.png')), 0, 0, '100', '100');
-					//	await this.fbWrite(canvas);
+					//	await this.fbWrite(undefined, canvas);
 
 						this.eventCatch(undefined, 'terminalChanged', async (_) => {
 							let terminal = this.terminals.filter(v => v.id == _.terminalId)[0],
@@ -99,7 +97,7 @@
 										this.drDraw(canvas, 'image', symbol, i*width, string.id*height-height);
 									}
 								}
-								await this.fbWrite(canvas);
+								await this.fbWrite(undefined, canvas);
 							}
 						});
 
@@ -211,7 +209,7 @@
 
 			//	this.drDraw(canvas, 'rectangle', 'rgba(0%,0%,0%,0.25)', 0, 0, canvas.width, canvas.height);
 			//	this.drDraw(canvas, 'image', image, canvas.width/2-image.width/2, canvas.height/2-image.height/2);
-			//	await this.fbWrite(canvas);
+			//	await this.fbWrite(undefined, canvas);
 			}
 
 			async bootState(value) {
@@ -224,14 +222,14 @@
 
 					this.drDraw(canvas, 'rectangle', 'rgb(75%,75%,75%)', 0, 0, canvas.width, canvas.height);
 					this.drDraw(canvas, 'image', logo, canvas.width/2-logo.width/2, canvas.height/2-logo.height/2);
-					await this.fbWrite(canvas);
+					await this.fbWrite(undefined, canvas);
 
 					this.drDraw(_load, 'rectangle', 'rgb(75%,75%,75%)', 0, 0, _load.width, _load.height);
 					this.drDraw(_load, 'image', load);
 					this.#boot = this.timerCreate(undefined, 'multiple', 125/2, async () => {
 						iteration = iteration > 10 ? 0 : iteration+1;
 						this.drDraw(canvas, 'image', _load, canvas.width/2, canvas.height/2+(canvas.height+logo.height)/4, undefined, undefined, 30*iteration);
-						await this.fbWrite(canvas);
+						await this.fbWrite(undefined, canvas);
 					});
 				} else
 				if(value == 'stopped' && this.#boot) {
@@ -247,7 +245,7 @@
 
 					this.drDraw(canvas, 'rectangle', 'rgb(75%,75%,75%)', 0, 0, canvas.width, canvas.height);
 					this.drDraw(canvas, 'image', logo, canvas.width/2-logo.width/2, canvas.height/2-logo.height/2);
-					await this.fbWrite(canvas);
+					await this.fbWrite(undefined, canvas);
 
 					this.#boot = undefined;
 				}
@@ -326,7 +324,12 @@
 				return this.drClose(this.framebuffer);
 			}
 
-			async fbWrite(value) {
+			async fbWrite(process, value) {
+				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process?.user)[0]?.Group;
+
+				if(process && group > 0) {
+					return;
+				}
 				if(value !== '' && !value instanceof Buffer && !value instanceof HTMLCanvasElement) {
 					return;
 				}
@@ -362,7 +365,7 @@
 			async drOpen(data, format) {
 				let regex = /^data:image\/(.*);base64,/gi;
 
-				if(!data instanceof Buffer && !(typeof data == 'string' || regex.test(data))) {
+				if(!data || !data instanceof Buffer && !(typeof data == 'string' || regex.test(data))) {
 					return;
 				}
 
@@ -457,6 +460,18 @@
 				} else {
 					toCanvas.getContext('2d').putImageData(data, toX, toY);
 				}
+			}
+
+			drMask(canvas, _canvas, ..._arguments) {
+				let __canvas = this.drCreate(canvas.width, canvas.height);
+
+				this.drDraw(__canvas, 'image', _canvas, ..._arguments);
+
+				__canvas.getContext('2d').globalCompositeOperation = 'source-in';
+
+				this.drDraw(__canvas, 'image', canvas);
+				this.drClear(canvas);
+				this.drDraw(canvas, 'image', __canvas);
 			}
 
 			drClear(canvas, x, y, width, height) {
@@ -928,12 +943,18 @@
 			processRequest(process, method, ..._arguments) {
 				return {
 					version: (a) => this.version[a],
+					uptime: () => this.uptime,
+					screen: () => this.screen,
 					read: (a) => this.fsRead(a),
 					write: (...a) => this.fsWrite(...a),
 					remove: (a) => this.fsRemove(a),
 					createDir: () => {},
 					readDir: (a) => this.fsReadDir(a),
 					removeDir: () => {},
+					fbWrite: (a) => this.fbWrite(process, a),
+					drCreate: (...a) => this.drCreate(...a),
+				//	drOpen: async (...a) => await this.drOpen(...a),
+					drDraw: (...a) => this.drDraw(...a),
 					throw: (...a) => this.eventThrow(process, ...a),
 					catch: (...a) => this.eventCatch(process, ...a),
 					catchRemove: (a) => this.eventCatchRemove(process, a),
@@ -1183,19 +1204,23 @@
 			}
 
 			environmentRelaunch(process) {
-				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process.user)[0]?.Group;
+				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process?.user)[0]?.Group;
 
-				if(group == 0) {
-					chrome.runtime.reload();
+				if(process && group > 0) {
+					return;
 				}
+
+				chrome.runtime.reload();
 			}
 
 			environmentQuit(process) {
-				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process.user)[0]?.Group;
+				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process?.user)[0]?.Group;
 
-				if(group == 0) {
-					require('nw.gui').App.quit();
+				if(process && group > 0) {
+					return;
 				}
+
+				require('nw.gui').App.quit();
 			}
 		}
 	</script>
@@ -1366,8 +1391,6 @@
 	<wormhole>
 		<div></div>
 	</wormhole>
-	<framebuffer>
-		<canvas></canvas>
-	</framebuffer>
+	<framebuffer></framebuffer>
 </body>
 </html>
