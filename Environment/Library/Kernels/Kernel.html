@@ -251,6 +251,8 @@
 				}
 			}
 
+		//	sync(condition, )
+
 			fsRead(a) {
 				try {
 					if(/\.(png|jpe?g|gif)$/gi.test(a)) {
@@ -971,6 +973,7 @@
 					kill: (a) => this.processKill(a || process.id),
 					import: (...a) => this.classImport(process, ...a),
 					single: (a) => this.classSingle(a),
+					protected: (a) => this.classProtected(a),
 					system: () => this.system(),
 					relaunch: () => this.environmentRelaunch(process),
 					quit: () => this.environmentQuit(process)
@@ -1013,7 +1016,8 @@
 						_request: (...a) => this.processRequest(process, ...a),
 					//	_fork: (...a) => this.processRequest(process, 'fork', ...a),
 						_import: (...a) => this.processRequest(process, 'import', ...a),
-						_single: (...a) => this.processRequest(process, 'single', ...a)
+						_single: (...a) => this.processRequest(process, 'single', ...a),
+						_protected: (...a) => this.processRequest(process, 'protected', ...a)
 					}, {
 						get: (target, key) => {
 							return key == '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key == 'require' ? undefined : target[key] || this.environment[key]
@@ -1176,6 +1180,68 @@
 					this.kdbAdd(`classImport: Failed to import requested ${fwTitle !== moduleTitle ? moduleTitle+' module of ' : ''}${fwTitle} framework: "${error.name}: ${error.message}"`, error.stack);
 				}
 			}
+
+			/*
+			classProtected(a) {
+				let _protected = {}
+
+				a.prototype['@Protected'] = (caller, key, value) => {
+					let prototype = Object.getPrototypeOf(caller),
+						chain = []
+
+					while(prototype) {
+						chain.push(prototype);
+
+						prototype = Object.getPrototypeOf(prototype);
+					}
+
+					if(chain.includes(Object.getPrototypeOf(a))) {
+						if(value) {
+							_protected[key] = value;
+						} else
+						if(key) {
+							return _protected[key]
+						}
+					} else {
+						throw [caller, 'Cannot access protected property'];
+					}
+				}
+
+				return new Proxy(a, {
+					get: function(target, key) {
+						if(key.startsWith('_')) {
+							let prototype = Object.getPrototypeOf(target),
+								chain = []
+
+							while(prototype) {
+								chain.push(prototype);
+
+								prototype = Object.getPrototypeOf(prototype);
+							}
+
+							if(chain.includes(Object.getPrototypeOf(target))) {
+								return target[key]
+							}
+						} else {
+							return target[key]
+						}
+					},
+					set: function(target, key, value) {
+						if(key.startsWith('_')) {
+							target[key] = value;
+
+							return true;
+						} else {
+							target[key] = value;
+
+							return true;
+						}
+					}
+				});
+
+				return a;
+			}
+			*/
 
 			classSingle(a) {
 				return new Proxy(a, {
