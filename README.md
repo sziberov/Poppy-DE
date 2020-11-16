@@ -15,3 +15,7 @@ Architecture:
 				Enviro			.app Bundles
 				Dock
 				...
+
+Kernel and everything will be moved onto JVM + Groovy platform, as JS still lacks several important features.
+
+Ядро и всё остальное будет перенесено на платформу JVM + Groovy, так как в JS до сих пор не хватает некоторого важного функционала.
