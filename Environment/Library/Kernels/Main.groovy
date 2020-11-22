@@ -293,34 +293,49 @@ class Main {
 	}
 	*/
 
-	def processImport(GroovyClassLoader environment, String _class) {
-		def classPath = _class.endsWith(".groovy") ? _class : "/Environment/Library/Frameworks/${_class}.framework/${_class}.groovy",
-			file = fsRead(classPath)
+	def processImport(GroovyClassLoader environment, Boolean main, String path) {
+		def framework,
+			_class,
+			classPath
 
-		if (file) {
+		if (main) {
+			classPath = path
+		} else {
+			def parts = path.split(/\//) as List
+
+			framework = parts[0]
+			_class = parts[1] ?: framework
+
+			classPath = "/Environment/Library/Frameworks/${framework}.framework/Classes/${_class}.groovy"
+		}
+
+		def file = fsRead(classPath)
+
+		if (!file) {
+			return false
+		}
+
+		_class ?= file.name.replaceAll(/\.groovy$/, "")
+
+		def parsedClass,
+			parsedClassConstructor
+
+		try {
+			parsedClass = environment.parseClass(file)
+			parsedClassConstructor = environment.loadClass(main ? "Main" : _class).getDeclaredConstructor()
+		} catch(CompilationFailedException | ClassNotFoundException error) {
+			println error
+
+			return false
+		}
+
+		parsedClass.metaClass._request = { String method, ... arguments -> return processRequest(environment, method, *arguments) }
+		parsedClass.metaClass._import = { ... arguments -> return processRequest(environment, "import", false, *arguments) }
+		parsedClass.metaClass._info = { ... arguments -> return processRequest(environment, "info", *arguments) }
+
+		if (main && parsedClass.name == "Main" || !main && parsedClass.name == _class) {
 			try {
-				def parsedClass = environment.parseClass(file)
-
-				parsedClass.metaClass._request = { String method, ... arguments -> return processRequest(environment, method, *arguments) }
-				parsedClass.metaClass._import = { ... arguments -> return processRequest(environment, "import", *arguments) }
-				parsedClass.metaClass._info = { ... arguments -> return processRequest(environment, "info", *arguments) }
-
-				def name = file.name.replaceAll(/\.groovy$/, "")
-
-				environment.loadedClasses.each {
-					it.metaClass[name] = parsedClass
-				}
-
-			//	environment.loadClass(name)
-			//	environment.setClassCacheEntry(parsedClass)
-
-				def constructor = environment.loadClass(name).getDeclaredConstructor()
-
-				if (constructor) {
-					constructor.newInstance()
-				}
-
-				return true
+				parsedClassConstructor.newInstance()
 			} catch(Exception error) {
 				println error
 
@@ -329,16 +344,67 @@ class Main {
 		} else {
 			return false
 		}
+
+		if (main || framework != _class) {
+			environment.loadedClasses.each {
+				it.metaClass[_class] = parsedClass
+			}
+		}
+
+		return true
 	}
 
 	def processInfo(GroovyClassLoader environment) {
 		println(environment.loadedClasses)
 	}
 
+	/*
+	class processEnvironmentClass extends GroovyClassLoader {
+		processEnvironmentClass(ClassLoader loader) {
+			super(loader)
+		}
+
+		Class findClass(String name) {
+			println "Trying to find class: $name"
+
+			try {
+				return super.findClass(name)
+			} catch(ClassNotFoundException error) {
+				if(name.startsWith('Frameworks.')) {
+					name = name.replaceAll(/^Frameworks\./, "")
+
+					println "Trying to find framework class: $name"
+
+					def path = "/Environment/Library/Frameworks/${name}.framework/${name}.groovy",
+						file = fsRead(path)
+
+					if(file) {
+						return new GroovyClassLoader(this).parseClass(file)
+					}
+				}
+
+				throw error
+			}
+		}
+
+		Class loadClass(String name) {
+			println "Trying to load class: $name"
+
+			return super.loadClass(name)
+		}
+
+		Class parseClass(File file) {
+			println "Trying to parse class: $name"
+
+			return super.parseClass(file)
+		}
+	}
+	*/
+
 	def processExec(String path) {
 		def environment = new GroovyClassLoader(this.class.classLoader)
 
-		processImport(environment, path)
+		processImport(environment, true, path)
 	}
 
 	/*
