@@ -1,8 +1,0 @@
-{
-	"CFBundleIdentifier": "ru.poppy.environment-preferences",
-	"CFBundleExecutable": "Environment Preferences",
-	"CFBundleTitle": "Environment Preferences",
-	"CFBundleVersion": "0.1",
-	"CFBundleLicense": "CC BY-NC-ND © Poppy.",
-	"CFBundleIcon": "Environment Preferences.icns"
-}

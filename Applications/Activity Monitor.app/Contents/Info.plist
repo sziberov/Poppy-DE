@@ -1,8 +1,0 @@
-{
-	"CFBundleIdentifier": "ru.poppy.activity-monitor",
-	"CFBundleExecutable": "Activity Monitor",
-	"CFBundleTitle": "Activity Monitor",
-	"CFBundleVersion": "0.1",
-	"CFBundleLicense": "CC BY-NC-ND © Poppy.",
-	"CFBundleIcon": "Activity Monitor.icns"
-}
