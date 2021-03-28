@@ -6,7 +6,7 @@ Free cross-platform OS X-like user interface and applications implementation.
 
 Architecture:
 
-	NW.JS						Native
+	NW.JS / JVM + Groovy				Native
 		Opium Kernel				HTML + CSS + JS + Node.JS
 			CoreFoundation Framework	.framework Bundles
 			CoreGraphics Framework
