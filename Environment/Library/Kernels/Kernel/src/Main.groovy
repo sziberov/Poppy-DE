@@ -4,6 +4,8 @@
 */
 
 import groovy.json.JsonSlurper
+import org.apache.tools.ant.taskdefs.Echo
+
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
@@ -37,9 +39,9 @@ class Main {
 		]
 	]
 
-	def starttime = System.currentTimeMillis()
+	long starttime = System.currentTimeMillis()
 
-	def getUptime() {
+	long getUptime() {
 		return System.currentTimeMillis() - starttime
 	}
 
@@ -51,6 +53,8 @@ class Main {
 			height: (size?.height ?: 600) as int
 		]
 	}
+
+	Integer bootHandlerId
 
 	def frame = new JFrame(version["DE"][0] as String),
 		frameKeyboard = new frameKeyboard(),
@@ -92,18 +96,22 @@ class Main {
 		frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
 		frame.visible = true
 
-	//	namedArguments(a: "1", c: "3")
+		//	namedArguments(a: "1", c: "3")
 		eventCatch(null, "fbChanged", {
 			fbRedraw()
 		})
 
-		def bootScreen = timerCreate(null, "multiple", 63, { ->
-			fbDraw()
-		})
+		bootState(true)
 
-		processExec(null, null, "root", "root","/Environment/Library/Applications/Login.app/Contents/Executables/Login.groovy")
-
-		timerRemove(null, bootScreen)
+		try {
+			processExec(null, null, "root", "root","/Environment/Library/Applications/Login.app/Contents/Executables/Login.groovy")
+		//	asd()
+		} catch (Exception exception) {
+			bootState(false)
+			kdbPanic(exception)
+		} finally {
+			bootState(false)
+		}
 	}
 
 	class frameKeyboard implements KeyListener {
@@ -134,9 +142,87 @@ class Main {
 		}
 	}
 
-	void kdbAdd(String... string) {
-		string.each { v ->
-			println(v.stripIndent().trim())
+	void kdbAdd(String... strings) {
+		strings.each {
+			println(it.stripIndent().trim())
+		}
+	}
+
+	void kdbPanic(Exception exception) {
+		kdbAdd("""
+			Please contact someone with an image of the
+			information printed below, along with a description of your
+			environment configuration and what you were doing at the time that
+			the kernel panic occurred. We apologize for the inconvenience.
+
+			panic: "$exception.class.simpleName"@${ exception.hasProperty("fileName") ? exception.fileName : "null" }:${ exception.stackTrace[0].lineNumber }
+
+			${ ExceptionUtils.getStackTrace(exception) }
+
+			Process title corresponding to current thread: ${ exception.hasProperty("fileName") ? exception.fileName.splitAll(/\//)?.pop() : "null" }
+
+			Kernel version:
+			${ version.kernel?.join(" ") ?: "Not yet set" }
+
+			DE version:
+			${ version.DE?.last() ?: "Not yet set" }
+
+			Environment uptime in milliseconds: $uptime
+			""")
+
+		def backgroundLine = 0,
+			animation = timerCreate(null, "multiple", 2, {
+				if (backgroundLine <= screen.height) {
+					drDraw(framebuffer, "rectangle", new Color(0, 0, 0, 0.25), 0, backgroundLine, screen.width, 1)
+					backgroundLine++
+
+					eventThrow(null, "fbChanged")
+				} else {
+					drDraw(framebuffer, "image", drOpen(fsRead("Panic.png")), null, null, null, null, true, null, null, frameGraphics)
+
+					eventThrow(null, "fbChanged")
+					eventThrow(null, "panicAnimationStopped")
+				}
+			})
+
+		eventCatch(null, "panicAnimationStopped", {
+			timerRemove(null, animation)
+		})
+	}
+
+	void bootState(Boolean state) {
+		switch (state) {
+			case false:
+				if (bootHandlerId) {
+					timerRemove(null, bootHandlerId)
+
+					bootHandlerId = null
+				}
+			break
+			case true:
+				if (!bootHandlerId) {
+					def spinnerIteration = 0
+
+					bootHandlerId  = timerCreate(null, "multiple", 63, {
+						if (framebuffer.width != screen.width || framebuffer.height != screen.height) {
+							framebuffer = new BufferedImage(screen.width, screen.height, BufferedImage.TYPE_4BYTE_ABGR_PRE)
+
+							drDraw(framebuffer, "rectangle", colors.black, 0, 0, screen.width, screen.height)
+						}
+
+						def logo = drOpen(fsRead("Logo.png")),
+							spinner = drOpen(fsRead("Spinner.png"))
+
+						spinnerIteration = spinnerIteration > 10 ? 0 : ++spinnerIteration
+
+						drDraw(framebuffer, "rectangle", colors.lightGray, 0, 0, screen.width, screen.height)
+						drDraw(framebuffer, "image", logo, null, null, null, null, true, null, null, frameGraphics)
+						drDraw(framebuffer, "image", spinner, null, screen.height / 2 + logo.height / 2, null, screen.height / 2 - logo.height / 2, true, null, 30 * spinnerIteration, frameGraphics)
+
+						eventThrow(null, "fbChanged")
+					})
+				}
+			break
 		}
 	}
 
@@ -164,29 +250,8 @@ class Main {
 		return file ? new JsonSlurper().parseText(file) : null
 	}
 
-	def loadIteration = 0
-
 	void fbDraw() {
-		if (framebuffer.width != screen.width || framebuffer.height != screen.height) {
-			framebuffer = new BufferedImage(screen.width, screen.height, BufferedImage.TYPE_4BYTE_ABGR_PRE)
-
-			drDraw(framebuffer, "rectangle", colors.black, 0, 0, screen.width, screen.height)
-		}
-
-		def logo = drOpen(fsRead("Logo.png")),
-			load = drOpen(fsRead("Load.png"))
-
-		loadIteration = loadIteration > 10 ? 0 : loadIteration + 1;
-
-		drDraw(framebuffer, "rectangle", colors.lightGray, 0, 0, screen.width, screen.height)
-		drDraw(framebuffer, "image", logo, null, null, null, null, true, null, null, frameGraphics)
-		drDraw(framebuffer, "image", load, null, screen.height / 2 + logo.height / 2, null, screen.height / 2 - logo.height / 2, true, null, 30 * loadIteration, frameGraphics)
-
-	//	drDraw(framebuffer, "image", drOpen(fsRead("/Library/Desktop Images/drawing.png")), null, null, null, null, null, "fill", null, frameGraphics)
-	//	drDraw(framebuffer, "rectangle", new Color(0, 0, 0, 0.25), 0, 0, screen.width, screen.height)
-	//	drDraw(framebuffer, "image", drOpen(fsRead("Panic.png")), null, null, null, null, true, null, null, frameGraphics)
-
-		eventThrow(null, "fbChanged")
+		drDraw(framebuffer, "image", drOpen(fsRead("/Library/Desktop Images/drawing.png")), null, null, null, null, null, "fill", null, frameGraphics)
 	}
 
 	void fbRedraw() {
@@ -322,9 +387,9 @@ class Main {
 			return false
 		}
 
-		handlers.findAll { it.event == event && it.type == "event" }.each { handler ->
+		handlers.findAll { it.event == event && it.type == "event" }.each {
 			try {
-				handler.function(*arguments)
+				it.function(*arguments)
 			} catch (Exception exception) {
 			//	error.fileName = handler.process.path
 
@@ -343,7 +408,7 @@ class Main {
 
 		handlers.push([
 			id: id,
-			type: 'event',
+			type: "event",
 			process: process ?: null,
 			event: event,
 			function: function
@@ -358,10 +423,10 @@ class Main {
 	}
 
 	Boolean eventCatchRemove(Map process, Integer handlerId) {
-		def handler = handlers.findAll { it.id == handlerId && it.type == "event" }[0]
+		def handler = handlers.find { it.id == handlerId && it.type == "event" }
 
 		if (!handler) {
-			kdbAdd("eventCatchRemove${ process ? "@" + process.id : "" }: Unable to find handler")
+			kdbAdd("eventCatchRemove${ process ? "@" + process.id : "" }: Unable to find handler: $handlerId")
 
 			return false
 		}
@@ -422,10 +487,10 @@ class Main {
 	}
 
 	Boolean timerRemove(Map process, Integer handlerId) {
-		def handler = handlers.findAll { it.id == handlerId && it.type == "timer" }[0]
+		def handler = handlers.find { it.id == handlerId && it.type == "timer" }
 
 		if (!handler) {
-			kdbAdd("timerRemove${ process ? "@" + process.id : "" }: Unable to find handler")
+			kdbAdd("timerRemove${ process ? "@" + process.id : "" }: Unable to find handler: $handlerId")
 
 			return false
 		}
@@ -484,16 +549,18 @@ class Main {
 				throw compilationFailedException
 			}
 
-			compiler.classes.each { v ->
-				if (v.name == clazz) {
-					defineClass(v.name, v.bytes)
+			compiler.classes.each {
+				if (it.name == clazz) {
+					defineClass(it.name, it.bytes)
 				}
 			}
 
 			def loadedClass = loadClass(clazz)
 
-			loadedClass.metaClass._request = { String method, ... arguments -> return processRequest(this, method, *arguments) }
-			loadedClass.metaClass._info = { ... arguments -> return processRequest(this, "info", *arguments) }
+			loadedClass.metaClass.with {
+				_request = { String method, ... arguments -> return processRequest(this, method, *arguments) }
+				_info = { ... arguments -> return processRequest(this, "info", *arguments) }
+			}
 
 			if (getClassCacheEntry(clazz) == null) {
 				setClassCacheEntry(loadedClass)
@@ -524,7 +591,7 @@ class Main {
 	}
 
 	def processExec(Integer terminalId = null, Integer processId = null, String login = null, String password = null, String path, String... arguments) {
-		def user = fsReadPreferences('Global').Users.findAll { it.Login == login && it.Password == password }[0]
+		def user = fsReadPreferences('Global').Users.find { it.Login == login && it.Password == password }
 
 		if (!user) {
 			kdbAdd("processExec${ processId ? "@" + processId : "" }: Authorization incorrect")
