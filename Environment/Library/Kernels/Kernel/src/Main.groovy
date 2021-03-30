@@ -80,7 +80,7 @@ class Main {
 			tan:		new Color(0.75, 0.5, 0.25)
 		],
 		handlers = [],
-		eventsReserved = ["fbChanged", "terminalChanged", "processListChanged", "dateChanged"],
+		eventsReserved = ["fbChanged", "panicAnimationChanged", "terminalChanged", "processListChanged", "dateChanged"],
 		terminals = [],
 		processes = []
 
@@ -96,7 +96,6 @@ class Main {
 		frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
 		frame.visible = true
 
-		//	namedArguments(a: "1", c: "3")
 		eventCatch(null, "fbChanged", {
 			fbRedraw()
 		})
@@ -171,7 +170,7 @@ class Main {
 			""")
 
 		def backgroundLine = 0,
-			animation = timerCreate(null, "multiple", 2, {
+			animation = timerCreate(null, "multiple", 125 / (screen.height / 125) / 8 as Integer, {
 				if (backgroundLine <= screen.height) {
 					drDraw(framebuffer, "rectangle", new Color(0, 0, 0, 0.25), 0, backgroundLine, screen.width, 1)
 					backgroundLine++
@@ -181,12 +180,14 @@ class Main {
 					drDraw(framebuffer, "image", drOpen(fsRead("Panic.png")), null, null, null, null, true, null, null, frameGraphics)
 
 					eventThrow(null, "fbChanged")
-					eventThrow(null, "panicAnimationStopped")
+					eventThrow(null, "panicAnimationChanged", "stopped")
 				}
 			})
 
-		eventCatch(null, "panicAnimationStopped", {
-			timerRemove(null, animation)
+		eventCatch(null, "panicAnimationChanged", { event ->
+			if (event == "stopped") {
+				timerRemove(null, animation)
+			}
 		})
 	}
 
@@ -377,10 +378,10 @@ class Main {
 		return file
 	}
 
-	Boolean eventThrow(Map process, String event, ... arguments) {
-		if (process && eventsReserved.contains(event)) {
+	Boolean eventThrow(Integer processId, String event, ... arguments) {
+		if (processId && eventsReserved.contains(event)) {
 			kdbAdd("""
-				eventThrow@$process.id: Processes aren't allowed to throw reserved events:
+				eventThrow@$processId: Processes aren't allowed to throw reserved events:
 					Event: "$event"
 				""")
 
@@ -394,7 +395,7 @@ class Main {
 			//	error.fileName = handler.process.path
 
 				kdbAdd("""
-					eventThrow@$process.id: Handler failed to execute:
+					eventThrow@$processId: Handler failed to execute:
 						Event: "$event"
 					""", ExceptionUtils.getStackTrace(exception))
 			}
@@ -403,18 +404,18 @@ class Main {
 		return true
 	}
 
-	Integer eventCatch(Map process, String event, Closure function) {
+	Integer eventCatch(Integer processId, String event, Closure function) {
 		def id = handlers.size() > 0 ? handlers.collect { it.id }.max() + 1 : 1
 
 		handlers.push([
 			id: id,
+			processId: processId,
 			type: "event",
-			process: process ?: null,
 			event: event,
 			function: function
 		])
 		kdbAdd("""
-			eventCatch${ process ? "@" + process.id : "" }: Successfully set handler:
+			eventCatch${ processId ? "@$processId" : "" }: Successfully set handler:
 				ID: $id
 				Event: "$event"
 			""")
@@ -422,23 +423,23 @@ class Main {
 		return id
 	}
 
-	Boolean eventCatchRemove(Map process, Integer handlerId) {
+	Boolean eventCatchRemove(Integer processId, Integer handlerId) {
 		def handler = handlers.find { it.id == handlerId && it.type == "event" }
 
 		if (!handler) {
-			kdbAdd("eventCatchRemove${ process ? "@" + process.id : "" }: Unable to find handler: $handlerId")
+			kdbAdd("eventCatchRemove${ processId ? "@$processId" : "" }: Unable to find handler: $handlerId")
 
 			return false
 		}
-		if (process && handler.process != process) {
-			kdbAdd("eventCatchRemove@$process.id: Processes aren't allowed to remove not owned handlers")
+		if (processId && handler.processId != processId) {
+			kdbAdd("eventCatchRemove@$processId: Processes aren't allowed to remove not owned handlers")
 
 			return false
 		}
 
 		handlers.remove(handler)
 		kdbAdd("""
-			eventCatchRemove${ process ? "@" + process.id : "" }: Successfully removed handler:
+			eventCatchRemove${ processId ? "@$processId" : "" }: Successfully removed handler:
 				ID: $handler.id
 				Event: "$handler.event"
 			""")
@@ -446,9 +447,9 @@ class Main {
 		return true
 	}
 
-	Integer timerCreate(Map process, String variant, Integer delay, Closure function, ... arguments) {
+	Integer timerCreate(Integer processId, String variant, Integer delay, Closure function, ... arguments) {
 		if (!["single", "multiple"].contains(variant)) {
-			kdbAdd("timerCreate${ process ? "@" + process.id : "" }: Variant incorrect")
+			kdbAdd("timerCreate${ processId ? "@$processId" : "" }: Variant incorrect")
 
 			return null
 		}
@@ -460,7 +461,7 @@ class Main {
 			timer.schedule(new TimerTask() {
 				void run() {
 					function(*arguments)
-					timerRemove(process, id)
+					timerRemove(processId, id)
 				}
 			}, delay)
 		} else {
@@ -472,13 +473,13 @@ class Main {
 		}
 		handlers.push([
 			id: id,
-			process: process ?: null,
+			processId: processId,
 			type: "timer",
 			variant: variant,
 			timer: timer
 		])
 		kdbAdd("""
-			timerCreate${ process ? "@" + process.id : "" }: Successfully set handler:
+			timerCreate${ processId ? "@$processId" : "" }: Successfully set handler:
 				ID: $id
 				Variant: $variant
 			""")
@@ -486,16 +487,16 @@ class Main {
 		return id
 	}
 
-	Boolean timerRemove(Map process, Integer handlerId) {
+	Boolean timerRemove(Integer processId, Integer handlerId) {
 		def handler = handlers.find { it.id == handlerId && it.type == "timer" }
 
 		if (!handler) {
-			kdbAdd("timerRemove${ process ? "@" + process.id : "" }: Unable to find handler: $handlerId")
+			kdbAdd("timerRemove${ processId ? "@$processId" : "" }: Unable to find handler: $handlerId")
 
 			return false
 		}
-		if (process && handler.process != process) {
-			kdbAdd("timerRemove@$process.id: Processes aren't allowed to remove not owned handlers")
+		if (processId && handler.process != processId) {
+			kdbAdd("timerRemove@$processId: Processes aren't allowed to remove not owned handlers")
 
 			return false
 		}
@@ -503,7 +504,7 @@ class Main {
 		handler.timer.cancel()
 		handlers.remove(handler)
 		kdbAdd("""
-			timerRemove${ process ? "@" + process.id : "" }: Successfully removed handler:
+			timerRemove${ processId ? "@$processId" : "" }: Successfully removed handler:
 				ID: $handler.id
 				Variant: $handler.variant
 			""")
@@ -511,28 +512,40 @@ class Main {
 		return true
 	}
 
-	def processRequest(processEnvironment environment, String method, ... arguments) {
-		switch (method) {
-			case "info":	return processInfo(environment, *arguments)
-		}
+	def processRequest(Integer processId, String method, ... arguments) {
+		return [
+			version: { String a -> version[a] },
+			uptime: { uptime },
+			screen: { screen },
+			info: { a -> processInfo(a ?: processId) }
+		][method](*arguments)
 	}
 
 	/**
 	 * Окружение процесса - расширенный загрузчик классов, позволяющий динамическую сборку и подключение классов из .framework'ов.
 	 */
 	class processEnvironment extends GroovyClassLoader {
-		processEnvironment(ClassLoader classLoader = null) {
+		Integer processId
+
+		processEnvironment(ClassLoader classLoader, Integer processId) {
 			super(classLoader)
 
-		//	shouldRecompile = true
+			this.processId = processId
 		}
 
 		Class compileClass(String path, Boolean main) {
-			def parts = path.split(/\./) as List,
-				framework = parts[0],
-				clazz = main ? "Main" : parts[1] ?: framework,
-				clazzPath = main ? path : "/Environment/Library/Frameworks/${ framework }.framework/Classes/${ clazz }.groovy",
-				file = !main && parts.size() > 2 ? null : fsRead(clazzPath, "text")
+			def framework, clazz, file
+
+			if (!main) {
+				def parts = path.split(/\./) as List
+
+				framework = parts[0]
+				clazz = parts[1] ?: framework
+				file = parts.size() > 2 ? null : fsRead("/Environment/Library/Frameworks/${ framework }.framework/Classes/${ clazz }.groovy", "text")
+			} else {
+				clazz = "Main"
+				file = fsRead(path, "text")
+			}
 
 			if (!file) {
 				throw new ClassNotFoundException()
@@ -557,16 +570,15 @@ class Main {
 
 			def loadedClass = loadClass(clazz)
 
-			loadedClass.metaClass.with {
-				_request = { String method, ... arguments -> return processRequest(this, method, *arguments) }
-				_info = { ... arguments -> return processRequest(this, "info", *arguments) }
-			}
+			loadedClass.metaClass._request = { String method, ... arguments -> processRequest(processId, method, *arguments) }
 
-			if (getClassCacheEntry(clazz) == null) {
+			if (!getClassCacheEntry(clazz)) {
 				setClassCacheEntry(loadedClass)
 			}
 
-			kdbAdd("processEnvironment: Compiled " + (main ? "main class" : ".framework class: $clazz"))
+			if (!main) {
+				kdbAdd("processEnvironment: Successfully imported ${ framework == clazz ? "main" : clazz } class of $framework framework into process: $processId")
+			}
 
 			return loadedClass
 		}
@@ -586,28 +598,25 @@ class Main {
 		}
 	}
 
-	def processInfo(processEnvironment environment) {
-		return environment.loadedClasses
-	}
-
-	def processExec(Integer terminalId = null, Integer processId = null, String login = null, String password = null, String path, String... arguments) {
+	def processExec(Integer terminalId, Integer processId, String login, String password, String path, String... arguments) {
 		def user = fsReadPreferences('Global').Users.find { it.Login == login && it.Password == password }
 
 		if (!user) {
-			kdbAdd("processExec${ processId ? "@" + processId : "" }: Authorization incorrect")
+			kdbAdd("processExec${ processId ? "@$processId" : "" }: Authorization incorrect")
 
 			return false
 		}
 
-		def process = [
-			id: processes.size() > 0 ? processes.collect { it.id }.max() + 1 : 1,
-			parentId: processId ?: 0,
-			terminalId: terminalId ?: 1,
-			user: user.Login,
-			path: path,
-			arguments: arguments,
-			environment: new processEnvironment(this.class.classLoader.parent)
-		]
+		def id = processes.size() > 0 ? processes.collect { it.id }.max() + 1 : 1,
+			process = [
+				id: id,
+				parentId: processId ?: 0,
+				terminalId: terminalId ?: 1,
+				user: user.Login,
+				path: path,
+				arguments: arguments,
+				environment: new processEnvironment(this.class.classLoader.parent, id)
+			]
 
 		processes.push(process)
 		kdbAdd("""
@@ -618,6 +627,7 @@ class Main {
 				User: $process.user
 				Path: $process.path
 			""")
+		eventThrow(null, "processListChanged", [ event: "added", value: process.id ])
 
 		try {
 			def compiledClass = process.environment.compileClass(path, true)
@@ -625,6 +635,7 @@ class Main {
 			compiledClass.getDeclaredConstructor().newInstance(*arguments)
 		} catch (ClassNotFoundException | CompilationFailedException | InvocationTargetException exception) {
 			processes.remove(process)
+			eventThrow(null, "processListChanged", [ event: "removed", value: process.id ])
 
 			if (exception.class.simpleName == "InvocationTargetException") {
 				kdbAdd("processExec: Process failed to start:")
@@ -638,11 +649,59 @@ class Main {
 		}
 	}
 
-	/*
-	def namedArguments(Map arguments) {
-		kdbAdd("$arguments.a, $arguments.b, $arguments.c, $arguments.d")
+	List processList() {
+		return processes.collect { it.id }
 	}
-	*/
+
+	def processInfo(Object processSearch) {
+		if(!processSearch instanceof Integer && !processSearch instanceof String || processes.size() == 0) {
+			return false
+		}
+
+		def infos = []
+
+		processes.findAll { it.id == processSearch || it.path.endsWith(processSearch) }.each {
+			infos.push([
+				id: it.id,
+				parentId: it.parentId,
+				terminalId: it.terminalId,
+				user: it.user,
+				path: it.path,
+				arguments: [*it.arguments]
+			])
+		}
+
+		if (infos.size() == 0) {
+			return false
+		}
+
+		return processSearch instanceof Integer ? infos[0] : infos
+	}
+
+	def processKill(Integer processId) {
+		def process = processes.find { it.id == processId }
+
+		if (!process) {
+			kdbAdd("processKill: Unable to find process")
+
+			return false
+		}
+
+		handlers.findAll { it.processId == processId }.each {
+			if(it.type == "event") {
+				eventCatchRemove(processId, it.id)
+			} else
+			if(it.type == "timer") {
+				timerRemove(processId, it.id)
+			} else
+			if(it.type == "se") {
+			//	seRemove(processId, it.id)
+			}
+		}
+		processes.remove(process)
+		kdbAdd("processKill: Process removed: $processId")
+		eventThrow(null, "processListChanged", [ event: "removed", value: processId ])
+	}
 
 	//TODO
 	// - DirectRender masking
@@ -650,7 +709,6 @@ class Main {
 	// - DirectRender moving parts of images
 	// - Shared environments handling
 	// - Terminals spawning
-	// * Processes spawning
 	// - Sandboxed classes loading
 	// - CoreFoundation framework
 	// - CoreGraphics framework

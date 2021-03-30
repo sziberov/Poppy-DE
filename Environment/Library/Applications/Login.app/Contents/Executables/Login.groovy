@@ -12,6 +12,6 @@ class Main {
 		Leaf.method()
 		new Leaf().dynamicMethod()
 		println(new LFTemporary().methodDynamic())
-		println(_info())
+		println(_request("info"))
 	}
 }
