@@ -111,6 +111,18 @@ class Main {
 		} finally {
 			bootState(false)
 		}
+
+		/*
+		def shit = [:]
+		def proxy = Object
+
+		proxy.getMetaClass().getProperty = { String name -> shit[name] ?: "missing" }
+		proxy.getMetaClass().setProperty = { String name, value -> shit[name] = "portSET" }
+
+		println proxy.dich
+		proxy.dich = "asd"
+		println proxy.dich
+		*/
 	}
 
 	class frameKeyboard implements KeyListener {
