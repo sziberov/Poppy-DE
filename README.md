@@ -16,6 +16,6 @@ Architecture:
 				Dock
 				...
 
-Kernel and everything will be moved onto JVM + Groovy platform, as JS still lacks several important features.
+Plans about porting kernel and everything onto JVM + Groovy platform coming into effect.
 
 Планы по переносу ядра и всего остального на платформу JVM + Groovy вступают в силу.
