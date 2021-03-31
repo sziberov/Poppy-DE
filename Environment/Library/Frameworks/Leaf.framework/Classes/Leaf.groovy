@@ -1,3 +1,4 @@
+import CoreFoundation
 import Leaf.LFTemporary
 import Leaf.LFView
 import Leaf.LFMenu

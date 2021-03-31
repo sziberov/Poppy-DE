@@ -4,8 +4,6 @@
 */
 
 import groovy.json.JsonSlurper
-import org.apache.tools.ant.taskdefs.Echo
-
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
@@ -111,18 +109,6 @@ class Main {
 		} finally {
 			bootState(false)
 		}
-
-		/*
-		def shit = [:]
-		def proxy = Object
-
-		proxy.getMetaClass().getProperty = { String name -> shit[name] ?: "missing" }
-		proxy.getMetaClass().setProperty = { String name, value -> shit[name] = "portSET" }
-
-		println proxy.dich
-		proxy.dich = "asd"
-		println proxy.dich
-		*/
 	}
 
 	class frameKeyboard implements KeyListener {
@@ -182,10 +168,10 @@ class Main {
 			""")
 
 		def backgroundLine = 0,
-			animation = timerCreate(null, "multiple", 125 / (screen.height / 125) / 8 as Integer, {
+			animation = timerCreate(null, "multiple", 125 / (screen.height / 125) / 2 as Integer, {
 				if (backgroundLine <= screen.height) {
-					drDraw(framebuffer, "rectangle", new Color(0, 0, 0, 0.25), 0, backgroundLine, screen.width, 1)
-					backgroundLine++
+					drDraw(framebuffer, "rectangle", new Color(0, 0, 0, 0.25), 0, backgroundLine, screen.width, 4)
+					backgroundLine += 4
 
 					eventThrow(null, "fbChanged")
 				} else {
@@ -524,6 +510,110 @@ class Main {
 		return true
 	}
 
+	def seCreate(Integer processId, String access, String title) {
+		def id = handlers.size() > 0 ? handlers.collect { it.id }.max() + 1 : 1
+
+		if (!["read", "readWrite"].contains(access)) {
+			kdbAdd("seCreate${ processId ? "@$processId" : "" }: Access incorrect")
+
+			return false
+		}
+		if (title && handlers.find { it.title == title && it.type == "se" }) {
+			kdbAdd("seCreate${ processId ? "@$processId" : "" }: Handler with same title already set")
+
+			return false
+		}
+
+		handlers.push([
+			id: id,
+			processId: processId,
+			type: "se",
+			access: access,
+			title: title,
+			environment: [:]
+		])
+		kdbAdd("""
+			seCreate${ processId ? "@$processId" : "" }: Successfully set handler:
+				ID: $id
+				Access: $access
+				Title: ${ title ? "$title" : "Not set" }
+			""")
+
+		return id
+	}
+
+	def seList(Integer processId) {
+		return handlers.findAll { (!processId || it.processId == processId) && it.type == "se" }.collect { it.id }
+	}
+
+	def seInfo(Integer processId, handlerSearch) {
+		def handler = handlers.find { (it.id == handlerSearch || it.title == handlerSearch) && it.type == "se" }
+
+		if (!handler) {
+			kdbAdd("seInfo${ processId ? "@$processId" : "" }: Unable to find handler")
+
+			return false
+		}
+
+		def validator
+
+		validator = { Map target ->
+			def proxy = Object
+
+			proxy.metaClass.with {
+				getProperty = { String key ->
+					if (handlers.contains(handler)) {
+						if (processId && handler.processId != processId && handler.access == "read" && target[key] instanceof Map) {
+							return validator(target[key])
+						}
+
+						return target[key]
+					}
+				}
+				setProperty = { String key, value ->
+					if (handlers.contains(handler)) {
+						if (processId && handler.processId != processId && handler.access == "read") {
+							return false
+						}
+
+						target[key] = value
+					}
+				}
+			}
+
+			return proxy
+		}
+
+		return [
+			id: handler.id,
+			processId: handler.processId,
+			access: handler.access,
+			title: handler.title,
+			environment: validator(handler.environment)
+		]
+	}
+
+	def seRemove(Integer processId, handlerSearch) {
+		def handler = handlers.find { (it.id == handlerSearch || it.title == handlerSearch) && it.type == "se" }
+
+		if (!handler) {
+			kdbAdd("seRemove${ processId ? "@$processId" : "" }: Unable to find handler")
+
+			return false
+		}
+		if (processId && handler.processId != processId) {
+			kdbAdd("seRemove@$processId: Processes aren't allowed to remove not owned handlers")
+
+			return false
+		}
+
+		handlers.remove(handler)
+		kdbAdd("""
+			seRemove${ processId ? "@$processId" : "" }: Successfully removed handler:
+				ID: $handler.id
+			""")
+	}
+
 	def processRequest(Integer processId, String method, ... arguments) {
 		return [
 			version: { String a -> version[a] },
@@ -543,6 +633,8 @@ class Main {
 			super(classLoader)
 
 			this.processId = processId
+
+			parseClass("class Environment {}").metaClass.static.request = { String method, ... arguments -> processRequest(processId, method, *arguments) }
 		}
 
 		Class compileClass(String path, Boolean main) {
@@ -582,8 +674,6 @@ class Main {
 
 			def loadedClass = loadClass(clazz)
 
-			loadedClass.metaClass._request = { String method, ... arguments -> processRequest(processId, method, *arguments) }
-
 			if (!getClassCacheEntry(clazz)) {
 				setClassCacheEntry(loadedClass)
 			}
@@ -596,16 +686,18 @@ class Main {
 		}
 
 		Class findClass(String name) {
+			def clazz = getClassCacheEntry(name)
+
+			if (clazz != null) {
+				return clazz
+			}
+
 			try {
-				return super.findClass(name)
+				return compileClass(name, false)
 			} catch (ClassNotFoundException classNotFoundException) {
-				try {
-					return compileClass(name, false)
-				} catch (ClassNotFoundException ignored) {
-					throw classNotFoundException
-				} catch (CompilationFailedException compilationFailedException) {
-					throw compilationFailedException
-				}
+				throw classNotFoundException
+			} catch (CompilationFailedException compilationFailedException) {
+				throw compilationFailedException
 			}
 		}
 	}
@@ -633,13 +725,13 @@ class Main {
 		processes.push(process)
 		kdbAdd("""
 			processExec: Process starting:
-				ID: $process.id
+				ID: $processId
 				Parent ID: $process.parentId
 				Terminal ID: $process.terminalId
 				User: $process.user
 				Path: $process.path
 			""")
-		eventThrow(null, "processListChanged", [ event: "added", value: process.id ])
+		eventThrow(null, "processListChanged", [ event: "added", value: processId ])
 
 		try {
 			def compiledClass = process.environment.compileClass(path, true)
@@ -647,7 +739,7 @@ class Main {
 			compiledClass.getDeclaredConstructor().newInstance(*arguments)
 		} catch (ClassNotFoundException | CompilationFailedException | InvocationTargetException exception) {
 			processes.remove(process)
-			eventThrow(null, "processListChanged", [ event: "removed", value: process.id ])
+			eventThrow(null, "processListChanged", [ event: "removed", value: processId ])
 
 			if (exception.class.simpleName == "InvocationTargetException") {
 				kdbAdd("processExec: Process failed to start:")
@@ -707,7 +799,7 @@ class Main {
 				timerRemove(processId, it.id)
 			} else
 			if(it.type == "se") {
-			//	seRemove(processId, it.id)
+				seRemove(processId, it.id)
 			}
 		}
 		processes.remove(process)
@@ -719,7 +811,7 @@ class Main {
 	// - DirectRender masking
 	// - DirectRender drawing parts of images
 	// - DirectRender moving parts of images
-	// - Shared environments handling
+	// * Shared environments handling
 	// - Terminals spawning
 	// - Sandboxed classes loading
 	// - CoreFoundation framework

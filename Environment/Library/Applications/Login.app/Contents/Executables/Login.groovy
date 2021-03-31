@@ -12,6 +12,7 @@ class Main {
 		Leaf.method()
 		new Leaf().dynamicMethod()
 		println(new LFTemporary().methodDynamic())
-		println(_request("info"))
+		println(new CFProcessInfo().path)
+		println(this.class.classLoader.loadedClasses)
 	}
 }

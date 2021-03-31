@@ -58,6 +58,10 @@
           <properties class="javax.imageio.IIOException" package="javax.imageio" />
           <option name="timeStamp" value="5" />
         </breakpoint>
+        <breakpoint enabled="true" type="java-exception">
+          <properties class="java.lang.ExceptionInInitializerError" package="java.lang" />
+          <option name="timeStamp" value="43" />
+        </breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
