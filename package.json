@@ -1,0 +1,14 @@
+{
+	"name": "Poppy DE",
+	"main": "Environment/Library/Kernels/Kernel.html",
+	"window": {
+		"fullscreen": true
+	},
+	"dependencies": {
+		"pngjs": "^6.0.0",
+		"svg2png": "^4.1.1"
+	},
+	"devDependencies": {
+		"image-size": "^0.9.7"
+	}
+}
