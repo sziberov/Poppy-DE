@@ -8,7 +8,7 @@ return class {
 		}
 
 		if(typeof URL == string) {
-		//	this.#canvas = await _request('drOpen', CFFile.content(URL), format);
+			this.#canvas = _request('drOpen', CFFile.content(URL), format);
 		} else {
 			this.#canvas = _request('drCreate', width, height);
 		}

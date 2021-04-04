@@ -381,11 +381,12 @@
 				}
 
 				if(format == 'svg') {
-					data = require('svg2png').sync(data);
+				//	data = require('svg2png').sync(data);
+                    data = require('child_process').spawnSync('magick', ['-background', 'none', 'svg:-', 'png:-'], { input: data }).stdout;
+                //                                 .spawnSync('inkscape', ['--pipe', '--export-filename=-', '--export-type=png'], { input: data }).stdout;
 				}
 
 				let image = require('pngjs').PNG.sync.read(data),
-					//image = (require('image-size'))(data),
 					imageData = new ImageData(new Uint8ClampedArray(image.data), image.width, image.height),
 					canvas = this.drCreate(image.width, image.height);
 
