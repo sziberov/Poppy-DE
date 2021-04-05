@@ -7,12 +7,10 @@
 		*/
 
 		const Opium = new class {
-			#uptime = Date.now();
-			#boot;
-
 			constructor() {
 				this.extensionExec();
 
+				this.uptimeStart = Date.now();
 				this.framebuffer = this.drCreate(this.screen.width, this.screen.height);
 				this.colors = {
 					black:		'rgb(0%,0%,0%)',
@@ -40,6 +38,7 @@
 				}
 				this.handlers = []
 				this.eventsReserved = ['fbChanged', 'terminalChanged', 'processListChanged', 'dateChanged']
+				this.bootHandlerId = undefined;
 				this.terminals = []
 				this.processes = []
 				this.environment = {
@@ -63,11 +62,6 @@
 						this.bootState(true);
 					//	this.verbose = true;
 
-					//	let canvas = this.drCreate(this.screen.width, this.screen.height);
-
-					//	this.drDraw(canvas, 'image', this.drOpen(this.fsRead('/drawing.png'), 'png'), 0, 0, '100', '100');
-					//	this.fbWrite(undefined, canvas);
-
 						this.eventCatch(undefined, 'terminalChanged', (_) => {
 							let terminal = this.terminals.filter(v => v.id == _.terminalId)[0],
 								string = {
@@ -86,14 +80,15 @@
 									width = 8,
 									height = 16;
 
-								this.drDraw(canvas, 'rectangle', this.colors.white, 0, string.id*height-height, string.value.length*width, height);
+								this.drDraw(canvas, 'rectangle', this.colors.black, 0, string.id*height-height, string.value.length*width, height);
 								for(let i in string.value) {
 									let position = alphabet.indexOf(string.value[i]);
 
 									if(position > -1) {
 										let symbol = this.drCreate(width, height);
 
-										this.drMove(font, 'copy', position*width, 0, width, height, 0, 0, symbol);
+										this.drDraw(symbol, 'rectangle', this.colors.white, 0, 0, width, height);
+										this.drMask(symbol, this.drClip(font, position*width, 0, width, height));
 										this.drDraw(canvas, 'image', symbol, i*width, string.id*height-height);
 									}
 								}
@@ -115,9 +110,16 @@
                         sh.postMessage({ Opium: this });
                         */
 
-						this.processExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
+						this.timerCreate(undefined, 'single', 125/2, () => {
+							this.bootState(false);
+						});
 
-					//	this.bootState(false);
+					//	let canvas = this.drCreate(this.screen.width, this.screen.height);
+
+					//	this.drDraw(canvas, 'image', this.drOpen(this.fsRead('/drawing.png'), 'png'), 0, 0, '100', '100');
+					//	this.fbWrite(undefined, canvas);
+
+						this.processExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
 					} catch(error) {
 						this.kdbPanic(error);
 					}
@@ -138,7 +140,7 @@
 			}
 
 			get uptime() {
-				return new Date(Date.now()-this.#uptime).getTime();
+				return new Date(Date.now()-this.uptimeStart).getTime();
 			}
 
 			get screen() {
@@ -191,19 +193,19 @@
 					environment configuration and what you were doing at the time that
 					the kernel panic occurred. We apologize for the inconvenience.
 
-					panic: "${a.name}: ${a.message}"@${a.fileName}:${a.lineNumber}
+					panic: "${ a.name }: ${ a.message }"@${ a.fileName }:${ a.lineNumber }
 
-					${a.stack}
+					${ a.stack }
 
-					Process title corresponding to current thread: ${a.fileName?.split('/').pop()}
+					Process title corresponding to current thread: ${ a.fileName?.split('/').pop() }
 
 					Kernel version:
-					${this.version.kernel?.join(' ') || 'Not yet set'}
+					${ this.version.kernel?.join(' ') || 'Not yet set' }
 
 					DE version:
-					${this.version.DE?.pop() || 'Not yet set'}
+					${ this.version.DE?.pop() || 'Not yet set' }
 
-					Environment uptime in milliseconds: ${this.uptime}
+					Environment uptime in milliseconds: ${ this.uptime }
 				`);
 				$('kdb').attr('panic', '');
 
@@ -220,14 +222,14 @@
 
 				switch(value) {
 					case false:
-						if(this.#boot) {
-							this.timerRemove(undefined, this.#boot);
+						if(this.bootHandlerId) {
+							this.timerRemove(undefined, this.bootHandlerId);
 
-							this.#boot = undefined;
+							this.bootHandlerId = undefined;
 						}
 					break
 					case true:
-						if(!this.#boot) {
+						if(!this.bootHandlerId) {
 							let logo = this.drOpen(this.images.logo),
 								spinner = this.drOpen(this.images.spinner),
 								spinnerBackground = this.drCreate(spinner.width, spinner.height),
@@ -237,8 +239,8 @@
 							this.drDraw(canvas, 'image', logo, canvas.width/2-logo.width/2, canvas.height/2-logo.height/2);
 							this.drDraw(spinnerBackground, 'rectangle', this.colors.lightGray, 0, 0, spinnerBackground.width, spinnerBackground.height);
 
-							this.#boot = this.timerCreate(undefined, 'multiple', 125/2, () => {
-								spinnerIteration = spinnerIteration > 10 ? 0 : spinnerIteration+1;
+							this.bootHandlerId = this.timerCreate(undefined, 'multiple', 125/2, () => {
+								spinnerIteration = spinnerIteration > 10 ? 0 : ++spinnerIteration;
 
 								let x = canvas.width/2,
 									y = canvas.height/2+(canvas.height+logo.height)/4,
@@ -313,10 +315,10 @@
 					}
 				}
 				for(let v of a) {
-					let b = `/Environment/Library/Extensions/${v}.kext/Contents/Executables/${v}.js`;
+					let b = `/Environment/Library/Extensions/${ v }.kext/Contents/Executables/${ v }.js`;
 
 					if(this.fsRead(b)) {
-					//  window[v] = require(`../Extensions/${v}.kext/Contents/Modules/${v}.js`);
+					//  window[v] = require(`../Extensions/${ v }.kext/Contents/Modules/${ v }.js`);
 						new Function(this.fsRead(b))();
 					}
 				}
@@ -431,7 +433,7 @@
 			}
 			*/
 
-			drDraw(canvas, type, ..._arguments) {
+			drDraw(canvas, type, ...arguments_) {
 				let context = canvas.getContext('2d');
 
 				return {
@@ -439,8 +441,8 @@
 						context.fillStyle = color;
 						context.fillRect(x, y, width, height);
 					},
-					image: (_canvas, x, y, width, height, angle) => {
-						let _context = _canvas.getContext('2d');
+					image: (canvas_, x, y, width, height, angle) => {
+						let context_ = canvas_.getContext('2d');
 
 						if(typeof width == 'string') {
 							width = parseInt(width)/100*canvas.width;
@@ -451,14 +453,14 @@
 
 						if(typeof angle !== 'number') {
 							context.imageSmoothingEnabled = width || height ? true : false;
-							context.drawImage(_canvas, x || 0, y || 0, width || _canvas.width, height || _canvas.height);
+							context.drawImage(canvas_, x || 0, y || 0, width || canvas_.width, height || canvas_.height);
 						} else {
 							angle = angle*Math.PI/180;
 
 							context.imageSmoothingEnabled = Math.isEven(angle/90) ? false : true;
 							context.translate(x, y);
 							context.rotate(angle);
-							context.drawImage(_canvas, -_canvas.width/2, -_canvas.height/2);
+							context.drawImage(canvas_, -canvas_.width/2, -canvas_.height/2);
 							context.rotate(-angle);
 							context.translate(-x, -y);
 						}
@@ -469,7 +471,17 @@
 						context.fillStyle = color;
 						context.fillText(value, x, y);
 					}
-				}[type](..._arguments);
+				}[type](...arguments_);
+			}
+			
+			drClip(canvas, x, y, width, height) {
+				let canvas_ = this.drCreate(width, height),
+					context = canvas.getContext('2d'),
+					context_ = canvas_.getContext('2d');
+
+				context_.putImageData(context.getImageData(x, y, width, height), 0, 0);
+
+				return canvas_;
 			}
 
 			drMove(canvas, type, x = 0, y = 0, width, height, toX = 0, toY = 0, toCanvas) {
@@ -497,16 +509,16 @@
 				}
 			}
 
-			drMask(canvas, _canvas, ..._arguments) {
-				let __canvas = this.drCreate(canvas.width, canvas.height);
+			drMask(canvas, canvas_, ...arguments_) {
+				let canvas__ = this.drCreate(canvas.width, canvas.height);
 
-				this.drDraw(__canvas, 'image', _canvas, ..._arguments);
+				this.drDraw(canvas__, 'image', canvas_, ...arguments_);
 
-				__canvas.getContext('2d').globalCompositeOperation = 'source-in';
+				canvas__.getContext('2d').globalCompositeOperation = 'source-in';
 
-				this.drDraw(__canvas, 'image', canvas);
+				this.drDraw(canvas__, 'image', canvas);
 				this.drClear(canvas);
-				this.drDraw(canvas, 'image', __canvas);
+				this.drDraw(canvas, 'image', canvas__);
 			}
 
 			drClear(canvas, x, y, width, height) {
@@ -579,11 +591,11 @@
 				return Buffer.from(Buffer.from(data.replace(regex, ''), 'base64'));
 			}
 
-			eventThrow(processId, event, ..._arguments) {
+			eventThrow(processId, event, ...arguments_) {
 				if(processId && this.eventsReserved.includes(event)) {
 					this.kdbAdd(`
-						eventThrow@${processId}: Processes aren't allowed to throw reserved events:
-						    Event: ${'"'+event+'"'}
+						eventThrow@${ processId }: Processes aren't allowed to throw reserved events:
+						    Event: "${ event }"
 					`);
 
 					return;
@@ -591,12 +603,12 @@
 
 				for(let handler of this.handlers.filter(v => v.event == event && v.type == 'event')) {
 					try {
-						handler.function(..._arguments);
+						handler.function(...arguments_);
 					} catch(error) {
 						error.fileName = handler.process.path;
 						this.kdbAdd(`
-							eventThrow@${processId}: Handler failed to execute:
-							    Event: ${'"'+event+'"'}
+							eventThrow@${ processId }: Handler failed to execute:
+							    Event: "${ event }"
 						`, error.stack);
 					}
 				}
@@ -613,9 +625,9 @@
 					function: _function
 				});
 				this.kdbAdd(`
-					eventCatch${processId ? '@'+processId : ''}: Successfully set handler:
-					    ID: ${id}
-					    Event: ${'"'+event+'"'}
+					eventCatch${ processId ? '@'+processId : '' }: Successfully set handler:
+					    ID: ${ id }
+					    Event: "${ event }"
 				`);
 
 				return id;
@@ -625,37 +637,37 @@
 				let handler = this.handlers.filter(v => v.id == handlerId && v.type == 'event')[0]
 
 				if(!handler) {
-					this.kdbAdd(`eventCatchRemove${processId ? '@'+processId : ''}: Unable to find handler`);
+					this.kdbAdd(`eventCatchRemove${ processId ? '@'+processId : '' }: Unable to find handler`);
 
 					return;
 				}
 				if(processId && handler.processId !== processId) {
-					this.kdbAdd(`eventCatchRemove@${processId}: Processes aren't allowed to remove not owned handlers`);
+					this.kdbAdd(`eventCatchRemove@${ processId }: Processes aren't allowed to remove not owned handlers`);
 
 					return;
 				}
 
 				this.handlers = this.handlers.filter(v => v !== handler);
 				this.kdbAdd(`
-					eventCatchRemove${processId ? '@'+processId : ''}: Successfully removed handler:
-					    ID: ${handler.id}
-					    Event: "${handler.event}"
+					eventCatchRemove${ processId ? '@'+processId : '' }: Successfully removed handler:
+					    ID: ${ handler.id }
+					    Event: "${ handler.event }"
 				`);
 			}
 
-			timerCreate(processId, variant, delay, _function, ..._arguments) {
+			timerCreate(processId, variant, delay, _function, ...arguments_) {
 				if(!['single', 'multiple'].includes(variant)) {
-					this.kdbAdd(`timerCreate${processId ? '@'+processId : ''}: Variant incorrect`);
+					this.kdbAdd(`timerCreate${ processId ? '@'+processId : '' }: Variant incorrect`);
 
 					return;
 				}
 				if(typeof delay !== 'number') {
-					this.kdbAdd(`timerCreate${processId ? '@'+processId : ''}: Delay incorrect`);
+					this.kdbAdd(`timerCreate${ processId ? '@'+processId : '' }: Delay incorrect`);
 
 					return;
 				}
 				if(typeof _function !== 'function') {
-					this.kdbAdd(`timerCreate${processId ? '@'+processId : ''}: Function incorrect`);
+					this.kdbAdd(`timerCreate${ processId ? '@'+processId : '' }: Function incorrect`);
 
 					return;
 				}
@@ -665,11 +677,11 @@
 
 				if(variant == 'single') {
 					timer = setTimeout(() => {
-						_function(..._arguments);
+						_function(...arguments_);
 						this.timerRemove(processId, id);
 					}, delay);
 				} else {
-					timer = setInterval(_function, delay, ..._arguments);
+					timer = setInterval(_function, delay, ...arguments_);
 				}
 				this.handlers.push({
 					id: id,
@@ -679,9 +691,9 @@
 					timer: timer
 				});
 				this.kdbAdd(`
-					timerCreate${processId ? '@'+processId : ''}: Successfully set handler:
-					    ID: ${id}
-					    Variant: ${variant}
+					timerCreate${ processId ? '@'+processId : '' }: Successfully set handler:
+					    ID: ${ id }
+					    Variant: ${ variant }
 				`);
 
 				return id;
@@ -691,12 +703,12 @@
 				let handler = this.handlers.filter(v => v.id == handlerId && v.type == 'timer')[0]
 
 				if(!handler) {
-					this.kdbAdd(`timerRemove${processId ? '@'+processId : ''}: Unable to find handler`);
+					this.kdbAdd(`timerRemove${ processId ? '@'+processId : '' }: Unable to find handler`);
 
 					return;
 				}
 				if(processId && handler.processId !== processId) {
-					this.kdbAdd(`timerRemove@${processId}: Processes aren't allowed to remove not owned handlers`);
+					this.kdbAdd(`timerRemove@${ processId }: Processes aren't allowed to remove not owned handlers`);
 
 					return;
 				}
@@ -708,9 +720,9 @@
 				}
 				this.handlers = this.handlers.filter(v => v !== handler);
 				this.kdbAdd(`
-					timerRemove${processId ? '@'+processId : ''}: Successfully removed handler:
-					    ID: ${handler.id}
-					    Variant: ${handler.variant}
+					timerRemove${ processId ? '@'+processId : '' }: Successfully removed handler:
+					    ID: ${ handler.id }
+					    Variant: ${ handler.variant }
 				`);
 			}
 
@@ -718,12 +730,12 @@
 				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1;
 
 				if(!['read', 'readWrite'].includes(access)) {
-					this.kdbAdd(`seCreate${processId ? '@'+processId : ''}: Access incorrect`);
+					this.kdbAdd(`seCreate${ processId ? '@'+processId : '' }: Access incorrect`);
 
 					return;
 				}
 				if(title && this.handlers.filter(v => v.title == title && v.type == 'se')[0]) {
-					this.kdbAdd(`seCreate${processId ? '@'+processId : ''}: Handler with same title already set`);
+					this.kdbAdd(`seCreate${ processId ? '@'+processId : '' }: Handler with same title already set`);
 
 					return;
 				}
@@ -737,10 +749,10 @@
 					environment: {}
 				});
 				this.kdbAdd(`
-					seCreate${processId ? '@'+processId : ''}: Successfully set handler:
-					    ID: ${id}
-					    Access: ${access}
-					    Title: ${'"'+title+'"' || 'Not set'}
+					seCreate${ processId ? '@'+processId : '' }: Successfully set handler:
+					    ID: ${ id }
+					    Access: ${ access }
+					    Title: ${ '"'+title+'"' || 'Not set' }
 				`);
 
 				return id;
@@ -757,12 +769,12 @@
 						undefined;
 
 				if(!['number', 'string'].includes(typeof handlerSearch)) {
-					this.kdbAdd(`seInfo${processId ? '@'+processId : ''}: Search incorrect`);
+					this.kdbAdd(`seInfo${ processId ? '@'+processId : '' }: Search incorrect`);
 
 					return;
 				}
 				if(!handler) {
-					this.kdbAdd(`seInfo${processId ? '@'+processId : ''}: Unable to find handler`);
+					this.kdbAdd(`seInfo${ processId ? '@'+processId : '' }: Unable to find handler`);
 
 					return;
 				}
@@ -804,25 +816,25 @@
 						undefined;
 
 				if(!['number', 'string'].includes(typeof handlerSearch)) {
-					this.kdbAdd(`seInfo${processId ? '@'+processId : ''}: Search incorrect`);
+					this.kdbAdd(`seInfo${ processId ? '@'+processId : '' }: Search incorrect`);
 
 					return;
 				}
 				if(!handler) {
-					this.kdbAdd(`seRemove${processId ? '@'+processId : ''}: Unable to find handler`);
+					this.kdbAdd(`seRemove${ processId ? '@'+processId : '' }: Unable to find handler`);
 
 					return;
 				}
 				if(processId && handler.processId !== processId) {
-					this.kdbAdd(`seRemove@${processId}: Processes aren't allowed to remove not owned handlers`);
+					this.kdbAdd(`seRemove@${ processId }: Processes aren't allowed to remove not owned handlers`);
 
 					return;
 				}
 
 				this.handlers = this.handlers.filter(v => v !== handler);
 				this.kdbAdd(`
-					seRemove${processId ? '@'+processId : ''}: Successfully removed handler:
-					    ID: ${handler.id}
+					seRemove${ processId ? '@'+processId : '' }: Successfully removed handler:
+					    ID: ${ handler.id }
 				`);
 			}
 
@@ -864,13 +876,13 @@
 				let terminal = this.terminals.filter(v => v.id == terminalId)[0]
 
 				if(!terminal) {
-					this.kdbAdd(`terminalOutput${process ? '@'+process.id : ''}: Unable to find terminal`);
+					this.kdbAdd(`terminalOutput${ process ? '@'+process.id : '' }: Unable to find terminal`);
 
 					return;
 				}
 
 				if(process && process.terminalId !== terminalId && process.terminalId !== terminal.parentId) {
-					this.kdbAdd(`terminalOutput@${process.id}: Processes aren't allowed to output into non-parent and not owned terminals`);
+					this.kdbAdd(`terminalOutput@${ process.id }: Processes aren't allowed to output into non-parent and not owned terminals`);
 
 					return;
 				}
@@ -919,22 +931,22 @@
 				let terminal = this.terminals.filter(v => v.id == terminalId)[0]
 
 				if(!['text', 'graphics'].includes(value)) {
-					this.kdbAdd(`terminalMode${process ? '@'+process.id : ''}: Mode incorrect`);
+					this.kdbAdd(`terminalMode${ process ? '@'+process.id : '' }: Mode incorrect`);
 
 					return;
 				}
 				if(!terminal) {
-					this.kdbAdd(`terminalMode${process ? '@'+process.id : ''}: Unable to find terminal`);
+					this.kdbAdd(`terminalMode${ process ? '@'+process.id : '' }: Unable to find terminal`);
 
 					return;
 				}
 				if(terminal.parentId) {
-					this.kdbAdd(`terminalMode${process ? '@'+process.id : ''}: Child terminals shouldn't have changeable mode`);
+					this.kdbAdd(`terminalMode${ process ? '@'+process.id : '' }: Child terminals shouldn't have changeable mode`);
 
 					return;
 				}
 				if(process && process.terminalId !== terminalId) {
-					this.kdbAdd(`terminalMode@${process.id}: Processes aren't allowed to set mode of non-parent terminals`);
+					this.kdbAdd(`terminalMode@${ process.id }: Processes aren't allowed to set mode of non-parent terminals`);
 
 					return;
 				}
@@ -946,12 +958,12 @@
 				let terminal = this.terminals.filter(v => v.id == terminalId)[0]
 
 				if(!terminal) {
-					this.kdbAdd(`terminalRemove${process ? '@'+process.id : ''}: Unable to find terminal`);
+					this.kdbAdd(`terminalRemove${ process ? '@'+process.id : '' }: Unable to find terminal`);
 
 					return;
 				}
 				if(process && process.terminalId !== terminal.parentId) {
-					this.kdbAdd(`terminalRemove@${process.id}: Processes aren't allowed to remove not owned terminals`);
+					this.kdbAdd(`terminalRemove@${ process.id }: Processes aren't allowed to remove not owned terminals`);
 
 					return;
 				}
@@ -962,7 +974,7 @@
 				this.terminals = this.terminals.filter(v => v !== terminal);
 				this.kdbAdd(`
 					terminalRemove: Terminal removed:
-					    ID: ${terminal.id}
+					    ID: ${ terminal.id }
 				`);
 				this.eventThrow(undefined, 'terminalListChanged', { event: 'removed', value: terminal.id });
 			}
@@ -975,7 +987,7 @@
 				return require('vm').runInContext(a, b);
 			}
 
-			processRequest(process, method, ..._arguments) {
+			processRequest(process, method, ...arguments_) {
 				return {
 					version: (a) => this.version[a],
 					uptime: () => this.uptime,
@@ -1010,15 +1022,15 @@
 					system: () => this.system(),
 					relaunch: () => this.environmentRelaunch(process),
 					quit: () => this.environmentQuit(process)
-				}[method](..._arguments);
+				}[method](...arguments_);
 			}
 
-			processExec(terminalId, processId, login, password, path, ..._arguments) {
+			processExec(terminalId, processId, login, password, path, ...arguments_) {
 				let user = this.fsReadPref('Global').Users.filter(v => v.Login == login && v.Password == password)[0],
 					executable = this.fsRead(path);
 
 				if(terminalId && !this.terminals.filter(v => v.id == terminalId)[0]) {
-					this.kdbAdd(`processExec${processId ? '@'+processId : ''}: Terminal incorrect`);
+					this.kdbAdd(`processExec${ processId ? '@'+processId : '' }: Terminal incorrect`);
 
 					return;
 				}
@@ -1026,12 +1038,12 @@
 					terminalId = this.terminalCreate();
 				}
 				if(!user) {
-					this.kdbAdd(`processExec${processId ? '@'+processId : ''}: Authorization incorrect`);
+					this.kdbAdd(`processExec${ processId ? '@'+processId : '' }: Authorization incorrect`);
 
 					return;
 				}
 				if(!executable.startsWith('return class {') || !executable.endsWith('}')) {
-					this.kdbAdd(`processExec${processId ? '@'+processId : ''}: Non-executable format`);
+					this.kdbAdd(`processExec${ processId ? '@'+processId : '' }: Non-executable format`);
 
 					return;
 				}
@@ -1042,7 +1054,7 @@
 						terminalId: terminalId,
 						user: user.Login,
 						path: path,
-						arguments: _arguments.filter(v => typeof v === 'string'),
+						arguments: arguments_.filter(v => typeof v === 'string'),
 						environment: undefined
 					}
 					process.environment = this.sbCreate(new Proxy({
@@ -1053,20 +1065,20 @@
 						_protected: (...a) => this.processRequest(process, 'protected', ...a)
 					}, {
 						get: (target, key) => {
-							return key == '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key == 'require' ? undefined : target[key] || this.environment[key]
+							return key == 'arguments_' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key == 'require' ? undefined : target[key] || this.environment[key]
 						}
 					}));
 
 				this.processes.push(process);
 				try {
-					this.sbExec(`var _executable = new ((() => { ${executable} })())(..._arguments);`, process.environment);
+					this.sbExec(`var _executable = new ((() => { ${ executable } })())(...arguments_);`, process.environment);
 					this.kdbAdd(`
 						processExec: Process started:
-						    ID: ${process.id}
-						    Parent ID: ${process.parentId}
-						    Terminal ID: ${process.terminalId}
-						    User: ${process.user}
-						    Path: ${process.path}
+						    ID: ${ process.id }
+						    Parent ID: ${ process.parentId }
+						    Terminal ID: ${ process.terminalId }
+						    User: ${ process.user }
+						    Path: ${ process.path }
 					`);
 					this.eventThrow(undefined, 'processListChanged', { event: 'added', value: process.id });
 
@@ -1074,7 +1086,7 @@
 				} catch(error) {
 					error.fileName = process.path;
 					this.processes = this.processes.filter(v => v !== process);
-					this.kdbAdd(`processExec: Process stopped: "${error.name}: ${error.message}":`, error.stack);
+					this.kdbAdd(`processExec: Process stopped: "${ error.name }: ${ error.message }":`, error.stack);
 					this.eventThrow(undefined, 'processListChanged', { event: 'removed', value: process.id });
 
 					throw error;
@@ -1097,12 +1109,12 @@
 						undefined;
 
 				if(!['number', 'string'].includes(typeof processSearch)) {
-					this.kdbAdd(`processInfo${process ? '@'+process.id : ''}: Search incorrect`);
+					this.kdbAdd(`processInfo${ process ? '@'+process.id : '' }: Search incorrect`);
 
 					return;
 				}
 				if(processes.length == 0) {
-					this.kdbAdd(`processInfo${process ? '@'+process.id : ''}: Unable to find processes`);
+					this.kdbAdd(`processInfo${ process ? '@'+process.id : '' }: Unable to find processes`);
 
 					return;
 				}
@@ -1128,7 +1140,7 @@
 
 						if(b && b.environment) {
 							if(b.environment[key]) {
-								this.kdbAdd(`processFork: Successfully forked "${key}" into child process: ${b.id} -> ${processId}`);
+								this.kdbAdd(`processFork: Successfully forked "${ key }" into child process: ${ b.id } -> ${ processId }`);
 
 								return b.environment[key]
 							} else
@@ -1173,7 +1185,7 @@
 				this.processes = this.processes.filter(v => v !== process);
 				this.kdbAdd(`
 					processKill: Process removed:
-					    ID: ${processId}
+					    ID: ${ processId }
 				`);
 				if(b) {
 					this.kdbAdd(`    Deconstructor failed:`, error.stack)
@@ -1194,7 +1206,7 @@
 					c = this.fsRead(a[1]+a[2]) || this.fsRead(a[0]+a[1]+a[2]) || undefined;
 
 				if(!c) {
-					this.kdbAdd(`classImport: Unable to access requested ${fwTitle !== moduleTitle ? moduleTitle+' module of ' : ''}${fwTitle} framework`);
+					this.kdbAdd(`classImport: Unable to access requested ${ fwTitle !== moduleTitle ? moduleTitle+' module of ' : '' }${ fwTitle } framework`);
 
 					return;
 				}
@@ -1204,13 +1216,13 @@
 						.replace(/@(Resources)/g, b+a[3])
 						.replace(/@(Title)/g, moduleTitle);
 
-					this.sbExec(`var ${moduleTitle} = (() => { ${c} })();`, process.environment);
+					this.sbExec(`var ${ moduleTitle } = (() => { ${ c } })();`, process.environment);
 
 					if(fwTitle == moduleTitle) {
-						this.kdbAdd(`classImport: Successfully imported main module of ${fwTitle} framework into process: ${process.id}`);
+						this.kdbAdd(`classImport: Successfully imported main module of ${ fwTitle } framework into process: ${ process.id }`);
 					}
 				} catch(error) {
-					this.kdbAdd(`classImport: Failed to import requested ${fwTitle !== moduleTitle ? moduleTitle+' module of ' : ''}${fwTitle} framework: "${error.name}: ${error.message}"`, error.stack);
+					this.kdbAdd(`classImport: Failed to import requested ${ fwTitle !== moduleTitle ? moduleTitle+' module of ' : '' }${ fwTitle } framework: "${ error.name }: ${ error.message }"`, error.stack);
 				}
 			}
 
@@ -1279,9 +1291,9 @@
 			classSingle(a) {
 				return new Proxy(a, {
 					instance: undefined,
-					construct: function(target, _arguments) {
+					construct: function(target, arguments_) {
 						if(!this.instance) {
-							this.instance = new target(..._arguments);
+							this.instance = new target(...arguments_);
 						}
 
 						return this.instance;
