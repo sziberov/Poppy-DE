@@ -63,13 +63,13 @@
 					//	this.verbose = true;
 
 						this.eventCatch(undefined, 'terminalChanged', (_) => {
-							let terminal = this.terminals.filter(v => v.id == _.terminalId)[0],
+							let terminal = this.terminals.find(v => v.id == _.terminalId),
 								string = {
 									id: _.stringId,
 									processId: _.processId,
 									value: _.value
 								},
-								process = this.processes.filter(v => v.id == _.processId)[0]
+								process = this.processes.find(v => v.id == _.processId)
 
 							string.value = process ? process.path.split('/').pop()+': '+string.value : string.value;
 
@@ -119,7 +119,7 @@
 					//	this.drDraw(canvas, 'image', this.drOpen(this.fsRead('/drawing.png'), 'png'), 0, 0, '100', '100');
 					//	this.fbWrite(undefined, canvas);
 
-						this.processExec(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
+						this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
 					} catch(error) {
 						this.kdbPanic(error);
 					}
@@ -263,7 +263,7 @@
 						return require('fs').readFileSync('.'+a).toString();
 					}
 				} catch(error) {
-					return undefined;
+					console.warn(0); return;
 				}
 			}
 
@@ -286,11 +286,11 @@
 
 					return true;
 				} catch(error) {
-					return undefined;
+					console.error(0); return;
 				}
 			}
 
-			fsReadDir(a) {
+			fsReadDirectory(a) {
 				try {
 					return require('fs').readdirSync('.'+a, { withFileTypes: true });
 				} catch(error) {
@@ -298,7 +298,7 @@
 				}
 			}
 
-			fsReadPref(a) {
+			fsReadPreferences(a) {
 				let b = this.fsRead('/Library/Preferences/'+a+'.plist') ||
 						this.fsRead('/Environment/Library/Preferences/'+a+'.plist') ||
 						undefined;
@@ -310,7 +310,7 @@
 				var a = Array.isArray(a) ? a : []
 
 				if(a.length == 0) {
-					for(let v of this.fsReadDir('/Environment/Library/Extensions')) {
+					for(let v of this.fsReadDirectory('/Environment/Library/Extensions')) {
 						a.push(v.name.replace('.kext', ''));
 					}
 				}
@@ -318,7 +318,7 @@
 					let b = `/Environment/Library/Extensions/${ v }.kext/Contents/Executables/${ v }.js`;
 
 					if(this.fsRead(b)) {
-					//  window[v] = require(`../Extensions/${ v }.kext/Contents/Modules/${ v }.js`);
+					//	window[v] = require(`../Extensions/${ v }.kext/Contents/Classes/${ v }.js`);
 						new Function(this.fsRead(b))();
 					}
 				}
@@ -329,13 +329,13 @@
 			}
 
 			fbWrite(process, value) {
-				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process?.user)[0]?.Group;
+				let group = this.fsReadPreferences('Global').Users.find(v => v.Login == process?.user)?.Group;
 
 				if(process && group > 0) {
-					return;
+					console.error(0); return;
 				}
 				if(value !== '' && !value instanceof Buffer && !value instanceof HTMLCanvasElement) {
-					return;
+					console.error(1); return;
 				}
 
 				let canvas = this.framebuffer;
@@ -354,7 +354,7 @@
 
 			drCreate(width, height) {
 				if(typeof width !== 'number' || typeof height !== 'number') {
-					return;
+					console.error(0); return;
 				}
 
 				let canvas = $('<canvas/>')[0]
@@ -370,7 +370,7 @@
 				let regex = /^data:image\/(.*);base64,/gi;
 
 				if(!data || !data instanceof Buffer && !(typeof data == 'string' || regex.test(data))) {
-					return 0;
+					console.error(0); return;
 				}
 
 				if(typeof data == 'string') {
@@ -379,13 +379,11 @@
 				}
 
 				if(!['png', 'svg'].includes(format)) {
-					return 1;
+					console.error(1); return;
 				}
 
 				if(format == 'svg') {
-				//	data = require('svg2png').sync(data);
-                    data = require('child_process').spawnSync('magick', ['-background', 'none', 'svg:-', 'png:-'], { input: data }).stdout;
-                //                                 .spawnSync('inkscape', ['--pipe', '--export-filename=-', '--export-type=png'], { input: data }).stdout;
+					data = require('child_process').spawnSync('magick', ['-background', 'none', 'svg:-', 'png:-'], { input: data }).stdout;
 				}
 
 				let image = require('pngjs').PNG.sync.read(data),
@@ -441,6 +439,21 @@
 						context.fillStyle = color;
 						context.fillRect(x, y, width, height);
 					},
+			    	gradient: (colors, x, y, toX, toY) => {
+						let gradient = context.createLinearGradient(x, y, toX, toY);
+
+						for(let v of colors) {
+							let position = v[0],
+								color = v[1]
+
+							if(typeof position == "number" && position >= 0 && position <= 1) {
+								gradient.addColorStop(position, color);
+							}
+						}
+
+						context.fillStyle = gradient;
+						context.fillRect(x, y, toX, toY);
+					},
 					image: (canvas_, x, y, width, height, angle) => {
 						let context_ = canvas_.getContext('2d');
 
@@ -473,7 +486,7 @@
 					}
 				}[type](...arguments_);
 			}
-			
+
 			drClip(canvas, x, y, width, height) {
 				let canvas_ = this.drCreate(width, height),
 					context = canvas.getContext('2d'),
@@ -493,7 +506,7 @@
 					typeof toX,
 					typeof toY
 				].some(v => v !== 'number')) {
-					return;
+					console.error(0); return;
 				}
 
 				let context = canvas.getContext('2d'),
@@ -581,7 +594,7 @@
 				let regex = /^data:image\/(.*);base64,/gi;
 
 				if(!data instanceof HTMLCanvasElement && !(typeof data == 'string' || regex.test(data))) {
-					return;
+					console.error(0); return;
 				}
 
 				if(data instanceof HTMLCanvasElement) {
@@ -598,7 +611,7 @@
 						    Event: "${ event }"
 					`);
 
-					return;
+					console.error(0); return;
 				}
 
 				for(let handler of this.handlers.filter(v => v.event == event && v.type == 'event')) {
@@ -634,17 +647,17 @@
 			}
 
 			eventCatchRemove(processId, handlerId) {
-				let handler = this.handlers.filter(v => v.id == handlerId && v.type == 'event')[0]
+				let handler = this.handlers.find(v => v.id == handlerId && v.type == 'event');
 
 				if(!handler) {
 					this.kdbAdd(`eventCatchRemove${ processId ? '@'+processId : '' }: Unable to find handler`);
 
-					return;
+					console.error(0); return;
 				}
 				if(processId && handler.processId !== processId) {
 					this.kdbAdd(`eventCatchRemove@${ processId }: Processes aren't allowed to remove not owned handlers`);
 
-					return;
+					console.error(1); return;
 				}
 
 				this.handlers = this.handlers.filter(v => v !== handler);
@@ -659,17 +672,17 @@
 				if(!['single', 'multiple'].includes(variant)) {
 					this.kdbAdd(`timerCreate${ processId ? '@'+processId : '' }: Variant incorrect`);
 
-					return;
+					console.error(0); return;
 				}
 				if(typeof delay !== 'number') {
 					this.kdbAdd(`timerCreate${ processId ? '@'+processId : '' }: Delay incorrect`);
 
-					return;
+					console.error(1); return;
 				}
 				if(typeof _function !== 'function') {
 					this.kdbAdd(`timerCreate${ processId ? '@'+processId : '' }: Function incorrect`);
 
-					return;
+					console.error(2); return;
 				}
 
 				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1,
@@ -700,17 +713,17 @@
 			}
 
 			timerRemove(processId, handlerId) {
-				let handler = this.handlers.filter(v => v.id == handlerId && v.type == 'timer')[0]
+				let handler = this.handlers.find(v => v.id == handlerId && v.type == 'timer');
 
 				if(!handler) {
 					this.kdbAdd(`timerRemove${ processId ? '@'+processId : '' }: Unable to find handler`);
 
-					return;
+					console.error(0); return;
 				}
 				if(processId && handler.processId !== processId) {
 					this.kdbAdd(`timerRemove@${ processId }: Processes aren't allowed to remove not owned handlers`);
 
-					return;
+					console.error(1); return;
 				}
 
 				if(handler.variant == 'single') {
@@ -732,12 +745,12 @@
 				if(!['read', 'readWrite'].includes(access)) {
 					this.kdbAdd(`seCreate${ processId ? '@'+processId : '' }: Access incorrect`);
 
-					return;
+					console.error(0); return;
 				}
-				if(title && this.handlers.filter(v => v.title == title && v.type == 'se')[0]) {
+				if(title && this.handlers.find(v => v.title == title && v.type == 'se')) {
 					this.kdbAdd(`seCreate${ processId ? '@'+processId : '' }: Handler with same title already set`);
 
-					return;
+					console.error(1); return;
 				}
 
 				this.handlers.push({
@@ -764,24 +777,24 @@
 
 			seInfo(processId, handlerSearch) {
 				let handler =
-						typeof handlerSearch == 'number' ? this.handlers.filter(v => v.id == handlerSearch && v.type == 'se')[0] :
-						typeof handlerSearch == 'string' ? this.handlers.filter(v => v.title == handlerSearch && v.type == 'se')[0] :
-						undefined;
+					typeof handlerSearch == 'number' ? this.handlers.find(v => v.id == handlerSearch && v.type == 'se') :
+					typeof handlerSearch == 'string' ? this.handlers.find(v => v.title == handlerSearch && v.type == 'se') :
+					undefined;
 
 				if(!['number', 'string'].includes(typeof handlerSearch)) {
 					this.kdbAdd(`seInfo${ processId ? '@'+processId : '' }: Search incorrect`);
 
-					return;
+					console.error(0); return;
 				}
 				if(!handler) {
 					this.kdbAdd(`seInfo${ processId ? '@'+processId : '' }: Unable to find handler`);
 
-					return;
+					console.error(1); return;
 				}
 
 				let validator = {
 					get: (target, key) => {
-						if(this.handlers.filter(v => v == handler)[0]) {
+						if(this.handlers.find(v => v == handler)) {
 							if(processId && handler.processId !== processId && handler.access == 'read' && typeof target[key] === 'object') {
 								return new Proxy(target[key], validator);
 							}
@@ -790,7 +803,7 @@
 						}
 					},
 					set: (target, key, value) => {
-						if(this.handlers.filter(v => v == handler)[0]) {
+						if(this.handlers.find(v => v == handler)) {
 							if(processId && handler.processId !== processId && handler.access == 'read') {
 								return;
 							}
@@ -811,24 +824,24 @@
 
 			seRemove(processId, handlerSearch) {
 				let handler =
-						typeof handlerSearch == 'number' ? this.handlers.filter(v => v.id == handlerSearch && v.type == 'se')[0] :
-						typeof handlerSearch == 'string' ? this.handlers.filter(v => v.title == handlerSearch && v.type == 'se')[0] :
+						typeof handlerSearch == 'number' ? this.handlers.find(v => v.id == handlerSearch && v.type == 'se') :
+						typeof handlerSearch == 'string' ? this.handlers.find(v => v.title == handlerSearch && v.type == 'se') :
 						undefined;
 
 				if(!['number', 'string'].includes(typeof handlerSearch)) {
 					this.kdbAdd(`seInfo${ processId ? '@'+processId : '' }: Search incorrect`);
 
-					return;
+					console.error(0); return;
 				}
 				if(!handler) {
 					this.kdbAdd(`seRemove${ processId ? '@'+processId : '' }: Unable to find handler`);
 
-					return;
+					console.error(1); return;
 				}
 				if(processId && handler.processId !== processId) {
 					this.kdbAdd(`seRemove@${ processId }: Processes aren't allowed to remove not owned handlers`);
 
-					return;
+					console.error(2); return;
 				}
 
 				this.handlers = this.handlers.filter(v => v !== handler);
@@ -844,7 +857,7 @@
 						id: id,
 						parentId: process?.terminalId || 0,
 						mode: 'text',
-						current: this.terminals.some(v => v.current) ? false : true,
+						current: !this.terminals.some(v => v.current),
 						strings: []
 					}
 
@@ -859,32 +872,32 @@
 			}
 
 			set terminalCurrent(terminalId) {
-				if(this.terminals.filter(v => v.terminalId == terminalId)[0]) {
+				if(this.terminals.find(v => v.terminalId == terminalId)) {
 					for(let v of this.terminals) {
 						v.current = v.id == terminalId ? true : false;
 					}
 				}
 			}
 
-			terminalInput(process, value) {
-				this.eventThrow(undefined, 'terminalChanged', { event: 'input', processId: process.id, value: value });
+			terminalInput(processId, value) {
+				this.eventThrow(undefined, 'terminalChanged', { event: 'input', processId: processId, value: value });
 			}
 
 			terminalOutput(process, value, terminalId) {
-				terminalId = terminalId || process?.terminalId;
+				terminalId ??= process?.terminalId;
 
-				let terminal = this.terminals.filter(v => v.id == terminalId)[0]
+				let terminal = this.terminals.find(v => v.id == terminalId);
 
 				if(!terminal) {
 					this.kdbAdd(`terminalOutput${ process ? '@'+process.id : '' }: Unable to find terminal`);
 
-					return;
+					console.error(0); return;
 				}
 
 				if(process && process.terminalId !== terminalId && process.terminalId !== terminal.parentId) {
 					this.kdbAdd(`terminalOutput@${ process.id }: Processes aren't allowed to output into non-parent and not owned terminals`);
 
-					return;
+					console.error(1); return;
 				}
 
 				let id = terminal.strings.length > 0 ? Math.max(...terminal.strings.map(v => v.id))+1 : 1,
@@ -926,46 +939,46 @@
 			}
 
 			terminalMode(process, value, terminalId) {
-				terminalId = terminalId || process?.terminalId;
+				terminalId ??= process?.terminalId;
 
-				let terminal = this.terminals.filter(v => v.id == terminalId)[0]
+				let terminal = this.terminals.find(v => v.id == terminalId);
 
 				if(!['text', 'graphics'].includes(value)) {
 					this.kdbAdd(`terminalMode${ process ? '@'+process.id : '' }: Mode incorrect`);
 
-					return;
+					console.error(0); return;
 				}
 				if(!terminal) {
 					this.kdbAdd(`terminalMode${ process ? '@'+process.id : '' }: Unable to find terminal`);
 
-					return;
+					console.error(1); return;
 				}
 				if(terminal.parentId) {
 					this.kdbAdd(`terminalMode${ process ? '@'+process.id : '' }: Child terminals shouldn't have changeable mode`);
 
-					return;
+					console.error(2); return;
 				}
 				if(process && process.terminalId !== terminalId) {
 					this.kdbAdd(`terminalMode@${ process.id }: Processes aren't allowed to set mode of non-parent terminals`);
 
-					return;
+					console.error(3); return;
 				}
 
 				this.terminal.mode = value;
 			}
 
 			terminalRemove(process, terminalId) {
-				let terminal = this.terminals.filter(v => v.id == terminalId)[0]
+				let terminal = this.terminals.find(v => v.id == terminalId);
 
 				if(!terminal) {
 					this.kdbAdd(`terminalRemove${ process ? '@'+process.id : '' }: Unable to find terminal`);
 
-					return;
+					console.error(0); return;
 				}
 				if(process && process.terminalId !== terminal.parentId) {
 					this.kdbAdd(`terminalRemove@${ process.id }: Processes aren't allowed to remove not owned terminals`);
 
-					return;
+					console.error(1); return;
 				}
 
 				for(v of this.processes.filter(v => v.terminalId == terminal.id)) {
@@ -983,7 +996,7 @@
 				return require('vm').createContext(a);
 			}
 
-			sbExec(a, b) {
+			sbExecute(a, b) {
 				return require('vm').runInContext(a, b);
 			}
 
@@ -996,7 +1009,7 @@
 					write: (...a) => this.fsWrite(...a),
 					remove: (a) => this.fsRemove(a),
 					createDir: () => {},
-					readDir: (a) => this.fsReadDir(a),
+					readDir: (a) => this.fsReadDirectory(a),
 					removeDir: () => {},
 					fbWrite: (a) => this.fbWrite(process, a),
 					drCreate: (...a) => this.drCreate(...a),
@@ -1008,14 +1021,14 @@
 					timerCreate: (...a) => this.timerCreate(process.id, ...a),
 					timerRemove: (a) => this.timerRemove(process.id, a),
 					seCreate: (...a) => this.seCreate(process.id, ...a),
-					seList: (a) => this.seList(a || process.id),
+					seList: (a) => this.seList(a ?? process.id),
 					seInfo: (a) => this.seInfo(process.id, a),
 					seRemove: (a) => this.seRemove(process.id, a),
-					exec: (...a) => this.processExec(process.terminalId, process.id, ...a),
+					exec: (...a) => this.processExecute(process.terminalId, process.id, ...a),
 					list: () => this.processList(),
-					info: (a) => this.processInfo(a || process.id),
+					info: (a) => this.processInfo(a ?? process.id),
 				//	fork: (a) => this.processFork(process.id, a),
-					kill: (a) => this.processKill(a || process.id),
+					kill: (a) => this.processKill(a ?? process.id),
 					import: (...a) => this.classImport(process, ...a),
 					single: (a) => this.classSingle(a),
 				//	protected: (a) => this.classProtected(a),
@@ -1025,14 +1038,14 @@
 				}[method](...arguments_);
 			}
 
-			processExec(terminalId, processId, login, password, path, ...arguments_) {
-				let user = this.fsReadPref('Global').Users.filter(v => v.Login == login && v.Password == password)[0],
+			processExecute(terminalId, processId, login, password, path, ...arguments_) {
+				let user = this.fsReadPreferences('Global').Users.find(v => v.Login == login && v.Password == password),
 					executable = this.fsRead(path);
 
-				if(terminalId && !this.terminals.filter(v => v.id == terminalId)[0]) {
+				if(terminalId && !this.terminals.find(v => v.id == terminalId)) {
 					this.kdbAdd(`processExec${ processId ? '@'+processId : '' }: Terminal incorrect`);
 
-					return;
+					console.error(0); return;
 				}
 				if(!terminalId) {
 					terminalId = this.terminalCreate();
@@ -1040,12 +1053,12 @@
 				if(!user) {
 					this.kdbAdd(`processExec${ processId ? '@'+processId : '' }: Authorization incorrect`);
 
-					return;
+					console.error(1); return;
 				}
 				if(!executable.startsWith('return class {') || !executable.endsWith('}')) {
 					this.kdbAdd(`processExec${ processId ? '@'+processId : '' }: Non-executable format`);
 
-					return;
+					console.error(2); return;
 				}
 
 				var process = {
@@ -1062,16 +1075,16 @@
 					//	_fork: (...a) => this.processRequest(process, 'fork', ...a),
 						_import: (...a) => this.processRequest(process, 'import', ...a),
 						_single: (...a) => this.processRequest(process, 'single', ...a),
-						_protected: (...a) => this.processRequest(process, 'protected', ...a)
+					//	_protected: (...a) => this.processRequest(process, 'protected', ...a)
 					}, {
 						get: (target, key) => {
-							return key == 'arguments_' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key == 'require' ? undefined : target[key] || this.environment[key]
+							return key == '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key == 'require' ? undefined : target[key] || this.environment[key]
 						}
 					}));
 
 				this.processes.push(process);
 				try {
-					this.sbExec(`var _executable = new ((() => { ${ executable } })())(...arguments_);`, process.environment);
+					this.sbExecute(`var _executable = new ((() => { ${ executable } })())(..._arguments);`, process.environment);
 					this.kdbAdd(`
 						processExec: Process started:
 						    ID: ${ process.id }
@@ -1093,9 +1106,11 @@
 				}
 			}
 
+			/*
 			wtExec(a) {
 				return new (require('worker_threads')).Worker(a, { eval: true });
 			}
+			*/
 
 			processList() {
 				return this.processes.map(v => v.id);
@@ -1106,27 +1121,27 @@
 					processes =
 						typeof processSearch == 'number' ? this.processes.filter(v => v.id == processSearch) :
 						typeof processSearch == 'string' ? this.processes.filter(v => v.path.endsWith(processSearch)) :
-						undefined;
+						[]
 
 				if(!['number', 'string'].includes(typeof processSearch)) {
-					this.kdbAdd(`processInfo${ process ? '@'+process.id : '' }: Search incorrect`);
+					this.kdbAdd(`processInfo: Search incorrect`);
 
-					return;
+					console.error(0); return;
 				}
 				if(processes.length == 0) {
-					this.kdbAdd(`processInfo${ process ? '@'+process.id : '' }: Unable to find processes`);
+					this.kdbAdd(`processInfo: Unable to find processes`);
 
-					return;
+					console.error(1); return;
 				}
 
-				for(let process of processes) {
+				for(let v of processes) {
 					infos.push({
-						id: process.id,
-						parentId: process.parentId,
-						terminalId: process.terminalId,
-						user: process.user,
-						path: process.path,
-						arguments: [...process.arguments]
+						id: v.id,
+						parentId: v.parentId,
+						terminalId: v.terminalId,
+						user: v.user,
+						path: v.path,
+						arguments: [...v.arguments]
 					});
 				}
 
@@ -1157,13 +1172,13 @@
 			*/
 
 			processKill(processId) {
-				let process = this.processes.filter(v => v.id == processId)[0],
+				let process = this.processes.find(v => v.id == processId),
 					b;
 
 				if(!process) {
 					this.kdbAdd(`processKill: Unable to find process`);
 
-					return;
+					console.error(0); return;
 				}
 
 				try {
@@ -1193,36 +1208,42 @@
 				this.eventThrow(undefined, 'processListChanged', { event: 'removed', value: processId });
 			}
 
-			classImport(process, fwTitle, moduleTitle) {
-				moduleTitle = moduleTitle || fwTitle;
+			/**
+			 * Импортирует классы из фреймворка в окружение процесса.
+			 * @param {!number} process Идентификатор процесса.
+			 * @param {!string} framework Название фреймворка.
+			 * @param {?string} clazz Название класса.
+			 */
+			classImport(process, framework, clazz) {
+				clazz = clazz ?? framework;
 
 				let a = [
 						'/Environment',
-						'/Library/Frameworks/'+fwTitle+'.framework/Contents',
-						'/Modules/'+moduleTitle+'.js',
+						'/Library/Frameworks/'+framework+'.framework/Contents',
+						'/Classes/'+clazz+'.js',
 						'/Resources'
 					],
 					b = this.fsRead(a[1]+a[2]) ? a[1] : this.fsRead(a[0]+a[1]+a[2]) ? a[0]+a[1] : undefined,
 					c = this.fsRead(a[1]+a[2]) || this.fsRead(a[0]+a[1]+a[2]) || undefined;
 
 				if(!c) {
-					this.kdbAdd(`classImport: Unable to access requested ${ fwTitle !== moduleTitle ? moduleTitle+' module of ' : '' }${ fwTitle } framework`);
+					this.kdbAdd(`classImport: Unable to access requested ${ framework !== clazz ? clazz+' module of ' : '' }${ framework } framework`);
 
-					return;
+					console.error(0); return;
 				}
 
 				try {
 					c = c
 						.replace(/@(Resources)/g, b+a[3])
-						.replace(/@(Title)/g, moduleTitle);
+						.replace(/@(Title)/g, clazz);
 
-					this.sbExec(`var ${ moduleTitle } = (() => { ${ c } })();`, process.environment);
+					this.sbExecute(`var ${ clazz } = (() => { ${ c } })();`, process.environment);
 
-					if(fwTitle == moduleTitle) {
-						this.kdbAdd(`classImport: Successfully imported main module of ${ fwTitle } framework into process: ${ process.id }`);
+					if(framework == clazz) {
+						this.kdbAdd(`classImport: Successfully imported main module of ${ framework } framework into process: ${ process.id }`);
 					}
 				} catch(error) {
-					this.kdbAdd(`classImport: Failed to import requested ${ fwTitle !== moduleTitle ? moduleTitle+' module of ' : '' }${ fwTitle } framework: "${ error.name }: ${ error.message }"`, error.stack);
+					this.kdbAdd(`classImport: Failed to import requested ${ framework !== clazz ? clazz+' module of ' : '' }${ framework } framework: "${ error.name }: ${ error.message }"`, error.stack);
 				}
 			}
 
@@ -1288,6 +1309,10 @@
 			}
 			*/
 
+			/**
+			 * Конвертирует обычный класс в синглтон.
+			 * @param {!class} a Класс.
+			 */
 			classSingle(a) {
 				return new Proxy(a, {
 					instance: undefined,
@@ -1315,20 +1340,20 @@
 			}
 
 			environmentRelaunch(process) {
-				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process?.user)[0]?.Group;
+				let group = this.fsReadPreferences('Global').Users.find(v => v.Login == process?.user)?.Group;
 
 				if(process && group > 0) {
-					return;
+					console.error(0); return;
 				}
 
 				chrome.runtime.reload();
 			}
 
 			environmentQuit(process) {
-				let group = this.fsReadPref('Global').Users.filter(v => v.Login == process?.user)[0]?.Group;
+				let group = this.fsReadPreferences('Global').Users.find(v => v.Login == process?.user)?.Group;
 
 				if(process && group > 0) {
-					return;
+					console.error(0); return;
 				}
 
 				require('nw.gui').App.quit();
