@@ -1031,7 +1031,7 @@
 					kill: (a) => this.processKill(a ?? process.id),
 					import: (...a) => this.classImport(process, ...a),
 					single: (a) => this.classSingle(a),
-				//	protected: (a) => this.classProtected(a),
+					protected: (a) => this.classProtected(a),
 					system: () => this.system(),
 					relaunch: () => this.environmentRelaunch(process),
 					quit: () => this.environmentQuit(process)
@@ -1075,7 +1075,7 @@
 					//	_fork: (...a) => this.processRequest(process, 'fork', ...a),
 						_import: (...a) => this.processRequest(process, 'import', ...a),
 						_single: (...a) => this.processRequest(process, 'single', ...a),
-					//	_protected: (...a) => this.processRequest(process, 'protected', ...a)
+						_protected: (...a) => this.processRequest(process, 'protected', ...a)
 					}, {
 						get: (target, key) => {
 							return key == '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key == 'require' ? undefined : target[key] || this.environment[key]
@@ -1212,22 +1212,22 @@
 			 * Импортирует классы из фреймворка в окружение процесса.
 			 * @param {!number} process Идентификатор процесса.
 			 * @param {!string} framework Название фреймворка.
-			 * @param {?string} clazz Название класса.
+			 * @param {?string} class_ Название класса.
 			 */
-			classImport(process, framework, clazz) {
-				clazz = clazz ?? framework;
+			classImport(process, framework, class_) {
+				class_ = class_ ?? framework;
 
 				let a = [
 						'/Environment',
 						'/Library/Frameworks/'+framework+'.framework/Contents',
-						'/Classes/'+clazz+'.js',
+						'/Classes/'+class_+'.js',
 						'/Resources'
 					],
 					b = this.fsRead(a[1]+a[2]) ? a[1] : this.fsRead(a[0]+a[1]+a[2]) ? a[0]+a[1] : undefined,
 					c = this.fsRead(a[1]+a[2]) || this.fsRead(a[0]+a[1]+a[2]) || undefined;
 
 				if(!c) {
-					this.kdbAdd(`classImport: Unable to access requested ${ framework !== clazz ? clazz+' module of ' : '' }${ framework } framework`);
+					this.kdbAdd(`classImport: Unable to access requested ${ framework !== class_ ? class_+' module of ' : '' }${ framework } framework`);
 
 					console.error(0); return;
 				}
@@ -1235,7 +1235,7 @@
 				try {
 					c = c
 						.replace(/@(Resources)/g, b+a[3])
-						.replace(/@(Title)/g, clazz);
+						.replace(/@(Title)/g, class_);
 
 					/*
 					c = require('recast').parse(c, {
@@ -1264,25 +1264,55 @@
 						esproposal_optional_chaining: true
 					});
 
+					require('ast-types').visit(c, {
+						visitAnyTypeAnnotation(path) {
+							delete path.node.range;
+						},
+						visitClassExpression(path) {
+							let node = path.node;
+
+							let classNode = Object.assign({}, node);
+
+							for (let k in node) {
+								delete node[k]
+							}
+
+							node.type = 'CallExpression';
+							node.callee = {
+								type: 'Identifier',
+								name: '_protected',
+								typeAnnotation: null,
+								optional: false
+							}
+							node.typeArguments = null;
+							node.arguments = [classNode]
+
+							console.log(node);
+
+							return false;
+						}
+					});
+
 					c = require('recast').print(c).code;
 
 					console.log(c);
 
-					this.sbExecute(`var ${ clazz } = (() => { ${ c } })();`, process.environment);
+					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment);
 
-					if(framework == clazz) {
+					if(framework == class_) {
 						this.kdbAdd(`classImport: Successfully imported main module of ${ framework } framework into process: ${ process.id }`);
 					}
 				} catch(error) {
-					this.kdbAdd(`classImport: Failed to import requested ${ framework !== clazz ? clazz+' module of ' : '' }${ framework } framework: "${ error.name }: ${ error.message }"`, error.stack);
+					this.kdbAdd(`classImport: Failed to import requested ${ framework !== class_ ? class_+' module of ' : '' }${ framework } framework: "${ error.name }: ${ error.message }"`, error.stack);
 				}
 			}
 
-			classProtected(a) {
+			classProtected(target) {
 				let friendly = []
 
 				return new Proxy(target, {
 					get(target, key) {
+						/*
 						if(key == 'getProperty') {
 							return (caller, property) => {
 								if(property.startsWith('__') && !caller.hasOwnProperty(property)) {
@@ -1295,8 +1325,9 @@
 								return target[property]
 							}
 						}
+						*/
 
-						return;
+						return target[key]
 					},
 					set(target, key, value) {
 						target[key] = value;
