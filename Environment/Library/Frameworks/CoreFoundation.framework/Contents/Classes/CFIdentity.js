@@ -1,31 +1,33 @@
 return _single(class {
-	#user = new CFPreferences('Global').get().Users.filter(v => v.Login == new CFProcessInfo().user)[0]
+	constructor() {
+		this.__user = new CFPreferences('Global').get().Users.find(v => v.Login == new CFProcessInfo().user);
+	}
 
 	get id() {
-		return this.#user.ID;
+		return this.__user.ID;
 	}
 
 	get login() {
-		return this.#user.Login;
+		return this.__user.Login;
 	}
 
 	get password() {
-		return this.#user.Password;
+		return this.__user.Password;
 	}
 
 	get group() {
-		return this.#user.Group;
+		return this.__user.Group;
 	}
 
 	get hidden() {
-		return this.#user.Hidden;
+		return this.__user.Hidden;
 	}
 
 	get title() {
-		return this.#user.Title;
+		return this.__user.Title;
 	}
 
 	get image() {
-		return this.#user.Image;
+		return this.__user.Image;
 	}
 });

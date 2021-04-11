@@ -1,42 +1,42 @@
 return _CFShared.@Title || _single(class {
-	#element;
-	#event;
-	#type;
-	#hidden = false;
-
 	constructor() {
+		this.__element;
+		this.__event;
+		this.__type;
+		this.__hidden = false;
+
 		this.add();
 	}
 
 	set type(value) {
 		if(['default', 'wait', 'progress', 'copy', 'notAllowed', 'text', 'hidden'].includes(value)) {
 			if(value !== 'default') {
-				this.#type = value;
-				this.#element.attr(value, '');
+				this.__type = value;
+				this.__element.attr(value, '');
 			} else {
-				this.#element.removeAttr(this.#type);
-				this.#type = undefined;
+				this.__element.removeAttr(this.__type);
+				this.__type = undefined;
 			}
 		}
 	}
 
 	set hidden(value) {
 		if([false, true].includes(value)) {
-			this.#hidden = value;
+			this.__hidden = value;
 			if(!value) {
-				this.#element.removeAttr('hidden');
+				this.__element.removeAttr('hidden');
 			} else {
-				this.#element.attr('hidden', '');
+				this.__element.attr('hidden', '');
 			}
 		}
 	}
 
 	add() {
-		if(!this.#element) {
-			this.#element = $('<@Title>').appendTo('body');
-			this.#event = $._data($('body')[0], 'events')?.mousemove?.length+1 || 1;
-			$('body').on('mousemove.'+this.#event, (event) => {
-				this.#element.css('transform', 'translate('+event.pageX+'px, '+event.pageY+'px)');
+		if(!this.__element) {
+			this.__element = $('<@Title>').appendTo('body');
+			this.__event = $._data($('body')[0], 'events')?.mousemove?.length+1 || 1;
+			$('body').on('mousemove.'+this.__event, (event) => {
+				this.__element.css('transform', 'translate('+event.pageX+'px, '+event.pageY+'px)');
 			});
 		}
 
@@ -44,9 +44,9 @@ return _CFShared.@Title || _single(class {
 	}
 
 	remove() {
-		if(this.#element) {
-			this.#element.remove();
-			$('body').off('mousemove.'+this.#event);
+		if(this.__element) {
+			this.__element.remove();
+			$('body').off('mousemove.'+this.__event);
 		}
 
 		return this;

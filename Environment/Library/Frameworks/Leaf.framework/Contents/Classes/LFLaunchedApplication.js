@@ -1,51 +1,49 @@
 return _single(class {
-	#application;
-
-	constructor(_application) {
-		this.#application = _application;
+	constructor(application) {
+		this.__application = application;
 	}
 
 	get processIdentifier() {
-		return this.#application.process.identifier;
+		return this.__application.process.identifier;
 	}
 
 	get bundle() {
-		return this.#application.bundle;
+		return this.__application.bundle;
 	}
 
 	get identifier() {
-		return this.#application.identifier;
+		return this.__application.identifier;
 	}
 
 	get executable() {
-		return this.#application.executable;
+		return this.__application.executable;
 	}
 
 	get title() {
-		return this.#application.title;
+		return this.__application.title;
 	}
 
 	get version() {
-		return this.#application.version;
+		return this.__application.version;
 	}
 
 	get license() {
-		return this.#application.license;
+		return this.__application.license;
 	}
 
 	get icon() {
-		return this.#application.icon;
+		return this.__application.icon;
 	}
 
-	focus(..._arguments) {
-		this.#application.focus(..._arguments);
+	focus(...arguments_) {
+		this.__application.focus(...arguments_);
 	}
 
-	cautiously(..._arguments) {
-		this.#application.cautiously(..._arguments);
+	cautiously(...arguments_) {
+		this.__application.cautiously(...arguments_);
 	}
 
-	quit(..._arguments) {
-		this.#application.quit(..._arguments);
+	quit(...arguments_) {
+		this.__application.quit(...arguments_);
 	}
 });

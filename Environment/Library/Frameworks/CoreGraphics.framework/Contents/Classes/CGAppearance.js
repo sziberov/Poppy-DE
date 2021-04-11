@@ -1,5 +1,5 @@
 return _CFShared.@Title || class {
-	static #URLs = []
+	static __URLSs = []
 
 	constructor(URL) {
 		this.URL = URL;
@@ -7,7 +7,7 @@ return _CFShared.@Title || class {
 	}
 
 	add() {
-		if(!this.element && this.URL && !@Title.#URLs.includes(this.URL)) {
+		if(!this.element && this.URL && !@Title.__URLSs.includes(this.URL)) {
 			let file = CFFile.content(this.URL),
 				format =
 					this.URL.endsWith('.less') ? 'less' :
@@ -17,7 +17,7 @@ return _CFShared.@Title || class {
 			if(file && format) {
 				let add = $('<style/>');
 
-				@Title.#URLs.push(this.URL);
+				@Title.__URLSs.push(this.URL);
 				add.attr('type', 'text/'+format);
 				add.text(file.replace(/@(Resources)/g, this.URL.replace(/(?<=\/Resources\/)(.*)/g, '')));
 
@@ -34,7 +34,7 @@ return _CFShared.@Title || class {
 
 	remove() {
 		if(this.element) {
-			CFArray.remove(@Title.#URLs, this.URL);
+			CFArray.remove(@Title.__URLSs, this.URL);
 			this.element.remove();
 			this.element = undefined;
 		}

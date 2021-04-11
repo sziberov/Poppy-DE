@@ -1,8 +1,4 @@
 return class extends LFView {
-	#application = new LFApplication();
-	#hidden = true;
-	#main = false;
-
 	constructor(_) {
 		super(_);
 		this.class = '@Title';
@@ -28,6 +24,10 @@ return class extends LFView {
 			view: undefined,
 			..._
 		}
+
+		this.__application = new LFApplication();
+		this.__hidden = true;
+		this.__main = false;
 
 		this.style = {
 			'width': this._.width+'px',
@@ -60,11 +60,11 @@ return class extends LFView {
 	}
 
 	get hidden() {
-		return this.#hidden;
+		return this.__hidden;
 	}
 
 	get main() {
-		return this.#main;
+		return this.__main;
 	}
 
 	get frame() {
@@ -107,7 +107,7 @@ return class extends LFView {
 
 	set hidden(value) {
 		if([false, true].includes(value)) {
-			this.#hidden = value;
+			this.__hidden = value;
 			if(!value) {
 				this.attributes['hidden'] = undefined;
 			} else {
@@ -118,7 +118,7 @@ return class extends LFView {
 
 	set main(value) {
 		if([false, true].includes(value)) {
-			this.#main = value;
+			this.__main = value;
 			if(value) {
 				for(let v of this.get('Siblings', this.class).filter(v => v.application == this.application)) {
 					v.main = false;
@@ -249,7 +249,7 @@ return class extends LFView {
 	destroy() {
 		super.destroy();
 
-		let application = this.#application;
+		let application = this.__application;
 
 		if(application.quitableBySingleWindow && application.windows.length == 0) {
 			application.quit();

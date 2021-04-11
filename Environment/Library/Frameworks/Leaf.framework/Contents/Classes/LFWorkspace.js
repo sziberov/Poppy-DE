@@ -1,6 +1,4 @@
 return _CFShared.@Title || _single(class extends LFView {
-	#launchedApplications = new CFArray();
-
 	constructor(_) {
 		super(_);
 		this.class = '@Title';
@@ -9,6 +7,9 @@ return _CFShared.@Title || _single(class extends LFView {
 			desktopImage: '',
 			..._
 		}
+
+		this.__launchedApplications = new CFArray();
+
 		this.desktopImage = this.desktopImage;
 
 		this.subviews.add(new LFMenubar({ transparent: true }));
@@ -40,7 +41,7 @@ return _CFShared.@Title || _single(class extends LFView {
 	}
 
 	get launchedApplications() {
-		return this.#launchedApplications;
+		return this.__launchedApplications;
 	}
 
 	get desktopImage() {
@@ -56,7 +57,7 @@ return _CFShared.@Title || _single(class extends LFView {
 		LFMenu.deactivateAll();
 	}
 
-	launchApplication(URL, ..._arguments) {
+	launchApplication(URL, ...arguments_) {
 		URL = URL.endsWith('.app') ? URL : URL+='.app';
 
 		try {
@@ -76,7 +77,7 @@ return _CFShared.@Title || _single(class extends LFView {
 			try {
 				let user = new CFPreferences('Global').get().Users.filter(v => v.Group == 1)[0]
 
-				_request('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ..._arguments);
+				_request('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
 
 				return this.getApplication(identifier);
 			} catch(error) {

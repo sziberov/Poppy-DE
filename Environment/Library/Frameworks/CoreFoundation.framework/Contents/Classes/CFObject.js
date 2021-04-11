@@ -1,16 +1,14 @@
 return class extends Object {
-	#proxy;
+	constructor(...arguments_) {
+		super(...arguments_);
 
-	constructor(..._arguments) {
-		super(..._arguments);
-
-		this.#proxy = new Proxy(this, {
+		this.__proxy = new Proxy(this, {
 			set: (target, key, value) => {
 				let event = target[key] ? 'changed' : 'added';
 
 				target[key] = value;
 
-				CFEventEmitter.dispatch('@TitleChanged', this.#proxy, { event: event, key: key, value: value });
+				CFEventEmitter.dispatch('@TitleChanged', this.__proxy, { event: event, key: key, value: value });
 
 				return true;
 			},
@@ -18,21 +16,21 @@ return class extends Object {
 				if(key in target) {
 					delete target[key]
 
-					CFEventEmitter.dispatch('@TitleChanged', this.#proxy, { event: 'removed', key: key });
+					CFEventEmitter.dispatch('@TitleChanged', this.__proxy, { event: 'removed', key: key });
 
 					return true;
 				}
 			}
 		})
 
-		return this.#proxy;
+		return this.__proxy;
 	}
 
-	static addObserver(object, _function) {
-		if(typeof _function === 'function') {
-			return CFEventEmitter.addHandler('@TitleChanged', (_object, ..._arguments) => {
-				if(_object == object) {
-					_function(..._arguments);
+	static addObserver(object, function_) {
+		if(typeof function_ === 'function') {
+			return CFEventEmitter.addHandler('@TitleChanged', (object_, ...arguments_) => {
+				if(object_ == object) {
+					function_(...arguments_);
 				}
 			});
 		}
@@ -42,11 +40,11 @@ return class extends Object {
 		CFEventEmitter.removeHandler('@TitleChanged', observerId);
 	}
 
-	static observable(object = {}, _function) {
+	static observable(object = {}, function_) {
 		return new Proxy(object, {
 			set: (target, key, value) => {
 				target[key] = value;
-				_function(key, value);
+				function_(key, value);
 
 				return true;
 			}

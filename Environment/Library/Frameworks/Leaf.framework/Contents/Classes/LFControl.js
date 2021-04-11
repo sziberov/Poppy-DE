@@ -26,17 +26,17 @@ return class extends LFView {
 		return this._.action;
 	}
 
-	set highlighted(_value) {
-		this.attributes['highlighted'] = _value == true ? '' : undefined;
+	set highlighted(value) {
+		this.attributes['highlighted'] = value == true ? '' : undefined;
 	}
 
-	set activated(_value) {
-		this.attributes['activated'] = _value == true ? '' : undefined;
+	set activated(value) {
+		this.attributes['activated'] = value == true ? '' : undefined;
 	}
 
-	set action(_value) {
-		if(typeof _value === 'function') {
-			this._.action = _value;
+	set action(value) {
+		if(typeof value === 'function') {
+			this._.action = value;
 			this.attributes['enabled'] = '';
 		} else {
 			this._.action = undefined;
@@ -59,12 +59,12 @@ return class extends LFView {
 		this.activated = false;
 	}
 
-	mousedown(_event, _exceptView) {
-		_event.stopPropagation();
-		if(_event.button == 0) {
+	mousedown(event, exceptView) {
+		event.stopPropagation();
+		if(event.button == 0) {
 			this.activated = true;
 		}
-		LFMenu.deactivateAll(_exceptView);
+		LFMenu.deactivateAll(exceptView);
 		this.get('Superview', 'LFWindow')?.focus();
 	}
 

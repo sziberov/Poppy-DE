@@ -17,16 +17,17 @@ return class extends LFView {
 		this.get('Superview', 'LFWindow').minimize();
 	}
 
-	drag(_event, _dragCache) {
-		var _window = this.get('Superview', 'LFWindow'),
-			_dragX = _window.element.offset().left-(_dragCache[1]-_event.pageX),
-			_dragY = _window.element.offset().top-(_dragCache[2]-_event.pageY),
-			_dragY = _dragY >= 24 ? _dragY : 24;
-			_dragCache[1] = _event.pageX;
-			_dragCache[2] = _event.pageY >= 24 ? _event.pageY : 24;
+	drag(event, dragCache) {
+		let window = this.get('Superview', 'LFWindow'),
+			dragX = window.element.offset().left-(dragCache[1]-event.pageX),
+			dragY = window.element.offset().top-(dragCache[2]-event.pageY);
 
-	//	if(!_window._.style.includes('fullscreen')) {
-			_window.origin = { x: _dragX, y: _dragY }
+		dragY = dragY >= 24 ? dragY : 24;
+		dragCache[1] = event.pageX;
+		dragCache[2] = event.pageY >= 24 ? event.pageY : 24;
+
+	//	if(!window._.style.includes('fullscreen')) {
+			window.origin = { x: dragX, y: dragY }
 	//	}
 	}
 }

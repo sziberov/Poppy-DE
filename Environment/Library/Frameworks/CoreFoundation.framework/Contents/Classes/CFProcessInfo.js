@@ -1,11 +1,11 @@
 return _single(class {
-	#info = _request('info');
-
 	constructor() {
-		this.identifier = this.#info.id;
-		this.parentIdentifier = this.#info.parentId;
-		this.user = this.#info.user;
-		this.path = this.#info.path;
+		this.__info = _request('info');
+
+		this.identifier = this.__info.id;
+		this.parentIdentifier = this.__info.parentId;
+		this.user = this.__info.user;
+		this.path = this.__info.path;
 		this.arguments = _arguments;
 		this.environment = _environment;
 	}

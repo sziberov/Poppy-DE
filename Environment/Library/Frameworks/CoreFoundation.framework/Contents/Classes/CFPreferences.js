@@ -1,11 +1,11 @@
 return class {
-	#user = new CFProcessInfo().user;
-	#identifier;
-	#properties;
-
 	constructor(identifier) {
+		this.__user = new CFProcessInfo().user;
+		this.__identifier;
+		this.__properties;
+
 		let file =
-				CFFile.content('/Users/'+this.#user+'/Library/Preferences/'+identifier+'.plist') ||
+				CFFile.content('/Users/'+this.__user+'/Library/Preferences/'+identifier+'.plist') ||
 				CFFile.content('/Library/Preferences/'+identifier+'.plist') ||
 				CFFile.content('/Environment/Library/Preferences/'+identifier+'.plist') ||
 				undefined;
@@ -13,18 +13,18 @@ return class {
 		if(!file) {
 			return undefined;
 		} else {
-			this.#identifier = identifier;
-			this.#properties = JSON.parse(file);
+			this.__identifier = identifier;
+			this.__properties = JSON.parse(file);
 		}
 	}
 
 	get() {
-		return this.#properties;
+		return this.__properties;
 	}
 
 	set(value) {
-		this.#properties[value] = value;
+		this.__properties[value] = value;
 
-		CFFile.content('/Users/'+this.#user+'/Library/Preferences/'+this.#identifier+'.plist', JSON.stringify(this.#properties));
+		CFFile.content('/Users/'+this.__user+'/Library/Preferences/'+this.__identifier+'.plist', JSON.stringify(this.__properties));
 	}
 }

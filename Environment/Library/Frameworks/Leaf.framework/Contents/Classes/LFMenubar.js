@@ -35,8 +35,8 @@ return _CFShared.@Title || _single(class extends LFView {
 		return this.subviews.filter(v => v.tag == 'status')[0]
 	}
 
-	set transparent(_value) {
-		this._.transparent = _value;
-		this.attributes['transparent'] = _value == true ? '' : undefined;
+	set transparent(value) {
+		this._.transparent = value;
+		this.attributes['transparent'] = value == true ? '' : undefined;
 	}
 });

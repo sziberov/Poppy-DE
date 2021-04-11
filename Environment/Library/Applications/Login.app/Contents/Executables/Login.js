@@ -1,19 +1,19 @@
 return class {
-	#services = [
-		{
-			identifier: 'ru.poppy.enviro',
-			URL: '/Environment/Library/Applications/Enviro',
-			error: false
-		},
-		{
-			identifier: 'ru.poppy.dock',
-			URL: '/Environment/Library/Applications/Dock',
-			error: false
-		}
-	]
-
 	constructor() {
 		_import('Leaf');
+
+		this.__services = [
+			{
+				identifier: 'ru.poppy.enviro',
+				URL: '/Environment/Library/Applications/Enviro',
+				error: false
+			},
+			{
+				identifier: 'ru.poppy.dock',
+				URL: '/Environment/Library/Applications/Dock',
+				error: false
+			}
+		]
 
 		new LFApp().focusingPolicy = 1;
 
@@ -90,7 +90,7 @@ return class {
 	}
 
 	launchServices() {
-		for(let v of this.#services) {
+		for(let v of this.__services) {
 			if(!v.error && !new LFWorkspace().getApplication(v.identifier)) {
 				try {
 					new LFWorkspace().launchApplication(v.URL);

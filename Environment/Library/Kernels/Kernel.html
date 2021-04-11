@@ -553,7 +553,7 @@
 				canvas.getContext('2d').clearRect(x, y, width, height);
 			}
 
-			drIterate(canvas, _function) {
+			drIterate(canvas, function_) {
 				let width = canvas.width,
 					height = canvas.height,
 					context = canvas.getContext('2d'),
@@ -564,7 +564,7 @@
 					for(let x = 0; x < width; ++x) {
 						let i = (y*width+x)*4;
 
-						_function(new Proxy(pixels, {
+						function_(new Proxy(pixels, {
 							get: (target, key) => {
 								return {
 									x: x,
@@ -627,7 +627,7 @@
 				}
 			}
 
-			eventCatch(processId, event, _function) {
+			eventCatch(processId, event, function_) {
 				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1;
 
 				this.handlers.push({
@@ -635,7 +635,7 @@
 					type: 'event',
 					processId: processId || undefined,
 					event: event,
-					function: _function
+					function: function_
 				});
 				this.kdbAdd(`
 					eventCatch${ processId ? '@'+processId : '' }: Successfully set handler:
@@ -668,7 +668,7 @@
 				`);
 			}
 
-			timerCreate(processId, variant, delay, _function, ...arguments_) {
+			timerCreate(processId, variant, delay, function_, ...arguments_) {
 				if(!['single', 'multiple'].includes(variant)) {
 					this.kdbAdd(`timerCreate${ processId ? '@'+processId : '' }: Variant incorrect`);
 
@@ -679,7 +679,7 @@
 
 					console.error(1); return;
 				}
-				if(typeof _function !== 'function') {
+				if(typeof function_ !== 'function') {
 					this.kdbAdd(`timerCreate${ processId ? '@'+processId : '' }: Function incorrect`);
 
 					console.error(2); return;
@@ -690,11 +690,11 @@
 
 				if(variant == 'single') {
 					timer = setTimeout(() => {
-						_function(...arguments_);
+						function_(...arguments_);
 						this.timerRemove(processId, id);
 					}, delay);
 				} else {
-					timer = setInterval(_function, delay, ...arguments_);
+					timer = setInterval(function_, delay, ...arguments_);
 				}
 				this.handlers.push({
 					id: id,
@@ -1237,6 +1237,37 @@
 						.replace(/@(Resources)/g, b+a[3])
 						.replace(/@(Title)/g, clazz);
 
+					/*
+					c = require('recast').parse(c, {
+					//	parser: 'flow-parser'
+						parser: {
+							parse(source) {
+								return require('flow-parser').parse(source, {
+									esproposal_class_instance_fields: true,
+									esproposal_class_static_fields: true,
+									esproposal_decorators: true,
+									esproposal_export_star_as: true,
+									esproposal_nullish_coalescing: true,
+									esproposal_optional_chaining: true
+								});
+							}
+						}
+					});
+					*/
+
+					c = require('flow-parser').parse(c, {
+						esproposal_class_instance_fields: true,
+						esproposal_class_static_fields: true,
+						esproposal_decorators: true,
+						esproposal_export_star_as: true,
+						esproposal_nullish_coalescing: true,
+						esproposal_optional_chaining: true
+					});
+
+					c = require('recast').print(c).code;
+
+					console.log(c);
+
 					this.sbExecute(`var ${ clazz } = (() => { ${ c } })();`, process.environment);
 
 					if(framework == clazz) {
@@ -1247,67 +1278,33 @@
 				}
 			}
 
-			/*
 			classProtected(a) {
-				let _protected = {}
+				let friendly = []
 
-				a.prototype['@Protected'] = (caller, key, value) => {
-					let prototype = Object.getPrototypeOf(caller),
-						chain = []
+				return new Proxy(target, {
+					get(target, key) {
+						if(key == 'getProperty') {
+							return (caller, property) => {
+								if(property.startsWith('__') && !caller.hasOwnProperty(property)) {
+									console.log('Absolutely no access'); return;
+								}
+								if(property.startsWith('_') && !caller.hasOwnProperty(property) && caller !== target && !friendly.includes(caller)) {
+									console.log('No access'); return;
+								}
 
-					while(prototype) {
-						chain.push(prototype);
-
-						prototype = Object.getPrototypeOf(prototype);
-					}
-
-					if(chain.includes(Object.getPrototypeOf(a))) {
-						if(value) {
-							_protected[key] = value;
-						} else
-						if(key) {
-							return _protected[key]
-						}
-					} else {
-						throw [caller, 'Cannot access protected property'];
-					}
-				}
-
-				return new Proxy(a, {
-					get: function(target, key) {
-						if(key.startsWith('_')) {
-							let prototype = Object.getPrototypeOf(target),
-								chain = []
-
-							while(prototype) {
-								chain.push(prototype);
-
-								prototype = Object.getPrototypeOf(prototype);
+								return target[property]
 							}
-
-							if(chain.includes(Object.getPrototypeOf(target))) {
-								return target[key]
-							}
-						} else {
-							return target[key]
 						}
+
+						return;
 					},
-					set: function(target, key, value) {
-						if(key.startsWith('_')) {
-							target[key] = value;
+					set(target, key, value) {
+						target[key] = value;
 
-							return true;
-						} else {
-							target[key] = value;
-
-							return true;
-						}
+						return true;
 					}
 				});
-
-				return a;
 			}
-			*/
 
 			/**
 			 * Конвертирует обычный класс в синглтон.

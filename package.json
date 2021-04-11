@@ -1,10 +1,12 @@
 {
-	"name": "Poppy DE",
+	"name": "Poppy-DE",
 	"main": "Environment/Library/Kernels/Kernel.html",
 	"window": {
 		"fullscreen": true
 	},
 	"dependencies": {
-		"pngjs": "^6.0.0"
+		"flow-parser": "^0.148.0",
+		"pngjs": "^6.0.0",
+		"recast": "^0.20.4"
 	}
 }

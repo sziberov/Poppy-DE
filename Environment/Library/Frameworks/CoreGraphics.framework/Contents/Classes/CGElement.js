@@ -42,8 +42,8 @@ return class {
 		return this;
 	}
 
-	addEvent(event, _function) {
-		this.node.on(event, _function);
+	addEvent(event, function_) {
+		this.node.on(event, function_);
 
 		return this;
 	}

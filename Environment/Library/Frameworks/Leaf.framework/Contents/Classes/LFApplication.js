@@ -1,9 +1,9 @@
 return _single(class {
-	#menuItems = new CFArray();
-	#focusingPolicy = 0;
-	#quitableBySingleWindow = false;
-
 	constructor() {
+		this.__menuItems = new CFArray();
+		this.__focusingPolicy = 0;
+		this.__quitableBySingleWindow = false;
+
 		this.process.environment.LFApp = @Title;
 		/*
 		this.application = new Proxy(this.process.executable, {
@@ -36,7 +36,7 @@ return _single(class {
 	}
 
 	get menuItems() {
-		return this.#menuItems;
+		return this.__menuItems;
 	}
 
 	get windows() {
@@ -44,11 +44,11 @@ return _single(class {
 	}
 
 	get focusingPolicy() {
-		return this.#focusingPolicy;
+		return this.__focusingPolicy;
 	}
 
 	get quitableBySingleWindow() {
-		return this.#quitableBySingleWindow;
+		return this.__quitableBySingleWindow;
 	}
 
 	get process() {
@@ -90,12 +90,12 @@ return _single(class {
 	set menuItems(value) {
 		value = value.filter(v => v.class == 'LFMenuItem');
 
-		this.#menuItems.removeAll().add(...value);
+		this.__menuItems.removeAll().add(...value);
 	}
 
 	set focusingPolicy(value) {
 		if([0, 1, 2].includes(value)) {
-			this.#focusingPolicy = value;
+			this.__focusingPolicy = value;
 		}
 		this.update('MenuItems');
 		this.update('Windows');
@@ -103,7 +103,7 @@ return _single(class {
 
 	set quitableBySingleWindow(value) {
 		if([false, true].includes(value)) {
-			this.#quitableBySingleWindow = value;
+			this.__quitableBySingleWindow = value;
 		}
 	}
 

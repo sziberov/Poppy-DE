@@ -24,12 +24,12 @@ return class extends LFControl {
 		return this._.data;
 	}
 
-	set title(_value) {
-		this._.title = _value;
-		this.attributes['title'] = _value;
+	set title(value) {
+		this._.title = value;
+		this.attributes['title'] = value;
 	}
 
-	set activated(_value) {
+	set activated(value) {
 		return {
 			true: () => {
 				this.attributes['activated'] = '';
@@ -40,11 +40,11 @@ return class extends LFControl {
 			false: () => {
 				this.attributes['activated'] = undefined;
 			}
-		}[_value]();
+		}[value]();
 	}
 
-	set data(_value) {
-		this._.data = _value;
+	set data(value) {
+		this._.data = value;
 	}
 
 	click() {}

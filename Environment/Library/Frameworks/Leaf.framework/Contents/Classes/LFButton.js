@@ -34,35 +34,35 @@ return class extends LFControl {
 		return this._.menu;
 	}
 
-	set minWidth(_value) {
-		this._.minWidth = _value;
-		this.style['min-width'] = _value;
+	set minWidth(value) {
+		this._.minWidth = value;
+		this.style['min-width'] = value;
 	}
 
-	set title(_value) {
-		this._.title = _value;
-		this.attributes['title'] = _value?.length > 0 ? _value : undefined;
+	set title(value) {
+		this._.title = value;
+		this.attributes['title'] = value?.length > 0 ? value : undefined;
 	}
 
-	set image(_value) {
+	set image(value) {
 		this.image?.destroy();
-		if(_value?.class == 'LFImage') {
-			this._.image = _value;
+		if(value?.class == 'LFImage') {
+			this._.image = value;
 			this.attributes['image'] = '';
-			this.addSubviews([_value]);
+			this.addSubviews([value]);
 		} else {
 			this._.image = undefined;
 			this.attributes['image'] = undefined;
 		}
 	}
 
-	set menu(_value) {
+	set menu(value) {
 		this.menu?.destroy();
-		if(_value?.class == 'LFMenu') {
-			this._.menu = _value;
+		if(value?.class == 'LFMenu') {
+			this._.menu = value;
 			this.attributes['enabled'] = '';
 			this.attributes['menu'] = '';
-			this.addSubviews([_value]);
+			this.addSubviews([value]);
 		} else {
 			this._.menu = undefined;
 			if(!this.action) {
@@ -79,10 +79,10 @@ return class extends LFControl {
 		}
 	}
 
-	mousedown(_event) {
-		super.mousedown(_event, this.menu);
+	mousedown(event) {
+		super.mousedown(event, this.menu);
 
-		if(!this.action && this.menu && _event.button == 0) {
+		if(!this.action && this.menu && event.button == 0) {
 			this.menu.setActivated('Toggle', this);
 		} else {
 

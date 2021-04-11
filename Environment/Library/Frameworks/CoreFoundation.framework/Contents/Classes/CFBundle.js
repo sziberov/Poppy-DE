@@ -1,8 +1,7 @@
 return class {
-	#URL;
-
 	constructor(URL) {
-		this.#URL = URL || CFString.splitByLast(new CFProcessInfo().path, '/Contents/')[0]
+		this.__URL = URL || CFString.splitByLast(new CFProcessInfo().path, '/Contents/')[0]
+
 		this.properties = {}
 		this.localizations = {}
 
@@ -44,7 +43,7 @@ return class {
 	}
 
 	get URL() {
-		return this.#URL;
+		return this.__URL;
 	}
 
 	get contentsURL() {

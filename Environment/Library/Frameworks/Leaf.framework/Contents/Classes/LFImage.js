@@ -25,15 +25,15 @@ return class extends LFView {
 		return super.create();
 	}
 
-	set size(_value) {
-		this._.width = _value.width;
-		this._.height = _value.height;
-		this.style['width'] = _value.width+'px';
-		this.style['height'] = _value.height+'px';
+	set size(value) {
+		this._.width = value.width;
+		this._.height = value.height;
+		this.style['width'] = value.width+'px';
+		this.style['height'] = value.height+'px';
 	}
 
-	set url(_value) {
-		this._.url = _value;
-		this.style['background-image'] = 'url(\''+_value+'\')';
+	set url(value) {
+		this._.url = value;
+		this.style['background-image'] = 'url(\''+value+'\')';
 	}
 }

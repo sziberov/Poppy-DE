@@ -82,18 +82,18 @@ return class extends LFView {
 						return { x: Math.round(this._.x), y: Math.round(this._.y), corners: [] }
 					},
 					Bottom: () => {
-						let _offsetX = element.offset().left || this._.x,
-							_offsetY = element.offset().top+element.outerHeight() || this._.y;
+						let offsetX = element.offset().left || this._.x,
+							offsetY = element.offset().top+element.outerHeight() || this._.y;
 
-						_offsetX = _offsetX+(_offsetX+this.element.outerWidth() > new LFWorkspace().element.outerWidth() ? element.outerWidth()-this.element.outerWidth() : 0);
+						offsetX = offsetX+(offsetX+this.element.outerWidth() > new LFWorkspace().element.outerWidth() ? element.outerWidth()-this.element.outerWidth() : 0);
 
-						return { x: Math.round(_offsetX), y: Math.round(_offsetY), corners: ['topLeft', 'topRight'] }
+						return { x: Math.round(offsetX), y: Math.round(offsetY), corners: ['topLeft', 'topRight'] }
 					},
 					TopRight: () => {
-						let _offsetX = element.offset().left+element.outerWidth() || this._.x,
-							_offsetY = element.offset().top-4 || this._.y;
+						let offsetX = element.offset().left+element.outerWidth() || this._.x,
+							offsetY = element.offset().top-4 || this._.y;
 
-						return { x: Math.round(_offsetX), y: Math.round(_offsetY), corners: ['topLeft'] }
+						return { x: Math.round(offsetX), y: Math.round(offsetY), corners: ['topLeft'] }
 					}
 				}[element ? side : 'Default']();
 

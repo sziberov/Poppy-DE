@@ -1,34 +1,32 @@
+// noinspection JSAnnotator
 return class {
-	#canvas;
-	#context;
-
 	constructor({ URL, format, width, height } = {}) {
 		if(typeof URL !== 'string' && !(typeof width == 'number' || typeof height == 'number')) {
 			return;
 		}
 
 		if(typeof URL == string) {
-			this.#canvas = _request('drOpen', CFFile.content(URL), format);
+			this.__canvas = _request('drOpen', CFFile.content(URL), format);
 		} else {
-			this.#canvas = _request('drCreate', width, height);
+			this.__canvas = _request('drCreate', width, height);
 		}
-		this.#context = this.canvas.getContext('2d');
+		this.__context = this.canvas.getContext('2d');
 	}
 
 	get width() {
-		return this.#canvas.width;
+		return this.__canvas.width;
 	}
 
 	get height() {
-		return this.#canvas.height;
+		return this.__canvas.height;
 	}
 
 	get canvas() {
-		return this.#canvas;
+		return this.__canvas;
 	}
 
 	get context() {
-		return this.#context;
+		return this.__context;
 	}
 
 	set width(value) {
@@ -36,7 +34,7 @@ return class {
 			return;
 		}
 
-		this.#canvas.width = value;
+		this.__canvas.width = value;
 	}
 
 	set height(value) {
@@ -44,7 +42,7 @@ return class {
 			return;
 		}
 
-		this.#canvas.height = value;
+		this.__canvas.height = value;
 	}
 
 	draw() {

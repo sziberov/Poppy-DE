@@ -1,21 +1,22 @@
 return class extends LFResponder {
-	#constraints = new CFArray();
-	#subviews = new CFArray();
-
 	constructor(_) {
 		super();
+
 		this.class = '@Title';
 		this._ = {
 			tag: undefined,
 			..._
 		}
 
+		this.__constraints = new CFArray();
+		this.__subviews = new CFArray();
+
 		this.superview;
-	//	CFArray.addObserver(this.#subviews, () => {});
+	//	CFArray.addObserver(this.__subviews, () => {});
 	}
 
 	get subviews() {
-		return this.#subviews;
+		return this.__subviews;
 	}
 
 	get tag() {
