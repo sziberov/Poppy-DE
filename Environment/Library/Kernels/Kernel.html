@@ -1269,25 +1269,120 @@
 							delete path.node.range;
 						},
 						visitClassExpression(path) {
-							let node = path.node;
-
-							let classNode = Object.assign({}, node);
+							let node = path.node,
+								classNode = Object.assign({}, node);
 
 							for (let k in node) {
 								delete node[k]
 							}
 
-							node.type = 'CallExpression';
-							node.callee = {
-								type: 'Identifier',
-								name: '_protected',
-								typeAnnotation: null,
-								optional: false
-							}
-							node.typeArguments = null;
-							node.arguments = [classNode]
+							Object.assign(node, {
+								type: 'CallExpression',
+								callee: {
+									type: 'Identifier',
+									name: '_protected',
+									typeAnnotation: null,
+									optional: false
+								},
+								typeArguments: null,
+								arguments: [classNode]
+							});
 
-							console.log(node);
+							return false;
+						},
+						visitMemberExpression(path) {
+							let node = path.node,
+								object = node.object || 'window',
+								propertyName = node.property.name;
+
+							if(node.property.type !== 'Identifier') {
+								return false;
+							}
+
+						//	if(!propertyName.startsWith('__') && !propertyName.startsWith(('_'))) {
+						//		return false;
+						//	}
+
+							for (let k in node) {
+								delete node[k]
+							}
+
+							let conditionalNode = {
+								type: 'ConditionalExpression',
+								test: {
+									'type': 'OptionalMemberExpression',
+									'object': object,
+									'property': {
+										'type': 'Identifier',
+										'name': 'getProperty',
+										'typeAnnotation': null,
+										'optional': false
+									},
+									'computed': false,
+									'optional': true
+								},
+								consequent: {
+									'type': 'CallExpression',
+									'callee': {
+										'type': 'MemberExpression',
+										'object': object,
+										'property': {
+											'type': 'Identifier',
+											'name': 'getProperty',
+											'typeAnnotation': null,
+											'optional': false
+										},
+										'computed': false
+									},
+									'typeArguments': null,
+									'arguments': [
+										{
+											'type': 'ThisExpression'
+										},
+										{
+											'type': 'Literal',
+											'value': propertyName,
+											'raw': "'"+propertyName+"'"
+										}
+									]
+								},
+								alternate: {
+									'type': 'MemberExpression',
+									'object': object,
+									'property': {
+										'type': 'Identifier',
+										'name': propertyName,
+										'typeAnnotation': null,
+										'optional': false
+									},
+									'computed': false
+								}
+							}
+
+							if(path.parentPath.node.type == 'CallExpression') {
+								Object.assign(node, {
+									'type': 'CallExpression',
+									'callee': {
+										'type': 'MemberExpression',
+										'object': {
+											...conditionalNode
+										},
+										'property': {
+											'type': 'Identifier',
+											'name': 'bind',
+											'typeAnnotation': null,
+											'optional': false
+										},
+										'computed': false
+									},
+									'typeArguments': null,
+									'arguments': [
+										object
+									]
+								});
+							} else {
+								Object.assign(node, conditionalNode);
+							}
 
 							return false;
 						}
@@ -1308,11 +1403,11 @@
 			}
 
 			classProtected(target) {
+				/*
 				let friendly = []
 
 				return new Proxy(target, {
 					get(target, key) {
-						/*
 						if(key == 'getProperty') {
 							return (caller, property) => {
 								if(property.startsWith('__') && !caller.hasOwnProperty(property)) {
@@ -1325,9 +1420,6 @@
 								return target[property]
 							}
 						}
-						*/
-
-						return target[key]
 					},
 					set(target, key, value) {
 						target[key] = value;
@@ -1335,6 +1427,9 @@
 						return true;
 					}
 				});
+				*/
+
+				return target;
 			}
 
 			/**
