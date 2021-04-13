@@ -1246,6 +1246,8 @@
 						esproposal_optional_chaining: true
 					});
 
+					let { builders } = require('ast-types');
+
 					require('ast-types').visit(c, {
 						visitAnyTypeAnnotation(path) {
 							delete path.node.loc;
@@ -1259,17 +1261,7 @@
 								delete node[k]
 							}
 
-							Object.assign(node, {
-								type: 'CallExpression',
-								callee: {
-									type: 'Identifier',
-									name: '_protected',
-									typeAnnotation: null,
-									optional: false
-								},
-								typeArguments: null,
-								arguments: [classNode]
-							});
+							Object.assign(node, builders.callExpression(builders.identifier('_protected'), [classNode]));
 
 							return false;
 						},
@@ -1278,7 +1270,7 @@
 								object = node.object || 'window',
 								propertyName = node.property.name,
 								propertyComputed = node.computed,
-								assign = path.parentPath.node.type == 'AssignmentExpression',
+								assignment = path.parentPath.node.type == 'AssignmentExpression',
 								call = path.parentPath.node.type == 'CallExpression';
 
 							if(node.property.type !== 'Identifier') {
@@ -1289,146 +1281,57 @@
 								delete node[k]
 							}
 
-							let logicalNode = {
-								'type': 'LogicalExpression',
-								'operator': '||',
-								'left': {
-									'type': 'MemberExpression',
-									'object': {
-										'type': 'Identifier',
-										'name': 'a',
-										'optional': false
-									},
-									'property': {
-										'type': 'SequenceExpression',
-										'expressions': [
-											{
-												'type': 'ThisExpression'
-											},
-											{
-												'type': 'Identifier',
-												'name': 'b',
-												'optional': false
-											}
-										]
-									},
-									'computed': true
-								},
-								'right': {
-									'type': 'MemberExpression',
-									'object': {
-										'type': 'Identifier',
-										'name': 'a',
-										'optional': false
-									},
-									'property': {
-										'type': 'Identifier',
-										'name': 'b',
-										'optional': false
-									},
-									'computed': true
-								}
-							}
+							let logicalNode = builders.logicalExpression(
+									'||',
+									builders.memberExpression(
+										builders.identifier('a'),
+										builders.sequenceExpression([
+											builders.thisExpression(),
+											builders.identifier('b')
+										]),
+										true
+									),
+									builders.memberExpression(
+										builders.identifier('a'),
+										builders.identifier('b'),
+										true
+									)
+								),
+								assignLogicalNode = builders.logicalExpression(
+									'||',
+									builders.memberExpression(
+										builders.identifier('a'),
+										builders.sequenceExpression([
+											builders.thisExpression(),
+											builders.identifier('undefined')
+										]),
+										true
+									),
+									builders.identifier('a')
+								),
+								callLogicalNode = builders.callExpression(
+									builders.memberExpression(
+										logicalNode,
+										builders.identifier('bind'),
+										false
+									),
+									[builders.identifier('a')]
+								),
+								callNode = builders.callExpression(
+									builders.arrowFunctionExpression(
+										[builders.identifier('a'), builders.identifier('b')],
+										assignment ? assignLogicalNode : call ? callLogicalNode : logicalNode,
+										true
+									),
+									[object, propertyComputed ? builders.identifier(propertyName) : builders.literal(propertyName)]
+								),
+								assignCallNode = builders.memberExpression(
+									callNode,
+									builders.identifier(propertyName),
+									false
+								);
 
-							let assignLogicalNode = {
-								'type': 'LogicalExpression',
-								'operator': '||',
-								'left': {
-									'type': 'MemberExpression',
-									'object': {
-										'type': 'Identifier',
-										'name': 'a',
-										'optional': false
-									},
-									'property': {
-										'type': 'SequenceExpression',
-										'expressions': [
-											{
-												'type': 'ThisExpression'
-											},
-											{
-												'type': 'Identifier',
-												'name': 'undefined',
-												'optional': false
-											}
-										]
-									},
-									'computed': true
-								},
-								'right': {
-									'type': 'Identifier',
-									'name': 'a',
-									'optional': false
-								}
-							}
-
-							let callLogicalNode = {
-								'type': 'CallExpression',
-								'callee': {
-									'type': 'MemberExpression',
-									'object': logicalNode,
-									'property': {
-										'type': 'Identifier',
-										'name': 'bind',
-										'optional': false
-									},
-									'computed': false
-								},
-								'arguments': [
-									{
-										'type': 'Identifier',
-										'name': 'a',
-										'optional': false
-									}
-								]
-							}
-
-							let callNode = {
-								'type': 'CallExpression',
-								'callee': {
-									'type': 'ArrowFunctionExpression',
-									'params': [
-										{
-											'type': 'Identifier',
-											'name': 'a',
-											'optional': false
-										},
-										{
-											'type': 'Identifier',
-											'name': 'b',
-											'optional': false
-										}
-									],
-									'body': assign ? assignLogicalNode : call ? callLogicalNode : logicalNode,
-									'async': false,
-									'generator': false,
-									'expression': true
-								},
-								'arguments': [
-									object,
-									...propertyComputed ? [{
-										'type': 'Identifier',
-										'name': propertyName
-									}] : [{
-										'type': 'Literal',
-										'value': propertyName,
-										'raw': "'" + propertyName + "'"
-									}]
-								]
-							}
-
-							let assignCallNode = {
-								'type': 'MemberExpression',
-								'object': callNode,
-								'property': {
-									'type': 'Identifier',
-									'name': propertyName,
-									'optional': false
-								},
-								'computed': false
-							}
-
-							Object.assign(node, assign ? assignCallNode : callNode);
+							Object.assign(node, assignment ? assignCallNode : callNode);
 
 							return false;
 						}
@@ -1436,9 +1339,9 @@
 
 					c = require('recast').print(c).code;
 
-					if(class_ == 'CoreGraphics' || class_ == 'CGAppearance' || class_ == 'CFLocalizedString') {
-						console.log(c);
-					}
+				//	if(class_ == 'CoreGraphics' || class_ == 'CGAppearance' || class_ == 'CFLocalizedString') {
+				//		console.log(c);
+				//	}
 
 					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment);
 
