@@ -1277,6 +1277,7 @@
 							let node = path.node,
 								object = node.object || 'window',
 								propertyName = node.property.name,
+								propertyComputed = node.computed,
 								assign = path.parentPath.node.type == 'AssignmentExpression',
 								call = path.parentPath.node.type == 'CallExpression';
 
@@ -1296,7 +1297,6 @@
 									'object': {
 										'type': 'Identifier',
 										'name': 'a',
-										'typeAnnotation': null,
 										'optional': false
 									},
 									'property': {
@@ -1308,7 +1308,6 @@
 											{
 												'type': 'Identifier',
 												'name': 'b',
-												'typeAnnotation': null,
 												'optional': false
 											}
 										]
@@ -1320,13 +1319,11 @@
 									'object': {
 										'type': 'Identifier',
 										'name': 'a',
-										'typeAnnotation': null,
 										'optional': false
 									},
 									'property': {
 										'type': 'Identifier',
 										'name': 'b',
-										'typeAnnotation': null,
 										'optional': false
 									},
 									'computed': true
@@ -1341,7 +1338,6 @@
 									'object': {
 										'type': 'Identifier',
 										'name': 'a',
-										'typeAnnotation': null,
 										'optional': false
 									},
 									'property': {
@@ -1353,7 +1349,6 @@
 											{
 												'type': 'Identifier',
 												'name': 'undefined',
-												'typeAnnotation': null,
 												'optional': false
 											}
 										]
@@ -1363,7 +1358,6 @@
 								'right': {
 									'type': 'Identifier',
 									'name': 'a',
-									'typeAnnotation': null,
 									'optional': false
 								}
 							}
@@ -1376,17 +1370,14 @@
 									'property': {
 										'type': 'Identifier',
 										'name': 'bind',
-										'typeAnnotation': null,
 										'optional': false
 									},
 									'computed': false
 								},
-								'typeArguments': null,
 								'arguments': [
 									{
 										'type': 'Identifier',
 										'name': 'a',
-										'typeAnnotation': null,
 										'optional': false
 									}
 								]
@@ -1396,37 +1387,33 @@
 								'type': 'CallExpression',
 								'callee': {
 									'type': 'ArrowFunctionExpression',
-									'id': null,
 									'params': [
 										{
 											'type': 'Identifier',
 											'name': 'a',
-											'typeAnnotation': null,
 											'optional': false
 										},
 										{
 											'type': 'Identifier',
 											'name': 'b',
-											'typeAnnotation': null,
 											'optional': false
 										}
 									],
 									'body': assign ? assignLogicalNode : call ? callLogicalNode : logicalNode,
 									'async': false,
 									'generator': false,
-									'predicate': null,
-									'expression': true,
-									'returnType': null,
-									'typeParameters': null
+									'expression': true
 								},
-								'typeArguments': null,
 								'arguments': [
 									object,
-									{
+									...propertyComputed ? [{
+										'type': 'Identifier',
+										'name': propertyName
+									}] : [{
 										'type': 'Literal',
 										'value': propertyName,
-										'raw': "'"+propertyName+"'"
-									}
+										'raw': "'" + propertyName + "'"
+									}]
 								]
 							}
 
@@ -1436,7 +1423,6 @@
 								'property': {
 									'type': 'Identifier',
 									'name': propertyName,
-									'typeAnnotation': null,
 									'optional': false
 								},
 								'computed': false
@@ -1450,7 +1436,7 @@
 
 					c = require('recast').print(c).code;
 
-					if(class_ == 'CoreGraphics' || class_ == 'CGAppearance') {
+					if(class_ == 'CoreGraphics' || class_ == 'CGAppearance' || class_ == 'CFLocalizedString') {
 						console.log(c);
 					}
 
