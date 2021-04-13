@@ -158,7 +158,7 @@ return _single(class {
 			let windows = this.windows;
 
 			if(this.focusingPolicy < 2 && windows.length > 0 && windows.filter(v => v.attributes['focused'] == '').length == 0) {
-				windows.filter(v => v.main == true)[0]?.focus();
+				windows.find(v => v.main == true)?.focus();
 			}
 		}
 	}
@@ -178,7 +178,7 @@ return _single(class {
 		if(typeof this.application.about === 'function') {
 			this.application.about();
 		} else {
-			let window = this.windows.filter(v => v.tag == 'about')[0];
+			let window = this.windows.find(v => v.tag == 'about');
 
 			if(!window) {
 				new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 256, style: ['titled', 'closable', 'minimizable'], title: undefined, view:

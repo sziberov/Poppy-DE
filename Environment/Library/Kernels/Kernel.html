@@ -1246,9 +1246,9 @@
 						esproposal_optional_chaining: true
 					});
 
-					let { builders } = require('ast-types');
+					let { visit, builders } = require('ast-types');
 
-					require('ast-types').visit(c, {
+					visit(c, {
 						visitAnyTypeAnnotation(path) {
 							delete path.node.loc;
 							delete path.node.range;
@@ -1267,13 +1267,13 @@
 						},
 						visitMemberExpression(path) {
 							let node = path.node,
-								object = node.object || 'window',
+								object = node.object,
 								propertyName = node.property.name,
 								propertyComputed = node.computed,
 								assignment = path.parentPath.node.type == 'AssignmentExpression',
 								call = path.parentPath.node.type == 'CallExpression';
 
-							if(node.property.type !== 'Identifier') {
+							if(node.object.type == 'ThisExpression' || node.property.type !== 'Identifier') {
 								return false;
 							}
 
@@ -1334,14 +1334,13 @@
 							Object.assign(node, assignment ? assignCallNode : callNode);
 
 							return false;
+						//	this.traverse(path);
 						}
 					});
 
 					c = require('recast').print(c).code;
 
-				//	if(class_ == 'CoreGraphics' || class_ == 'CGAppearance' || class_ == 'CFLocalizedString') {
-				//		console.log(c);
-				//	}
+					console.log(c);
 
 					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment);
 

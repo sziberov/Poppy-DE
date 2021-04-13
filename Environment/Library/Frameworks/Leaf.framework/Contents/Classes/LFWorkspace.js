@@ -15,7 +15,7 @@ return $CFShared.@Title || _single(class extends LFView {
 		this.subviews.add(new LFMenubar({ transparent: true }));
 		CFEventEmitter.addHandler('processListChanged', (a) => {
 			if(a.event == 'removed') {
-				let application = this.launchedApplications.filter(v => v.processIdentifier == a.value)[0],
+				let application = this.launchedApplications.find(v => v.processIdentifier == a.value),
 					menu = new LFMenubar().applicationMenu,
 					focused = menu.application;
 
@@ -75,7 +75,7 @@ return $CFShared.@Title || _single(class extends LFView {
 
 		if(!this.getApplication(identifier)) {
 			try {
-				let user = new CFPreferences('Global').get().Users.filter(v => v.Group == 1)[0]
+				let user = new CFPreferences('Global').get().Users.find(v => v.Group == 1);
 
 				_request('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
 
@@ -97,6 +97,6 @@ return $CFShared.@Title || _single(class extends LFView {
 	}
 
 	getApplication(identifier) {
-		return this.launchedApplications.filter(v => v.identifier == identifier)[0]
+		return this.launchedApplications.find(v => v.identifier == identifier);
 	}
 });

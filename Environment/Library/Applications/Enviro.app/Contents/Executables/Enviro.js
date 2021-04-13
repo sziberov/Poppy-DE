@@ -32,10 +32,10 @@ return class {
 				}
 				if(list.length > 0) {
 					list.unshift(new LFMenuItem().separator());
-					new LFApp().menuItems.filter(v => v.title == CFLocalizedString('Window'))[0].menu = new LFMenu({ items: [
-						new LFMenuItem({ title: CFLocalizedString('Close'), action: () => new LFApp().windows.filter(v => v.main == true)[0].close() }),
-						new LFMenuItem({ title: CFLocalizedString('Minimize'), action: () => new LFApp().windows.filter(v => v.main == true)[0].minimize() }),
-						new LFMenuItem({ title: CFLocalizedString('Maximize'), action: () => new LFApp().windows.filter(v => v.main == true)[0].maximize() }),
+					new LFApp().menuItems.find(v => v.title == CFLocalizedString('Window')).menu = new LFMenu({ items: [
+						new LFMenuItem({ title: CFLocalizedString('Close'), action: () => new LFApp().windows.find(v => v.main == true).close() }),
+						new LFMenuItem({ title: CFLocalizedString('Minimize'), action: () => new LFApp().windows.find(v => v.main == true).minimize() }),
+						new LFMenuItem({ title: CFLocalizedString('Maximize'), action: () => new LFApp().windows.find(v => v.main == true).maximize() }),
 						new LFMenuItem().separator(),
 						new LFMenuItem({ title: CFLocalizedString('Align Windows'),
 							menu: new LFMenu({ items: [
@@ -46,7 +46,7 @@ return class {
 						...list
 					] });
 				} else {
-					new LFApp().menuItems.filter(v => v.title == CFLocalizedString('Window'))[0].menu = undefined;
+					new LFApp().menuItems.find(v => v.title == CFLocalizedString('Window')).menu = undefined;
 				}
 			}
 		});

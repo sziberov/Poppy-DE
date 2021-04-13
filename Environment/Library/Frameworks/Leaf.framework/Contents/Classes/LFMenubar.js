@@ -24,15 +24,15 @@ return $CFShared.@Title || _single(class extends LFView {
 	}
 
 	get mainMenu() {
-		return this.subviews.filter(v => v.tag == 'main')[0]
+		return this.subviews.find(v => v.tag == 'main');
 	}
 
 	get applicationMenu() {
-		return this.subviews.filter(v => v.tag == 'application')[0]
+		return this.subviews.find(v => v.tag == 'application');
 	}
 
 	get statusMenu() {
-		return this.subviews.filter(v => v.tag == 'status')[0]
+		return this.subviews.find(v => v.tag == 'status');
 	}
 
 	set transparent(value) {

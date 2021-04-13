@@ -127,7 +127,7 @@ return class {
 				return variable;
 			})(),
 			software = _request('version', 'DE').join(' '),
-			window = new LFApp().windows.filter(v => v.tag == 'about')[0]
+			window = new LFApp().windows.find(v => v.tag == 'about');
 
 		if(!window) {
 			new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
@@ -160,7 +160,7 @@ return class {
 	}
 
 	forceQuit() {
-		let window = new LFApp().windows.filter(v => v.tag == 'forceQuit')[0];
+		let window = new LFApp().windows.find(v => v.tag == 'forceQuit');
 
 		if(!window) {
 			new LFWindow({ tag: 'forceQuit', width: 384, style: ['titled', 'closable', 'resizable'], title: CFLocalizedString('Force Quit Applications'),
