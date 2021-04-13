@@ -1,4 +1,4 @@
-return _CFShared.@Title || class {
+return $CFShared.@Title || class {
 	static __URLSs = []
 
 	constructor(URL) {

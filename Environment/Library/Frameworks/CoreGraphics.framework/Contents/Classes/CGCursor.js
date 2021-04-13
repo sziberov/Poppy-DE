@@ -1,4 +1,4 @@
-return _CFShared.@Title || _single(class {
+return $CFShared.@Title || _single(class {
 	constructor() {
 		this.__element;
 		this.__event;

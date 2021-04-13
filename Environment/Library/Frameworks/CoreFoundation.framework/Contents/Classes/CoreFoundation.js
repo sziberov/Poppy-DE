@@ -19,4 +19,4 @@ if(!_request('seInfo', '@Title')) {
 	_request('seCreate', 'read', '@Title');
 }
 
-new CFProcessInfo().environment._CFShared = _request('seInfo', '@Title').environment;
+new CFProcessInfo().environment.$CFShared = _request('seInfo', '@Title').environment;

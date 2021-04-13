@@ -1237,24 +1237,6 @@
 						.replace(/@(Resources)/g, b+a[3])
 						.replace(/@(Title)/g, class_);
 
-					/*
-					c = require('recast').parse(c, {
-					//	parser: 'flow-parser'
-						parser: {
-							parse(source) {
-								return require('flow-parser').parse(source, {
-									esproposal_class_instance_fields: true,
-									esproposal_class_static_fields: true,
-									esproposal_decorators: true,
-									esproposal_export_star_as: true,
-									esproposal_nullish_coalescing: true,
-									esproposal_optional_chaining: true
-								});
-							}
-						}
-					});
-					*/
-
 					c = require('flow-parser').parse(c, {
 						esproposal_class_instance_fields: true,
 						esproposal_class_static_fields: true,
@@ -1266,6 +1248,7 @@
 
 					require('ast-types').visit(c, {
 						visitAnyTypeAnnotation(path) {
+							delete path.node.loc;
 							delete path.node.range;
 						},
 						visitClassExpression(path) {
@@ -1293,96 +1276,173 @@
 						visitMemberExpression(path) {
 							let node = path.node,
 								object = node.object || 'window',
-								propertyName = node.property.name;
+								propertyName = node.property.name,
+								assign = path.parentPath.node.type == 'AssignmentExpression',
+								call = path.parentPath.node.type == 'CallExpression';
 
 							if(node.property.type !== 'Identifier') {
 								return false;
 							}
 
-						//	if(!propertyName.startsWith('__') && !propertyName.startsWith(('_'))) {
-						//		return false;
-						//	}
-
 							for (let k in node) {
 								delete node[k]
 							}
 
-							let conditionalNode = {
-								type: 'ConditionalExpression',
-								test: {
-									'type': 'OptionalMemberExpression',
-									'object': object,
-									'property': {
+							let logicalNode = {
+								'type': 'LogicalExpression',
+								'operator': '||',
+								'left': {
+									'type': 'MemberExpression',
+									'object': {
 										'type': 'Identifier',
-										'name': 'getProperty',
+										'name': 'a',
 										'typeAnnotation': null,
 										'optional': false
 									},
-									'computed': false,
-									'optional': true
-								},
-								consequent: {
-									'type': 'CallExpression',
-									'callee': {
-										'type': 'MemberExpression',
-										'object': object,
-										'property': {
-											'type': 'Identifier',
-											'name': 'getProperty',
-											'typeAnnotation': null,
-											'optional': false
-										},
-										'computed': false
+									'property': {
+										'type': 'SequenceExpression',
+										'expressions': [
+											{
+												'type': 'ThisExpression'
+											},
+											{
+												'type': 'Identifier',
+												'name': 'b',
+												'typeAnnotation': null,
+												'optional': false
+											}
+										]
 									},
-									'typeArguments': null,
-									'arguments': [
-										{
-											'type': 'ThisExpression'
-										},
-										{
-											'type': 'Literal',
-											'value': propertyName,
-											'raw': "'"+propertyName+"'"
-										}
-									]
+									'computed': true
 								},
-								alternate: {
+								'right': {
 									'type': 'MemberExpression',
-									'object': object,
+									'object': {
+										'type': 'Identifier',
+										'name': 'a',
+										'typeAnnotation': null,
+										'optional': false
+									},
 									'property': {
 										'type': 'Identifier',
-										'name': propertyName,
+										'name': 'b',
+										'typeAnnotation': null,
+										'optional': false
+									},
+									'computed': true
+								}
+							}
+
+							let assignLogicalNode = {
+								'type': 'LogicalExpression',
+								'operator': '||',
+								'left': {
+									'type': 'MemberExpression',
+									'object': {
+										'type': 'Identifier',
+										'name': 'a',
+										'typeAnnotation': null,
+										'optional': false
+									},
+									'property': {
+										'type': 'SequenceExpression',
+										'expressions': [
+											{
+												'type': 'ThisExpression'
+											},
+											{
+												'type': 'Identifier',
+												'name': 'undefined',
+												'typeAnnotation': null,
+												'optional': false
+											}
+										]
+									},
+									'computed': true
+								},
+								'right': {
+									'type': 'Identifier',
+									'name': 'a',
+									'typeAnnotation': null,
+									'optional': false
+								}
+							}
+
+							let callLogicalNode = {
+								'type': 'CallExpression',
+								'callee': {
+									'type': 'MemberExpression',
+									'object': logicalNode,
+									'property': {
+										'type': 'Identifier',
+										'name': 'bind',
 										'typeAnnotation': null,
 										'optional': false
 									},
 									'computed': false
-								}
+								},
+								'typeArguments': null,
+								'arguments': [
+									{
+										'type': 'Identifier',
+										'name': 'a',
+										'typeAnnotation': null,
+										'optional': false
+									}
+								]
 							}
 
-							if(path.parentPath.node.type == 'CallExpression') {
-								Object.assign(node, {
-									'type': 'CallExpression',
-									'callee': {
-										'type': 'MemberExpression',
-										'object': {
-											...conditionalNode
-										},
-										'property': {
+							let callNode = {
+								'type': 'CallExpression',
+								'callee': {
+									'type': 'ArrowFunctionExpression',
+									'id': null,
+									'params': [
+										{
 											'type': 'Identifier',
-											'name': 'bind',
+											'name': 'a',
 											'typeAnnotation': null,
 											'optional': false
 										},
-										'computed': false
-									},
-									'typeArguments': null,
-									'arguments': [
-										object
-									]
-								});
-							} else {
-								Object.assign(node, conditionalNode);
+										{
+											'type': 'Identifier',
+											'name': 'b',
+											'typeAnnotation': null,
+											'optional': false
+										}
+									],
+									'body': assign ? assignLogicalNode : call ? callLogicalNode : logicalNode,
+									'async': false,
+									'generator': false,
+									'predicate': null,
+									'expression': true,
+									'returnType': null,
+									'typeParameters': null
+								},
+								'typeArguments': null,
+								'arguments': [
+									object,
+									{
+										'type': 'Literal',
+										'value': propertyName,
+										'raw': "'"+propertyName+"'"
+									}
+								]
 							}
+
+							let assignCallNode = {
+								'type': 'MemberExpression',
+								'object': callNode,
+								'property': {
+									'type': 'Identifier',
+									'name': propertyName,
+									'typeAnnotation': null,
+									'optional': false
+								},
+								'computed': false
+							}
+
+							Object.assign(node, assign ? assignCallNode : callNode);
 
 							return false;
 						}
@@ -1390,7 +1450,9 @@
 
 					c = require('recast').print(c).code;
 
-					console.log(c);
+					if(class_ == 'CoreGraphics' || class_ == 'CGAppearance') {
+						console.log(c);
+					}
 
 					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment);
 
@@ -1403,33 +1465,37 @@
 			}
 
 			classProtected(target) {
-				/*
 				let friendly = []
 
 				return new Proxy(target, {
-					get(target, key) {
-						if(key == 'getProperty') {
-							return (caller, property) => {
-								if(property.startsWith('__') && !caller.hasOwnProperty(property)) {
-									console.log('Absolutely no access'); return;
-								}
-								if(property.startsWith('_') && !caller.hasOwnProperty(property) && caller !== target && !friendly.includes(caller)) {
-									console.log('No access'); return;
-								}
-
-								return target[property]
-							}
+					get: (target, key) => {
+						if(!Array.isArray(key)) {
+							return target[key]
 						}
-					},
-					set(target, key, value) {
-						target[key] = value;
 
-						return true;
+						let caller = key[0],
+							property = key[1]
+
+						if(property == undefined) {
+							if(!friendly.includes(caller)) {
+								return {}
+							}
+
+							return target;
+						}
+						if(property == '__friendly' && caller == target) {
+							return friendly;
+						}
+						if(/^__./i.test(property) && !caller.hasOwnProperty(property) && !friendly.includes(caller)) {
+							this.kdbAdd(`Can't access private field: ${ property }`); return;
+						}
+						if(/^_./i.test(property) && !caller.hasOwnProperty(property) && caller !== target && !friendly.includes(caller)) {
+							this.kdbAdd(`Can't access protected field: ${ property }`); return;
+						}
+
+						return target[property]
 					}
 				});
-				*/
-
-				return target;
 			}
 
 			/**

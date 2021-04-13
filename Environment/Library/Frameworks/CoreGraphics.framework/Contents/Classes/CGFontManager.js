@@ -1,4 +1,4 @@
-return _CFShared.@Title || _single(class {
+return $CFShared.@Title || _single(class {
 	constructor(URL) {
 		this.URL = URL;
 		this.element = $('<style type="text/css"/>');
