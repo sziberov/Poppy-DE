@@ -28,10 +28,10 @@ return $CFShared.@Title || _single(class extends LFView {
 					v.destroy();
 				}
 
-				let _default = this.getApplication('ru.poppy.enviro');
+				let default_ = this.getApplication('ru.poppy.enviro');
 
-				if(focused == application && _default) {
-					_default.focus();
+				if(focused == application && default_) {
+					default_.focus();
 				} else
 				if(focused !== application) {
 					focused.focus();

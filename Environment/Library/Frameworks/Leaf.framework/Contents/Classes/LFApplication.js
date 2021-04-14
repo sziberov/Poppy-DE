@@ -157,7 +157,7 @@ return _single(class {
 		if(!mode || mode == 'Window') {
 			let windows = this.windows;
 
-			if(this.focusingPolicy < 2 && windows.length > 0 && windows.filter(v => v.attributes['focused'] == '').length == 0) {
+			if(this.focusingPolicy < 2 && windows.length > 0 && !windows.find(v => v.attributes['focused'] == '')) {
 				windows.find(v => v.main == true)?.focus();
 			}
 		}

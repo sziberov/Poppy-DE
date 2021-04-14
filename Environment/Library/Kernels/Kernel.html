@@ -618,7 +618,7 @@
 					try {
 						handler.function(...arguments_);
 					} catch(error) {
-						error.fileName = handler.process.path;
+						error.fileName = this.processes.find(v => v.id == handler.processId).path;
 						this.kdbAdd(`
 							eventThrow@${ processId }: Handler failed to execute:
 							    Event: "${ event }"
@@ -1084,6 +1084,8 @@
 
 				this.processes.push(process);
 				try {
+					executable = this.codePrepare(executable);
+
 					this.sbExecute(`var _executable = new ((() => { ${ executable } })())(..._arguments);`, process.environment);
 					this.kdbAdd(`
 						processExec: Process started:
@@ -1227,128 +1229,22 @@
 					c = this.fsRead(a[1]+a[2]) || this.fsRead(a[0]+a[1]+a[2]) || undefined;
 
 				if(!c) {
-					this.kdbAdd(`classImport: Unable to access requested ${ framework !== class_ ? class_+' module of ' : '' }${ framework } framework`);
+					this.kdbAdd(`classImport: Unable to access requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
 
 					console.error(0); return;
 				}
 
 				try {
-					c = c
+					c = this.codePrepare(c
 						.replace(/@(Resources)/g, b+a[3])
-						.replace(/@(Title)/g, class_);
-
-					c = require('flow-parser').parse(c, {
-						esproposal_class_instance_fields: true,
-						esproposal_class_static_fields: true,
-						esproposal_decorators: true,
-						esproposal_export_star_as: true,
-						esproposal_nullish_coalescing: true,
-						esproposal_optional_chaining: true
-					});
-
-					let { visit, builders } = require('ast-types');
-
-					visit(c, {
-						visitAnyTypeAnnotation(path) {
-							delete path.node.loc;
-							delete path.node.range;
-						},
-						visitClassExpression(path) {
-							let node = path.node,
-								classNode = Object.assign({}, node);
-
-							for (let k in node) {
-								delete node[k]
-							}
-
-							Object.assign(node, builders.callExpression(builders.identifier('_protected'), [classNode]));
-
-							return false;
-						},
-						visitMemberExpression(path) {
-							let node = path.node,
-								object = node.object,
-								propertyName = node.property.name,
-								propertyComputed = node.computed,
-								assignment = path.parentPath.node.type == 'AssignmentExpression',
-								call = path.parentPath.node.type == 'CallExpression';
-
-							if(node.object.type == 'ThisExpression' || node.property.type !== 'Identifier') {
-								return false;
-							}
-
-							for (let k in node) {
-								delete node[k]
-							}
-
-							let logicalNode = builders.logicalExpression(
-									'||',
-									builders.memberExpression(
-										builders.identifier('a'),
-										builders.sequenceExpression([
-											builders.thisExpression(),
-											builders.identifier('b')
-										]),
-										true
-									),
-									builders.memberExpression(
-										builders.identifier('a'),
-										builders.identifier('b'),
-										true
-									)
-								),
-								assignLogicalNode = builders.logicalExpression(
-									'||',
-									builders.memberExpression(
-										builders.identifier('a'),
-										builders.sequenceExpression([
-											builders.thisExpression(),
-											builders.identifier('undefined')
-										]),
-										true
-									),
-									builders.identifier('a')
-								),
-								callLogicalNode = builders.callExpression(
-									builders.memberExpression(
-										logicalNode,
-										builders.identifier('bind'),
-										false
-									),
-									[builders.identifier('a')]
-								),
-								callNode = builders.callExpression(
-									builders.arrowFunctionExpression(
-										[builders.identifier('a'), builders.identifier('b')],
-										assignment ? assignLogicalNode : call ? callLogicalNode : logicalNode,
-										true
-									),
-									[object, propertyComputed ? builders.identifier(propertyName) : builders.literal(propertyName)]
-								),
-								assignCallNode = builders.memberExpression(
-									callNode,
-									builders.identifier(propertyName),
-									false
-								);
-
-							Object.assign(node, assignment ? assignCallNode : callNode);
-
-							return false;
-						//	this.traverse(path);
-						}
-					});
-
-					c = require('recast').print(c).code;
-
-					console.log(c);
+						.replace(/@(Title)/g, class_)
+					);
 
 					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment);
 
-					if(framework == class_) {
-						this.kdbAdd(`classImport: Successfully imported main module of ${ framework } framework into process: ${ process.id }`);
-					}
+					this.kdbAdd(`classImport: Successfully imported ${ framework == class_ ? 'main' : class_ } class of ${ framework } framework into process: ${ process.id }`);
 				} catch(error) {
-					this.kdbAdd(`classImport: Failed to import requested ${ framework !== class_ ? class_+' module of ' : '' }${ framework } framework: "${ error.name }: ${ error.message }"`, error.stack);
+					this.kdbAdd(`classImport: Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework: "${ error.name }: ${ error.message }"`, error.stack);
 				}
 			}
 
@@ -1410,6 +1306,122 @@
 						return target[key]
 					}
 				});
+			}
+
+			codePrepare(a) {
+				let { visit, builders } = require('ast-types');
+
+				a = require('flow-parser').parse(a, {
+					esproposal_class_instance_fields: true,
+					esproposal_class_static_fields: true,
+					esproposal_decorators: true,
+					esproposal_export_star_as: true,
+					esproposal_nullish_coalescing: true,
+					esproposal_optional_chaining: true
+				});
+
+				visit(a, {
+					visitAnyTypeAnnotation(path) {
+						delete path.node.loc;
+						delete path.node.range;
+					},
+					visitClassExpression(path) {
+						this.traverse(path);
+
+						let node = path.node,
+							classNode = Object.assign({}, node);
+
+						path.replace(builders.callExpression(builders.identifier('_protected'), [classNode]));
+					},
+					visitMemberExpression(path) {
+						this.traverse(path);
+
+						let node = path.node,
+							parentNode = path.parentPath.node,
+							object = node.object,
+							propertyName = node.property.name,
+							propertyComputed = node.computed,
+							assignment = parentNode.type == 'AssignmentExpression' && parentNode.left == node,
+							call = ['OptionalCallExpression', 'CallExpression'].includes(parentNode.type) && parentNode.callee == node;
+
+						if(['Super', 'ThisExpression'].includes(node.object.type) || node.property.type !== 'Identifier' || node.property.name == 'element' || propertyName.startsWith('$')) {
+							return false;
+						}
+
+						let logicalNode = builders.logicalExpression(
+							'||',
+							builders.optionalMemberExpression(
+								builders.identifier('a'),
+								builders.sequenceExpression([
+									builders.thisExpression(),
+									builders.identifier('b')
+								]),
+								true,
+								true
+							),
+							builders.optionalMemberExpression(
+								builders.identifier('a'),
+								builders.identifier('b'),
+								true,
+								true
+							)
+							),
+							assignLogicalNode = builders.logicalExpression(
+								'||',
+								builders.logicalExpression(
+									'||',
+									builders.optionalMemberExpression(
+										builders.identifier('a'),
+										builders.sequenceExpression([
+											builders.thisExpression(),
+											builders.identifier('undefined')
+										]),
+										true,
+										true
+									),
+									builders.identifier('a')
+								),
+								builders.objectExpression([])
+							),
+							callLogicalNode = builders.callExpression(
+								builders.optionalMemberExpression(
+									builders.parenthesizedExpression(logicalNode),
+									builders.identifier('bind'),
+									false,
+									true
+								),
+								[builders.identifier('a')]
+							),
+							callNode = builders.callExpression(
+								builders.arrowFunctionExpression(
+									[builders.identifier('a'), builders.identifier('b')],
+									assignment ? assignLogicalNode : call ? callLogicalNode : logicalNode,
+									true
+								),
+								[object, propertyComputed ? builders.identifier(propertyName) : builders.literal(propertyName)]
+							),
+							assignCallNode = builders.memberExpression(
+								callNode,
+								builders.identifier(propertyName),
+								propertyComputed
+							);
+
+						if(assignment) {
+							path.replace(assignCallNode);
+						} else
+						if(call) {
+							path.parentPath.replace(builders.optionalCallExpression(callNode, parentNode.arguments, true));
+						} else {
+							path.replace(callNode);
+						}
+					}
+				});
+
+				a = require('recast').print(a).code;
+
+			//	console.log(a);
+
+				return a;
 			}
 
 			system() {
