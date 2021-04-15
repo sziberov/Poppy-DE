@@ -1248,8 +1248,20 @@
 				}
 			}
 
+			/**
+			 * Добавляет классу поддержку защищённых и приватных полей, а также друзей. При этом для ощущения эффекта обращаться к нему после этого следует особым образом:
+			 * - <class>[this, <field>] - Возвращает поле <field> класса <class>, если контекст, из коего происходит обращение, удовлетворяет требованиям.
+			 * - <class>[this, undefined] - Возвращает сам класс <class> на тех же условиях.
+			 *
+			 * Модификаторами доступа полей становятся префиксы:
+			 * - __<field> - Приватное поле.
+			 * - _<field> - Защищённое поле.
+			 * - <field> - Обычное поле.
+			 *
+			 * Друзья класса указываются в массиве <class>.__friends. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только из контекста класса, коему он принадлежит.
+			 */
 			classProtected(target) {
-				let friendly = []
+				let friends = []
 
 				return new Proxy(target, {
 					get: (target, key) => {
@@ -1261,19 +1273,19 @@
 							property = key[1]
 
 						if(property == undefined) {
-							if(!friendly.includes(caller)) {
+							if(!friends.includes(caller)) {
 								return {}
 							}
 
 							return target;
 						}
-						if(property == '__friendly' && caller == target) {
-							return friendly;
+						if(property == '__friends' && caller == target) {
+							return friends;
 						}
-						if(/^__./i.test(property) && !caller.hasOwnProperty(property) && !friendly.includes(caller)) {
+						if(/^__./i.test(property) && !caller.hasOwnProperty(property) && !friends.includes(caller)) {
 							this.kdbAdd(`Can't access private field: ${ property }`); return;
 						}
-						if(/^_./i.test(property) && !caller.hasOwnProperty(property) && caller !== target && !friendly.includes(caller)) {
+						if(/^_./i.test(property) && !caller.hasOwnProperty(property) && caller !== target && !friends.includes(caller)) {
 							this.kdbAdd(`Can't access protected field: ${ property }`); return;
 						}
 
@@ -1283,8 +1295,8 @@
 			}
 
 			/**
-			 * Конвертирует обычный класс в синглтон.
-			 * @param {!class} a Класс.
+			 * @param {!class} a Обычный класс.
+			 * @returns {class} Синглтон.
 			 */
 			classSingle(a) {
 				return new Proxy(a, {
@@ -1308,6 +1320,11 @@
 				});
 			}
 
+			/**
+			 * Обеспечивает удобство использования classProtected().
+			 * @param {!string} a Сырой код.
+			 * @returns {string} Код, подготовленный для запуска в процессах.
+			 */
 			codePrepare(a) {
 				let { visit, builders } = require('ast-types');
 
@@ -1326,6 +1343,8 @@
 						delete path.node.range;
 					},
 					visitClassExpression(path) {
+					//	class {} == _protected(class {});
+
 						this.traverse(path);
 
 						let node = path.node,
@@ -1334,6 +1353,15 @@
 						path.replace(builders.callExpression(builders.identifier('_protected'), [classNode]));
 					},
 					visitMemberExpression(path) {
+					//	object.property				==	((a, b) => a?.[this, b] || a?.[b])(object, 'property');
+					//	object[property]			==	((a, b) => a?.[this, b] || a?.[b])(object, property);
+
+					//	object.property(arguments)	==	((a, b) => (a?.[this, b] || a?.[b])?.bind(a))(object, 'property')?.(arguments);
+					//	object[property](arguments)	==	((a, b) => (a?.[this, b] || a?.[b])?.bind(a))(object, property)?.(arguments);
+
+					//	object.property = ''		==	(a => a?.[this, undefined] || a || {})(object).property = '';
+					//	object[property] = ''		==	(a => a?.[this, undefined] || a || {})(object)[property] = '';
+
 						this.traverse(path);
 
 						let node = path.node,
@@ -1344,7 +1372,7 @@
 							assignment = parentNode.type == 'AssignmentExpression' && parentNode.left == node,
 							call = ['OptionalCallExpression', 'CallExpression'].includes(parentNode.type) && parentNode.callee == node;
 
-						if(['Super', 'ThisExpression'].includes(node.object.type) || node.property.type !== 'Identifier' || node.property.name == 'element' || propertyName.startsWith('$')) {
+						if(['Super', 'ThisExpression'].includes(node.object.type) || node.property.type !== 'Identifier') {
 							return false;
 						}
 
@@ -1394,11 +1422,11 @@
 							),
 							callNode = builders.callExpression(
 								builders.arrowFunctionExpression(
-									[builders.identifier('a'), builders.identifier('b')],
+									[builders.identifier('a'), ...!assignment ? [builders.identifier('b')] : []],
 									assignment ? assignLogicalNode : call ? callLogicalNode : logicalNode,
 									true
 								),
-								[object, propertyComputed ? builders.identifier(propertyName) : builders.literal(propertyName)]
+								[object, ...!assignment ? [propertyComputed ? builders.identifier(propertyName) : builders.literal(propertyName)] : []]
 							),
 							assignCallNode = builders.memberExpression(
 								callNode,
@@ -1419,7 +1447,7 @@
 
 				a = require('recast').print(a).code;
 
-			//	console.log(a);
+				console.log(a);
 
 				return a;
 			}
