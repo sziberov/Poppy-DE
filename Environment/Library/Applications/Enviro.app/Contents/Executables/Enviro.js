@@ -54,6 +54,12 @@ return class {
 		new LFWindow({ tag: 'desktop', level: 0, style: ['borderless', 'fullscreen'], background: 'none', view:
 			new LFView()
 		});
+
+		try {
+			console.error(new LFWorkspace().__launchedApplications);
+		} catch(error) {
+			console.error(error);
+		}
 	}
 
 	window() {

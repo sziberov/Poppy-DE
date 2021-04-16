@@ -197,6 +197,10 @@ return _single(class {
 
 	quit() {
 		if(new LFWorkspace().getApplication(this.identifier)) {
+			try {
+				this.process.executable?.quit?.();
+			} catch(error) {}
+
 			_request('kill');
 		}
 	}

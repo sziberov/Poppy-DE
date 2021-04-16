@@ -173,9 +173,10 @@ return class {
 		}
 	}
 
-	deconstructor() {
+	quit() {
 		new CGCursor().remove();
 		new LFWorkspace().remove();
-	//	_request('relaunch');
+
+	//	_request('quit');
 	}
 }

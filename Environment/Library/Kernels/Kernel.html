@@ -618,9 +618,9 @@
 					try {
 						handler.function(...arguments_);
 					} catch(error) {
-						error.fileName = this.processes.find(v => v.id == handler.processId).path;
+						error.fileName = this.processes.find(v => v.id == handler.processId)?.path;
 						this.kdbAdd(`
-							eventThrow@${ processId }: Handler failed to execute:
+							eventThrow@${ handler.processId }: Handler failed to execute:
 							    Event: "${ event }"
 						`, error.stack);
 					}
@@ -1085,6 +1085,8 @@
 				this.processes.push(process);
 				try {
 					executable = this.codePrepare(executable);
+					console.error(process.path);
+					console.error(executable);
 
 					this.sbExecute(`var _executable = new ((() => { ${ executable } })())(..._arguments);`, process.environment);
 					this.kdbAdd(`
@@ -1100,9 +1102,8 @@
 					return this.processInfo(process.id);
 				} catch(error) {
 					error.fileName = process.path;
-					this.processes = this.processes.filter(v => v !== process);
-					this.kdbAdd(`processExec: Process stopped: "${ error.name }: ${ error.message }":`, error.stack);
-					this.eventThrow(undefined, 'processListChanged', { event: 'removed', value: process.id });
+					this.kdbAdd(`processExec: Process failed to start: "${ error.name }: ${ error.message }":`, error.stack);
+					this.processKill(process.id, true);
 
 					throw error;
 				}
@@ -1173,21 +1174,17 @@
 			}
 			*/
 
-			processKill(processId) {
-				let process = this.processes.find(v => v.id == processId),
-					b;
+			processKill(processId, quiet) {
+				let process = this.processes.find(v => v.id == processId);
 
 				if(!process) {
-					this.kdbAdd(`processKill: Unable to find process`);
+					if(!quiet) {
+						this.kdbAdd(`processKill: Unable to find process`);
+					}
 
 					console.error(0); return;
 				}
 
-				try {
-					process.environment._executable.deconstructor?.();
-				} catch(error) {
-					b = error;
-				}
 				for(let v of this.handlers.filter(v => v.processId == processId)) {
 					if(v.type == 'event') {
 						this.eventCatchRemove(processId, v.id);
@@ -1200,12 +1197,11 @@
 					}
 				}
 				this.processes = this.processes.filter(v => v !== process);
-				this.kdbAdd(`
-					processKill: Process removed:
-					    ID: ${ processId }
-				`);
-				if(b) {
-					this.kdbAdd(`    Deconstructor failed:`, error.stack)
+				if(!quiet) {
+					this.kdbAdd(`
+						processKill: Process removed:
+						    ID: ${processId}
+					`);
 				}
 				this.eventThrow(undefined, 'processListChanged', { event: 'removed', value: processId });
 			}
@@ -1240,6 +1236,9 @@
 						.replace(/@(Title)/g, class_)
 					);
 
+				//	console.log(class_);
+				//	console.log(c);
+
 					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment);
 
 					this.kdbAdd(`classImport: Successfully imported ${ framework == class_ ? 'main' : class_ } class of ${ framework } framework into process: ${ process.id }`);
@@ -1250,46 +1249,63 @@
 
 			/**
 			 * Добавляет классу поддержку защищённых и приватных полей, а также друзей. При этом для ощущения эффекта обращаться к нему после этого следует особым образом:
-			 * - <class>[this, <field>] - Возвращает поле <field> класса <class>, если контекст, из коего происходит обращение, удовлетворяет требованиям.
-			 * - <class>[this, undefined] - Возвращает сам класс <class> на тех же условиях.
+			 * - <class>.__get__(this, <field>) - Возвращает поле <field> класса <class>, если контекст, из коего происходит обращение, удовлетворяет требованиям.
+			 * - <class>.__get__(this) - Возвращает сам класс <class> на тех же условиях.
 			 *
 			 * Модификаторами доступа полей становятся префиксы:
 			 * - __<field> - Приватное поле.
 			 * - _<field> - Защищённое поле.
 			 * - <field> - Обычное поле.
 			 *
-			 * Друзья класса указываются в массиве <class>.__friends. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только из контекста класса, коему он принадлежит.
+			 * Друзья класса указываются в массиве <class>.__friends__. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только из контекста класса, коему он принадлежит.
 			 */
-			classProtected(target) {
+			classProtected(a) {
 				let friends = []
 
-				return new Proxy(target, {
+				return new Proxy(a, {
+				//	construct: (target, arguments_) => {
+				//		return new (new Proxy(target, {
+
+				//		}))(...arguments_);
+				//	},
 					get: (target, key) => {
-						if(!Array.isArray(key)) {
-							return target[key]
-						}
+						if(key == '__get__') {
+							return (caller, property) => {
+								if(!property) {
+									if(!friends.includes(caller)) {
+										return {}
+									}
 
-						let caller = key[0],
-							property = key[1]
+									return target;
+								}
+								if(property == '__friends__' && caller == target) {
+									return friends;
+								}
 
-						if(property == undefined) {
-							if(!friends.includes(caller)) {
-								return {}
+								let equals = caller == target || Object.getPrototypeOf(caller) == target.prototype || caller.prototype == Object.getPrototypeOf(target) || caller.prototype == target.prototype || Object.getPrototypeOf(caller) == Object.getPrototypeOf(target),
+									inherits = caller instanceof target || caller.prototype instanceof target;
+
+								if(/^__./i.test(property) && !equals && !friends.includes(caller)) {
+									this.kdbAdd(`Can't get private property: ${ property }`); return;
+								}
+								if(/^_[^_]/i.test(property) && !equals && !inherits && !friends.includes(caller)) {
+									this.kdbAdd(`Can't get protected property: ${ property }`); return;
+								}
+
+								return target[property]
 							}
-
-							return target;
-						}
-						if(property == '__friends' && caller == target) {
-							return friends;
-						}
-						if(/^__./i.test(property) && !caller.hasOwnProperty(property) && !friends.includes(caller)) {
-							this.kdbAdd(`Can't access private field: ${ property }`); return;
-						}
-						if(/^_./i.test(property) && !caller.hasOwnProperty(property) && caller !== target && !friends.includes(caller)) {
-							this.kdbAdd(`Can't access protected field: ${ property }`); return;
 						}
 
-						return target[property]
+						return target[key]
+					},
+					set: (target, key, value) => {
+						if(['__set__', '__friends__'].includes(key)) {
+							this.kdbAdd(`Can't set reserved property: ${ key }`); return false;
+						}
+
+						target[key] = value;
+
+						return true;
 					}
 				});
 			}
@@ -1353,67 +1369,61 @@
 						path.replace(builders.callExpression(builders.identifier('_protected'), [classNode]));
 					},
 					visitMemberExpression(path) {
-					//	object.property				==	((a, b) => a?.[this, b] || a?.[b])(object, 'property');
-					//	object[property]			==	((a, b) => a?.[this, b] || a?.[b])(object, property);
+					//	object.property &&
+					//	object['property']				==	((a, b) => a?.__get__ ? a.__get__(this, b) : a?.[b])(object, 'property');
+					//	object[property]				==	((a, b) => a?.__get__ ? a.__get__(this, b) : a?.[b])(object, property);
 
-					//	object.property(arguments)	==	((a, b) => (a?.[this, b] || a?.[b])?.bind(a))(object, 'property')?.(arguments);
-					//	object[property](arguments)	==	((a, b) => (a?.[this, b] || a?.[b])?.bind(a))(object, property)?.(arguments);
+					//	object.property(arguments) &&
+					//	object['property'](arguments)	==	((a, b) => (a?.__get__ ? a.__get__(this, b) : a?.[b])?.bind(a))(object, 'property')?.(arguments);
+					//	object[property](arguments)		==	((a, b) => (a?.__get__ ? a.__get__(this, b) : a?.[b])?.bind(a))(object, property)?.(arguments);
 
-					//	object.property = ''		==	(a => a?.[this, undefined] || a || {})(object).property = '';
-					//	object[property] = ''		==	(a => a?.[this, undefined] || a || {})(object)[property] = '';
+					//	object.property = '' &&
+					//	object['property'] = ''			==	(a => a?.__get__ ? a.__get__(this) : a)(object).property = '';
+					//	object[property] = ''			==	(a => a?.__get__ ? a.__get__(this) : a)(object)[property] = '';
 
 						this.traverse(path);
 
 						let node = path.node,
 							parentNode = path.parentPath.node,
 							object = node.object,
-							propertyName = node.property.name,
+							property = node.property,
+							propertyName = property.name || property.value,
 							propertyComputed = node.computed,
 							assignment = parentNode.type == 'AssignmentExpression' && parentNode.left == node,
 							call = ['OptionalCallExpression', 'CallExpression'].includes(parentNode.type) && parentNode.callee == node;
 
-						if(['Super', 'ThisExpression'].includes(node.object.type) || node.property.type !== 'Identifier') {
+						if(['Super', 'ThisExpression'].includes(object.type) || property.type !== 'Identifier' && !(property.type == 'Literal' && typeof property.value == 'string')) {
 							return false;
 						}
 
-						let logicalNode = builders.logicalExpression(
-							'||',
-							builders.optionalMemberExpression(
-								builders.identifier('a'),
-								builders.sequenceExpression([
-									builders.thisExpression(),
-									builders.identifier('b')
-								]),
-								true,
-								true
-							),
-							builders.optionalMemberExpression(
-								builders.identifier('a'),
-								builders.identifier('b'),
-								true,
-								true
-							)
-							),
-							assignLogicalNode = builders.logicalExpression(
-								'||',
-								builders.logicalExpression(
-									'||',
+						let conditionalNode = builders.conditionalExpression(
+								builders.optionalMemberExpression(
+									builders.identifier('a'),
+									builders.identifier('__get__'),
+									false,
+									true
+								),
+								builders.callExpression(
+									builders.memberExpression(
+										builders.identifier('a'),
+										builders.identifier('__get__'),
+										false
+									),
+									[builders.thisExpression(), ...!assignment ? [builders.identifier('b')] : []]
+								),
+								!assignment ?
 									builders.optionalMemberExpression(
 										builders.identifier('a'),
-										builders.sequenceExpression([
-											builders.thisExpression(),
-											builders.identifier('undefined')
-										]),
+										builders.identifier('b'),
 										true,
 										true
-									),
-									builders.identifier('a')
-								),
-								builders.objectExpression([])
+									)
+								:
+								builders.identifier('a')
 							),
-							callLogicalNode = builders.callExpression(
+							callConditionalNode = builders.callExpression(
 								builders.optionalMemberExpression(
-									builders.parenthesizedExpression(logicalNode),
+									builders.parenthesizedExpression(conditionalNode),
 									builders.identifier('bind'),
 									false,
 									true
@@ -1423,14 +1433,14 @@
 							callNode = builders.callExpression(
 								builders.arrowFunctionExpression(
 									[builders.identifier('a'), ...!assignment ? [builders.identifier('b')] : []],
-									assignment ? assignLogicalNode : call ? callLogicalNode : logicalNode,
+									call ? callConditionalNode : conditionalNode,
 									true
 								),
-								[object, ...!assignment ? [propertyComputed ? builders.identifier(propertyName) : builders.literal(propertyName)] : []]
+								[object, ...!assignment ? [propertyComputed && property.type == 'Identifier' ? builders.identifier(propertyName) : builders.literal(propertyName)] : []]
 							),
 							assignCallNode = builders.memberExpression(
 								callNode,
-								builders.identifier(propertyName),
+								property,
 								propertyComputed
 							);
 
@@ -1446,8 +1456,6 @@
 				});
 
 				a = require('recast').print(a).code;
-
-				console.log(a);
 
 				return a;
 			}
