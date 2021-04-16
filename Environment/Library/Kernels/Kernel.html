@@ -1084,11 +1084,7 @@
 
 				this.processes.push(process);
 				try {
-					executable = this.codePrepare(executable);
-					console.error(process.path);
-					console.error(executable);
-
-					this.sbExecute(`var _executable = new ((() => { ${ executable } })())(..._arguments);`, process.environment);
+					this.sbExecute(`var _executable = new ((() => { ${ this.codePrepare(executable) } })())(..._arguments);`, process.environment);
 					this.kdbAdd(`
 						processExec: Process started:
 						    ID: ${ process.id }
@@ -1236,8 +1232,7 @@
 						.replace(/@(Title)/g, class_)
 					);
 
-				//	console.log(class_);
-				//	console.log(c);
+					if(class_ == 'LFMenubar') console.log(c);
 
 					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment);
 
@@ -1260,53 +1255,58 @@
 			 * Друзья класса указываются в массиве <class>.__friends__. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только из контекста класса, коему он принадлежит.
 			 */
 			classProtected(a) {
-				let friends = []
+				let get = (target, key) => {
+					if(key == '__get__') {
+						return (caller, property) => {
+							let equals = caller == target || (Object.getPrototypeOf(caller) == target.prototype || caller.prototype == Object.getPrototypeOf(target) || caller.prototype == target.prototype || Object.getPrototypeOf(caller) == Object.getPrototypeOf(target)) && Object.getPrototypeOf(caller) !== Object.getPrototypeOf(class {}),
+								inherits = false, //caller instanceof target || caller.prototype instanceof target,
+								friends = target.__friends__ || []
+
+							if(!property) {
+								if(!equals && !friends.includes(caller)) {
+									return {}
+								}
+
+								return target;
+							}
+							if(property == '__friends__' && !equals) {
+								return;
+							}
+							if(/^__./i.test(property) && !equals && !friends.includes(caller)) {
+								this.kdbAdd(`Can't get private property: ${ property }`); return;
+							}
+							if(/^_[^_]/i.test(property) && !equals && !inherits && !friends.includes(caller)) {
+								this.kdbAdd(`Can't get protected property: ${ property }`); return;
+							}
+
+							return target[property]
+						}
+					}
+
+					return target[key]
+				}
+
+				let set = (target, key, value) => {
+					if(['__set__', '__friends__'].includes(key)) {
+						this.kdbAdd(`Can't set reserved property: ${ key }`); return false;
+					}
+
+					target[key] = value;
+
+					return true;
+				}
+
+				let construct = (target, arguments_, newTarget) => {
+					return new Proxy(Reflect.construct(target, arguments_, newTarget), {
+						get: get,
+						set: set
+					});
+				}
 
 				return new Proxy(a, {
-				//	construct: (target, arguments_) => {
-				//		return new (new Proxy(target, {
-
-				//		}))(...arguments_);
-				//	},
-					get: (target, key) => {
-						if(key == '__get__') {
-							return (caller, property) => {
-								if(!property) {
-									if(!friends.includes(caller)) {
-										return {}
-									}
-
-									return target;
-								}
-								if(property == '__friends__' && caller == target) {
-									return friends;
-								}
-
-								let equals = caller == target || Object.getPrototypeOf(caller) == target.prototype || caller.prototype == Object.getPrototypeOf(target) || caller.prototype == target.prototype || Object.getPrototypeOf(caller) == Object.getPrototypeOf(target),
-									inherits = caller instanceof target || caller.prototype instanceof target;
-
-								if(/^__./i.test(property) && !equals && !friends.includes(caller)) {
-									this.kdbAdd(`Can't get private property: ${ property }`); return;
-								}
-								if(/^_[^_]/i.test(property) && !equals && !inherits && !friends.includes(caller)) {
-									this.kdbAdd(`Can't get protected property: ${ property }`); return;
-								}
-
-								return target[property]
-							}
-						}
-
-						return target[key]
-					},
-					set: (target, key, value) => {
-						if(['__set__', '__friends__'].includes(key)) {
-							this.kdbAdd(`Can't set reserved property: ${ key }`); return false;
-						}
-
-						target[key] = value;
-
-						return true;
-					}
+					get: get,
+					set: set,
+					construct: construct
 				});
 			}
 
@@ -1357,6 +1357,13 @@
 					visitAnyTypeAnnotation(path) {
 						delete path.node.loc;
 						delete path.node.range;
+					},
+					visitNewExpression(path) {
+						if(path.node.callee.name == 'Proxy') {
+							return false;
+						}
+
+						this.traverse(path);
 					},
 					visitClassExpression(path) {
 					//	class {} == _protected(class {});
