@@ -996,8 +996,8 @@
 				return require('vm').createContext(a);
 			}
 
-			sbExecute(a, b) {
-				return require('vm').runInContext(a, b);
+			sbExecute(a, b, c) {
+				return require('vm').runInContext(a, b, c?.split('/').pop());
 			}
 
 			processRequest(process, method, ...arguments_) {
@@ -1084,7 +1084,7 @@
 
 				this.processes.push(process);
 				try {
-					this.sbExecute(`var _executable = new ((() => { ${ this.codePrepare(executable) } })())(..._arguments);`, process.environment);
+					this.sbExecute(`var _executable = new ((() => { ${ this.codePrepare(executable) } })())(..._arguments);`, process.environment, process.path);
 					this.kdbAdd(`
 						processExec: Process started:
 						    ID: ${ process.id }
@@ -1234,7 +1234,7 @@
 
 				//	if(class_ == 'LFWorkspace') console.log(c);
 
-					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment);
+					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment, class_);
 
 					this.kdbAdd(`classImport: Successfully imported ${ framework == class_ ? 'main' : class_ } class of ${ framework } framework into process: ${ process.id }`);
 				} catch(error) {
