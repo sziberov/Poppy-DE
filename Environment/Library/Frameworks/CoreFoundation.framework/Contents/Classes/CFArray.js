@@ -1,6 +1,7 @@
+// noinspection JSAnnotator
 return class extends Array {
-	constructor(..._arguments) {
-		super(..._arguments);
+	constructor(...arguments_) {
+		super(...arguments_);
 
 		delete this.push;
 		delete this.splice;
@@ -21,7 +22,7 @@ return class extends Array {
 
 	remove(...value) {
 		for(let v of value) {
-			if(this.contains(v)) {
+			if(this.contains?.(v)) {
 				super.splice(this.indexOf(v), 1);
 
 				CFEventEmitter.dispatch('@TitleChanged', this, { event: 'removed', value: v });
@@ -42,20 +43,16 @@ return class extends Array {
 		return this;
 	}
 
-	removeByFilter(_function) {
-		if(typeof _function === 'function') {
+	removeByFilter(function_) {
+		if(typeof function_ === 'function') {
 			for(let v of this) {
-				if(_function(v)) {
+				if(function_(v)) {
 					this.remove(v);
 				}
 			}
 		}
 
 		return this;
-	}
-
-	contains(value) {
-		return super.includes(value);
 	}
 
 	static add(array = [], ...value) {
@@ -69,24 +66,24 @@ return class extends Array {
 
 	static remove(array = [], ...value) {
 		for(let v of value) {
-			if(array.contains && array.contains(v)) {
+			if(array.contains?.(v)) {
 				array.remove(v);
 			} else
-			if(array.includes && array.includes(v)) {
+			if(array.includes?.(v)) {
 				array.splice(array.indexOf(v), 1);
 			}
 		}
 	}
 
 	static contains(array = [], value) {
-		return array.contains && array.contains(value) || array.includes && array.includes(value);
+		return array.contains?.(value) || array.includes?.(value);
 	}
 
-	static addObserver(array, _function) {
-		if(super.isArray(array) && typeof _function === 'function') {
-			return CFEventEmitter.addHandler('@TitleChanged', (_array, ..._arguments) => {
-				if(_array == array) {
-					_function(..._arguments);
+	static addObserver(array, function_) {
+		if(super.isArray(array) && typeof function_ === 'function') {
+			return CFEventEmitter.addHandler('@TitleChanged', (array_, ...arguments_) => {
+				if(array_ == array) {
+					function_(...arguments_);
 				}
 			});
 		}

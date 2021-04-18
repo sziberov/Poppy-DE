@@ -1269,15 +1269,17 @@
 							if(property == '__friends__' && !equals) {
 								this.kdbAdd(`classProtected: Can't access reserved property: ${ property }`); return;
 							}
-							if(/^__./i.test(property) && !equals && !friends.includes(caller)) {
+							if(/^__./i.test(property) && !equals && !friends.contains?.(caller)) {
 								console.log('----');
-								console.log('Target:');
-								console.log(target);
 								console.log('Caller:');
 								console.log(caller);
+								console.log('Target:');
+								console.log(target);
+								console.log('Friends:');
+								console.log(friends);
 								this.kdbAdd(`classProtected: Can't access private property: ${ property }`); return;
 							}
-							if(/^_[^_]/i.test(property) && !equals && !inherits && !friends.includes(caller)) {
+							if(/^_[^_]/i.test(property) && !equals && !inherits && !friends.contains?.(caller)) {
 								this.kdbAdd(`classProtected: Can't access protected property: ${ property }`); return;
 							}
 							if(assignment) {

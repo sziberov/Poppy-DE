@@ -53,16 +53,6 @@ return class extends Object {
 	}
 
 	static equal(object = {}, object_ = {}) {
-		if(Object.keys(object).length !== Object.keys(object_).length) {
-			return false;
-		}
-
-		for(let k in object) {
-			if(object[k] !== object_[k]) {
-				return false;
-			}
-		}
-
-		return true;
+		return super.isEqual(object, object_);
 	}
 }
