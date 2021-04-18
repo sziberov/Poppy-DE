@@ -1,3 +1,4 @@
+// noinspection JSAnnotator
 return class extends LFView {
 	constructor(_) {
 		super(_);
@@ -12,11 +13,7 @@ return class extends LFView {
 	}
 
 	get activeRow() {
-		for(let v of this.subviews) {
-			if(v.activated == true) {
-				return v;
-			}
-		}
+		return this.subviews.find(v => v.activated == true);
 	}
 
 	mousedown() {

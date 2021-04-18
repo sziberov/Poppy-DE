@@ -52,7 +52,7 @@ return class {
 	drawLayer(layer, x, y, width, height) {
 		_request('drDraw', this.canvas, 'image', layer.canvas, x, y, width, height);
 
-		if($CFShared.CGLayer == this) {
+		if(CFObject.equal($CFShared.CGLayer, this)) {
 			this.draw();
 		}
 	}
@@ -60,7 +60,7 @@ return class {
 	drawRectangle(color, x, y, width, height) {
 		_request('drDraw', this.canvas, 'rectangle', color, x, y, width, height);
 
-		if($CFShared.CGLayer == this) {
+		if(CFObject.equal($CFShared.CGLayer, this)) {
 			this.draw();
 		}
 	}

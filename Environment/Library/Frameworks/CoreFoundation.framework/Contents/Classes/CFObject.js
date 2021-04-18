@@ -1,3 +1,4 @@
+// noinspection JSAnnotator
 return class extends Object {
 	constructor(...arguments_) {
 		super(...arguments_);
@@ -49,5 +50,19 @@ return class extends Object {
 				return true;
 			}
 		});
+	}
+
+	static equal(object = {}, object_ = {}) {
+		if(Object.keys(object).length !== Object.keys(object_).length) {
+			return false;
+		}
+
+		for(let k in object) {
+			if(object[k] !== object_[k]) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 }

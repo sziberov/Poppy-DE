@@ -1232,7 +1232,7 @@
 						.replace(/@(Title)/g, class_)
 					);
 
-					if(class_ == 'LFMenubar') console.log(c);
+				//	if(class_ == 'LFWorkspace') console.log(c);
 
 					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment);
 
@@ -1257,26 +1257,31 @@
 			classProtected(a) {
 				let get = (target, key) => {
 					if(key == '__get__') {
-						return (caller, property) => {
-							let equals = caller == target || (Object.getPrototypeOf(caller) == target.prototype || caller.prototype == Object.getPrototypeOf(target) || caller.prototype == target.prototype || Object.getPrototypeOf(caller) == Object.getPrototypeOf(target)) && Object.getPrototypeOf(caller) !== Object.getPrototypeOf(class {}),
-								inherits = false, //caller instanceof target || caller.prototype instanceof target,
-								friends = target.__friends__ || []
-
-							if(!property) {
-								if(!equals && !friends.includes(caller)) {
-									return {}
-								}
-
-								return target;
+						return (caller, property, assignment) => {
+							if(!caller) {
+								this.kdbAdd(`classProtected: No caller's context set: ${ property }`); return;
 							}
+
+							let equals = caller == target || (Object.getPrototypeOf(caller) == target.prototype || caller.prototype == Object.getPrototypeOf(target) || target.prototype !== undefined && caller.prototype == target.prototype || Object.getPrototypeOf(caller) == Object.getPrototypeOf(target)) && Object.getPrototypeOf(target) !== Object.getPrototypeOf(class {}),
+								inherits = false, //caller instanceof target || caller.prototype instanceof target,
+								friends = target.constructor?.__friends__ || target.prototype?.__friends__ || []
+
 							if(property == '__friends__' && !equals) {
-								return;
+								this.kdbAdd(`classProtected: Can't access reserved property: ${ property }`); return;
 							}
 							if(/^__./i.test(property) && !equals && !friends.includes(caller)) {
-								this.kdbAdd(`Can't get private property: ${ property }`); return;
+								console.log('----');
+								console.log('Target:');
+								console.log(target);
+								console.log('Caller:');
+								console.log(caller);
+								this.kdbAdd(`classProtected: Can't access private property: ${ property }`); return;
 							}
 							if(/^_[^_]/i.test(property) && !equals && !inherits && !friends.includes(caller)) {
-								this.kdbAdd(`Can't get protected property: ${ property }`); return;
+								this.kdbAdd(`classProtected: Can't access protected property: ${ property }`); return;
+							}
+							if(assignment) {
+								return target;
 							}
 
 							return target[property]
@@ -1287,8 +1292,8 @@
 				}
 
 				let set = (target, key, value) => {
-					if(['__set__', '__friends__'].includes(key)) {
-						this.kdbAdd(`Can't set reserved property: ${ key }`); return false;
+					if(['__get__', '__friends__'].includes(key)) {
+						this.kdbAdd(`classProtected: Can't access reserved property: ${ key }`); return false;
 					}
 
 					target[key] = value;
@@ -1376,17 +1381,17 @@
 						path.replace(builders.callExpression(builders.identifier('_protected'), [classNode]));
 					},
 					visitMemberExpression(path) {
-					//	object.property &&
+					//	object.property
 					//	object['property']				==	((a, b) => a?.__get__ ? a.__get__(this, b) : a?.[b])(object, 'property');
 					//	object[property]				==	((a, b) => a?.__get__ ? a.__get__(this, b) : a?.[b])(object, property);
 
-					//	object.property(arguments) &&
+					//	object.property(arguments)
 					//	object['property'](arguments)	==	((a, b) => (a?.__get__ ? a.__get__(this, b) : a?.[b])?.bind(a))(object, 'property')?.(arguments);
 					//	object[property](arguments)		==	((a, b) => (a?.__get__ ? a.__get__(this, b) : a?.[b])?.bind(a))(object, property)?.(arguments);
 
-					//	object.property = '' &&
-					//	object['property'] = ''			==	(a => a?.__get__ ? a.__get__(this) : a)(object).property = '';
-					//	object[property] = ''			==	(a => a?.__get__ ? a.__get__(this) : a)(object)[property] = '';
+					//	object.property = ''
+					//	object['property'] = ''			==	((a, b) => a?.__get__ ? a.__get__(this, b, true) : a)(object, 'property').property = '';
+					//	object[property] = ''			==	((a, b) => a?.__get__ ? a.__get__(this, b, true) : a)(object, property)[property] = '';
 
 						this.traverse(path);
 
@@ -1416,7 +1421,7 @@
 										builders.identifier('__get__'),
 										false
 									),
-									[builders.thisExpression(), ...!assignment ? [builders.identifier('b')] : []]
+									[builders.thisExpression(), builders.identifier('b'), ...assignment ? [builders.booleanLiteral(true)] : []]
 								),
 								!assignment ?
 									builders.optionalMemberExpression(
@@ -1439,11 +1444,11 @@
 							),
 							callNode = builders.callExpression(
 								builders.arrowFunctionExpression(
-									[builders.identifier('a'), ...!assignment ? [builders.identifier('b')] : []],
+									[builders.identifier('a'), builders.identifier('b')],
 									call ? callConditionalNode : conditionalNode,
 									true
 								),
-								[object, ...!assignment ? [propertyComputed && property.type == 'Identifier' ? builders.identifier(propertyName) : builders.literal(propertyName)] : []]
+								[object, propertyComputed && property.type == 'Identifier' ? builders.identifier(propertyName) : builders.literal(propertyName)]
 							),
 							assignCallNode = builders.memberExpression(
 								callNode,

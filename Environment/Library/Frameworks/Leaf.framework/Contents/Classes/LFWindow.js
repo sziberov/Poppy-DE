@@ -1,3 +1,4 @@
+// noinspection JSAnnotator
 return class extends LFView {
 	constructor(_) {
 		super(_);
@@ -46,13 +47,13 @@ return class extends LFView {
 						new LFTitlebar({ title: this.title, subviews: [
 							new LFTitlebarButton({ type: 'close',		action: this._.style.includes('closable')		? () => this.close()	: undefined }),
 							new LFTitlebarButton({ type: 'minimize',	action: this._.style.includes('minimizable')	? () => this.minimize()	: undefined }),
-							new LFTitlebarButton({ type: 'maximize',	action: this._.style.includes('resizable')		? () => this.maximize()	: undefined })
+							new LFTitlebarButton({ type: 'maximize',	action: this._.style.includes('resizable')	? () => this.maximize()	: undefined })
 						] })
 					] : [],
-					...this.toolbar?.class == 'LFToolbar' ? [this.toolbar] : []
+					...this.toolbar?.class === 'LFToolbar' ? [this.toolbar] : []
 				] }),
 			] : [],
-			...this.view?.class == 'LFView' ? [this.view] : [new LFView()]
+			...this.view?.class === 'LFView' ? [this.view] : [new LFView()]
 		);
 		this.level = [0, 1, 2].includes(this._.level) ? this._.level : 1;
 

@@ -34,6 +34,8 @@ return class {
 		this.table = new LFApp().windows[0].view.subviews[0]
 		this.update();
 		CFArray.addObserver(new LFWorkspace().launchedApplications, () => this.update());
+
+		console.error(new LFWorkspace().__launchedApplications);
 	}
 
 	update() {

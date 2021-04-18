@@ -173,7 +173,7 @@ return class {
 		}
 	}
 
-	quit() {
+	willQuit() {
 		new CGCursor().remove();
 		new LFWorkspace().remove();
 

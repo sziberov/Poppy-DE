@@ -90,7 +90,7 @@ return _single(class {
 	set menuItems(value) {
 		value = value.filter(v => v.class == 'LFMenuItem');
 
-		this.__menuItems.removeAll().add(...value);
+		this.__menuItems = value;
 	}
 
 	set focusingPolicy(value) {
@@ -198,7 +198,7 @@ return _single(class {
 	quit() {
 		if(new LFWorkspace().getApplication(this.identifier)) {
 			try {
-				this.process.executable?.quit?.();
+				this.process.executable?.willQuit?.();
 			} catch(error) {}
 
 			_request('kill');

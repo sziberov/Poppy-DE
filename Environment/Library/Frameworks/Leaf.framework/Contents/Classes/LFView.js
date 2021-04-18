@@ -1,3 +1,4 @@
+// noinspection JSAnnotator
 return class extends LFResponder {
 	constructor(_) {
 		super();
@@ -112,24 +113,24 @@ return class extends LFResponder {
 	get(mode, value) {
 		return {
 			Superview: () => {
-				var superview = this.superview;
+				let superview = this.superview;
 
-				function check() {
+				while(superview) {
 					if(superview.class !== value) {
 						if(!superview.superview) {
 							superview = undefined;
 						} else {
 							superview = superview.superview;
-							check();
 						}
+					} else {
+						break;
 					}
 				}
-				check();
 
 				return superview;
 			},
 			Siblings: () => {
-				return this.superview.subviews.filter(v => v !== this && v.class == value);
+				return this.superview.subviews.filter(v => !CFObject.equal(v, this) && v.class == value);
 			},
 			Subviews: () => {
 				/*

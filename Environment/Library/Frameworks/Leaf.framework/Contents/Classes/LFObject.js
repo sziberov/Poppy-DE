@@ -1,4 +1,7 @@
+// noinspection JSAnnotator
 return class {
+	static __friends__ = [CFObject]
+
 	constructor() {
 		this.class = '@Title';
 
@@ -20,36 +23,7 @@ return class {
 			text: ''
 		}
 
-		/*
-		this.__properties = {
-			style: new CFObject(),
-			attributes: new CFObject(),
-			text: ''
-		}
-		*/
-
 		this.element;
-
-		/*
-		CFObject.addObserver(this.style, (_) => {
-			if(this.element) {
-				if(['added', 'changed'].includes(_.event)) {
-					this.element.css(_.key, _.value);
-				} else {
-					this.element.css(_.key, undefined);
-				}
-			}
-		});
-		CFObject.addObserver(this.attributes, (_) => {
-			if(this.element) {
-				if(['added', 'changed'].includes(_.event) && _.value !== undefined) {
-					this.element.attr(_.key, _.value);
-				} else {
-					this.element.removeAttr(_.key);
-				}
-			}
-		});
-		*/
 	}
 
 	get style() {
@@ -90,12 +64,10 @@ return class {
 	}
 
 	create() {
-		let create = $('<'+this.class+'/>')
-				.css(this.style)
-				.attr(this.attributes)
-				.text(this.text);
-
-		return create;
+		return $('<'+this.class+'/>')
+			.css(this.style)
+			.attr(this.attributes)
+			.text(this.text);
 	}
 
 	add() {
@@ -116,11 +88,13 @@ return class {
 	}
 
 	destroy() {
+		let environment = new CFProcessInfo().environment;
+
 		this.remove();
-		window[this.class].destroyInstance?.();
-		for(let v in window) {
-			if(window.hasOwnProperty(v) && window[v] == this) {
-				delete window[v]
+		environment[this.class].destroyInstance?.();
+		for(let v in environment) {
+			if(environment.hasOwnProperty(v) && CFObject.equal(environment[v], this)) {
+				delete environment[v]
 			}
 		}
 	}

@@ -10,7 +10,7 @@ return class extends LFObject {
 		for(let v of ['click', 'dblclick', 'contextmenu', 'mouseover', 'mouseenter', 'mouseout', 'mouseleave', 'mousedown', 'mouseup', 'mousemove', 'drag']) {
 			if(typeof this[v] === 'function') {
 				if(v !== 'drag') {
-					create.on(v, (e) => this[v].bind(this)(e));
+					create.on(v, this[v].bind(this));
 				} else {
 					this.dragCache = []
 
