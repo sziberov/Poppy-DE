@@ -90,7 +90,7 @@ return _single(class {
 	set menuItems(value) {
 		value = value.filter(v => v.class == 'LFMenuItem');
 
-		this.__menuItems = value;
+		this.__menuItems.removeAll().add(...value);
 	}
 
 	set focusingPolicy(value) {
