@@ -34,8 +34,6 @@ return class {
 		this.table = new LFApp().windows[0].view.subviews[0]
 		this.update();
 		CFArray.addObserver(new LFWorkspace().launchedApplications, () => this.update());
-
-		console.error(new LFWorkspace().__launchedApplications);
 	}
 
 	update() {
@@ -45,7 +43,7 @@ return class {
 			update.push(
 				new LFTableRow({ title: v.title, data: { application: v }, action: function(v) {
 					return () => v.focus()
-				}(v) })
+				}.bind(this)(v) })
 			);
 		}
 		this.table.subviews = update;
