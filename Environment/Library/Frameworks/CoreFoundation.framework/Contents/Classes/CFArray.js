@@ -55,6 +55,10 @@ return class extends Array {
 		return this;
 	}
 
+	contains(value) {
+		return super.includes(value);
+	}
+
 	static add(array = [], ...value) {
 		if(array.add) {
 			array.add(...value);

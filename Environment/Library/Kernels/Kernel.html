@@ -263,7 +263,7 @@
 						return require('fs').readFileSync('.'+a).toString();
 					}
 				} catch(error) {
-					console.warn(0); return;
+				//	console.warn(0); return;
 				}
 			}
 
@@ -1032,6 +1032,7 @@
 					import: (...a) => this.classImport(process, ...a),
 					single: (a) => this.classSingle(a),
 					protected: (a) => this.classProtected(a),
+					defended: (...a) => this.classDefended(...a),
 					system: () => this.system(),
 					relaunch: () => this.environmentRelaunch(process),
 					quit: () => this.environmentQuit(process)
@@ -1075,7 +1076,8 @@
 					//	_fork: (...a) => this.processRequest(process, 'fork', ...a),
 						_import: (...a) => this.processRequest(process, 'import', ...a),
 						_single: (...a) => this.processRequest(process, 'single', ...a),
-						_protected: (...a) => this.processRequest(process, 'protected', ...a)
+						_protected: (...a) => this.processRequest(process, 'protected', ...a),
+						_defended: (...a) => this.processRequest(process, 'defended', ...a)
 					}, {
 						get: (target, key) => {
 							return key == '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key == 'require' ? undefined : target[key] || this.environment[key]
@@ -1232,7 +1234,7 @@
 						.replace(/@(Title)/g, class_)
 					);
 
-				//	if(class_ == 'LFWorkspace') console.log(c);
+					console.log(class_ + ' : ' + c);
 
 					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment, class_);
 
@@ -1243,55 +1245,50 @@
 			}
 
 			/**
-			 * Добавляет классу поддержку защищённых и приватных полей, а также друзей. При этом для ощущения эффекта обращаться к нему после этого следует особым образом:
-			 * - <class>.__get__(this, <field>) - Возвращает поле <field> класса <class>, если контекст, из коего происходит обращение, удовлетворяет требованиям.
-			 * - <class>.__get__(this) - Возвращает сам класс <class> на тех же условиях.
+			 * Создаёт особый интерфейс для обращения к полям класса с поддержкой защищённых и приватных полей, а также друзей:
+			 * - <class>.\_\_get__(this, <field>) - Возвращает поле <field> класса <class>, если контекст, из коего происходит обращение, удовлетворяет требованиям.
+			 * - <class>.\_\_get__(this) - Возвращает сам класс <class> на тех же условиях.
 			 *
-			 * Модификаторами доступа полей становятся префиксы:
+			 * Модификаторами доступа полей являются префиксы:
 			 * - __<field> - Приватное поле.
 			 * - _<field> - Защищённое поле.
 			 * - <field> - Обычное поле.
 			 *
-			 * Друзья класса указываются в массиве <class>.__friends__. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только из контекста класса, коему он принадлежит.
+			 * Друзья класса указываются в массиве <class>.\_\_friends__. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только из контекста класса, коему он принадлежит.
 			 */
 			classProtected(a) {
-				let get = (target, key) => {
-					if(key == '__get__') {
-						return (caller, property, assignment) => {
-							if(!caller) {
-								this.kdbAdd(`classProtected: No caller's context set: ${ property }`); return;
-							}
+				let private_ = /^__./i,
+					protected_ = /^_[^_]/i,
+					get = (target, key) => {
+						if(key == '__get__') {
+							return (caller, property, assignment) => {
+								if(!caller) {
+									this.kdbAdd(`classProtected: No caller's context set: ${ property }`); return;
+								}
 
-							let equals = caller == target || (Object.getPrototypeOf(caller) == target.prototype || caller.prototype == Object.getPrototypeOf(target) || target.prototype !== undefined && caller.prototype == target.prototype || Object.getPrototypeOf(caller) == Object.getPrototypeOf(target)) && Object.getPrototypeOf(target) !== Object.getPrototypeOf(class {}),
-								inherits = false, //caller instanceof target || caller.prototype instanceof target,
-								friends = target.constructor?.__friends__ || target.prototype?.__friends__ || []
+								let equals = caller == target || (Object.getPrototypeOf(caller) == target.prototype || caller.prototype == Object.getPrototypeOf(target) || target.prototype !== undefined && caller.prototype == target.prototype || Object.getPrototypeOf(caller) == Object.getPrototypeOf(target)) && Object.getPrototypeOf(target) !== Object.getPrototypeOf(class {}),
+									inherits = false, //Object.instanceOf(caller, target) || Object.instanceOf(target, caller),
+									friends = target.constructor?.__friends__ || target.prototype?.__friends__ || []
 
-							if(property == '__friends__' && !equals) {
-								this.kdbAdd(`classProtected: Can't access reserved property: ${ property }`); return;
-							}
-							if(/^__./i.test(property) && !equals && !friends.contains?.(caller)) {
-								console.log('----');
-								console.log('Caller:');
-								console.log(caller);
-								console.log('Target:');
-								console.log(target);
-								console.log('Friends:');
-								console.log(friends);
-								this.kdbAdd(`classProtected: Can't access private property: ${ property }`); return;
-							}
-							if(/^_[^_]/i.test(property) && !equals && !inherits && !friends.contains?.(caller)) {
-								this.kdbAdd(`classProtected: Can't access protected property: ${ property }`); return;
-							}
-							if(assignment) {
-								return target;
-							}
+								if(property == '__friends__' && !equals) {
+									this.kdbAdd(`classProtected: Can't access reserved property: ${ property }`); return;
+								}
+								if(private_.test(property) && !equals && !friends.contains?.(caller)) {
+									this.kdbAdd(`classProtected: Can't access private property: ${ property }`); return;
+								}
+								if(protected_.test(property) && !equals && !inherits && !friends.contains?.(caller)) {
+									this.kdbAdd(`classProtected: Can't access protected property: ${ property }`); return;
+								}
+								if(assignment) {
+									return target;
+								}
 
-							return target[property]
+								return target[property]
+							}
 						}
-					}
 
-					return target[key]
-				}
+						return target[key]
+					}
 
 				let set = (target, key, value) => {
 					if(['__get__', '__friends__'].includes(key)) {
@@ -1304,6 +1301,20 @@
 				}
 
 				let construct = (target, arguments_, newTarget) => {
+					/*
+					for(let k in newTarget.prototype) {
+						let v = newTarget.prototype[k]
+
+						if(['__proto__', '__friends__'].includes(v)) {
+							continue;
+						}
+						if(private_.test(v) || protected_.test(v)) {
+							delete newTarget.prototype[k]
+							console.error(newTarget);
+						}
+					}
+					*/
+
 					return new Proxy(Reflect.construct(target, arguments_, newTarget), {
 						get: get,
 						set: set
@@ -1315,6 +1326,27 @@
 					set: set,
 					construct: construct
 				});
+			}
+
+			classDefended(caller, class_, field, type) {
+				let this_ = caller === class_,
+					private_ = /^__./i,
+					protected_ = /^_[^_]/i;
+
+				if(!caller) {
+					this.kdbAdd(`classProtected: No caller's context set: ${ field }`); //return;
+				}
+				if(field == undefined || field == null) {
+					return class_;
+				}
+				if(type == 'assignment') {
+					return class_ || {}
+				}
+				if(type == 'call') {
+					return class_?.[field]?.bind(class_);
+				}
+
+				return class_?.[field]
 			}
 
 			/**
@@ -1344,7 +1376,7 @@
 			}
 
 			/**
-			 * Обеспечивает удобство использования classProtected().
+			 * Автоматически подменяет обычные обращения к полям/свойствам на преимущественно проходящие через classProtected().
 			 * @param {!string} a Сырой код.
 			 * @returns {string} Код, подготовленный для запуска в процессах.
 			 */
@@ -1372,6 +1404,39 @@
 
 						this.traverse(path);
 					},
+					visitMemberExpression(path) {
+						this.traverse(path);
+
+						let node = path.node,
+							parentNode = path.parentPath.node,
+							object = node.object,
+							property = node.property,
+							propertyName = property.name || property.value,
+							propertyComputed = node.computed,
+							assignment = parentNode.type == 'AssignmentExpression' && parentNode.left == node,
+							call = ['OptionalCallExpression', 'CallExpression'].includes(parentNode.type) && parentNode.callee == node;
+
+						if(['Super'].includes(object.type) /*|| parentNode.type == 'ExpressionStatement'*/) {
+							return false;
+						}
+
+						let callNode = builders.callExpression(builders.identifier('_defended'), [
+							builders.thisExpression(),
+							object,
+							!propertyComputed && property.type == 'Identifier' ? builders.stringLiteral(propertyName) : property,
+							...assignment ? [builders.stringLiteral('assignment')] : call ? [builders.stringLiteral('call')] : []
+						]);
+
+						if(assignment) {
+							path.replace(builders.memberExpression(callNode, property, propertyComputed));
+						} else
+						if(call) {
+							path.parentPath.replace(builders.optionalCallExpression(callNode, parentNode.arguments, true));
+						} else {
+							path.replace(callNode);
+						}
+					}
+					/*
 					visitClassExpression(path) {
 					//	class {} == _protected(class {});
 
@@ -1406,7 +1471,7 @@
 							assignment = parentNode.type == 'AssignmentExpression' && parentNode.left == node,
 							call = ['OptionalCallExpression', 'CallExpression'].includes(parentNode.type) && parentNode.callee == node;
 
-						if(['Super', 'ThisExpression'].includes(object.type) || property.type !== 'Identifier' && !(property.type == 'Literal' && typeof property.value == 'string')) {
+						if(['Super', 'ThisExpression'].includes(object.type) || property.type !== 'Identifier' && !(property.type == 'Literal' && typeof property.value == 'string') || !propertyName.startsWith('_')) {
 							return false;
 						}
 
@@ -1467,6 +1532,7 @@
 							path.replace(callNode);
 						}
 					}
+					*/
 				});
 
 				a = require('recast').print(a).code;

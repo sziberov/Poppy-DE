@@ -9,7 +9,7 @@ return class extends LFResponder {
 			..._
 		}
 
-		this.__constraints = new CFArray();
+		this._constraints = new CFArray();
 		this.__subviews = new CFArray();
 
 		this.superview;
@@ -130,7 +130,7 @@ return class extends LFResponder {
 				return superview;
 			},
 			Siblings: () => {
-				return this.superview.subviews.filter(v => !CFObject.equal(v, this) && v.class == value);
+				return this.superview.subviews.filter(v => v !== this && v.class == value);
 			},
 			Subviews: () => {
 				/*

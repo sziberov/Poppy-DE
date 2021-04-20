@@ -93,7 +93,7 @@ return class {
 		this.remove();
 		environment[this.class].destroyInstance?.();
 		for(let v in environment) {
-			if(environment.hasOwnProperty(v) && CFObject.equal(environment[v], this)) {
+			if(environment.hasOwnProperty(v) && environment[v] == this) {
 				delete environment[v]
 			}
 		}

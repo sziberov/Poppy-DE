@@ -1,4 +1,7 @@
-window.Object.isEqual = (object, object_) => {
+window.Object.isObject = (value) => {
+	return typeof value === 'object' && value !== null;
+}
+window.Object.isShallowlyEqual = (object, object_) => {
 	if(Object.keys(object).length !== Object.keys(object_).length) {
 		return false;
 	}
@@ -11,9 +14,25 @@ window.Object.isEqual = (object, object_) => {
 
 	return true;
 }
-window.Array.prototype.contains = function(value) {
-	if(typeof value === 'object' && value !== null) {
-		return this.filter(v => Object.isEqual(v, value)).length > 0;
+window.Object.instanceOf = function(object, object_) {
+	let proto = object.__proto__;
+
+	while(proto) {
+		if(proto.constructor && proto.constructor == object_ || proto == Object.getPrototypeOf(object_)) {
+			return true;
+		}
+		if(proto.__proto__) {
+			proto = proto.__proto__;
+		} else {
+			break;
+		}
+	}
+
+	return false;
+};
+window.Array.prototype.shallowlyContains = function(value) {
+	if(Object.isObject(value)) {
+		return this.filter(v => Object.isShallowlyEqual(v, value)).length > 0;
 	} else {
 		return this.includes(value);
 	}

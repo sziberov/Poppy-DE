@@ -5,7 +5,7 @@ return class {
 			return;
 		}
 
-		if(typeof URL == string) {
+		if(typeof URL == 'string') {
 			this.__canvas = _request('drOpen', CFFile.content(URL), format);
 		} else {
 			this.__canvas = _request('drCreate', width, height);
@@ -52,7 +52,7 @@ return class {
 	drawLayer(layer, x, y, width, height) {
 		_request('drDraw', this.canvas, 'image', layer.canvas, x, y, width, height);
 
-		if(CFObject.equal($CFShared.CGLayer, this)) {
+		if($CFShared.CGLayer == this) {
 			this.draw();
 		}
 	}
@@ -60,7 +60,7 @@ return class {
 	drawRectangle(color, x, y, width, height) {
 		_request('drDraw', this.canvas, 'rectangle', color, x, y, width, height);
 
-		if(CFObject.equal($CFShared.CGLayer, this)) {
+		if($CFShared.CGLayer == this) {
 			this.draw();
 		}
 	}

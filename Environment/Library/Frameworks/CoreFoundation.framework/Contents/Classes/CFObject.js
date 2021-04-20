@@ -52,7 +52,7 @@ return class extends Object {
 		});
 	}
 
-	static equal(object = {}, object_ = {}) {
-		return super.isEqual(object, object_);
+	static shallowlyEqual(object = {}, object_ = {}) {
+		return super.isShallowlyEqual(object, object_);
 	}
 }

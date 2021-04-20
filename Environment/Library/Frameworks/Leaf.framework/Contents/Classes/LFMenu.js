@@ -1,3 +1,4 @@
+// noinspection JSAnnotator
 return class extends LFView {
 	constructor(_) {
 		super(_);
