@@ -307,7 +307,7 @@
 			}
 
 			extensionExec(...a) {
-				var a = Array.isArray(a) ? a : []
+				a = Array.isArray(a) ? a : []
 
 				if(a.length == 0) {
 					for(let v of this.fsReadDirectory('/Environment/Library/Extensions')) {
@@ -439,14 +439,14 @@
 						context.fillStyle = color;
 						context.fillRect(x, y, width, height);
 					},
-			    	gradient: (colors, x, y, toX, toY) => {
+					gradient: (colors, x, y, toX, toY) => {
 						let gradient = context.createLinearGradient(x, y, toX, toY);
 
 						for(let v of colors) {
 							let position = v[0],
 								color = v[1]
 
-							if(typeof position == "number" && position >= 0 && position <= 1) {
+							if(typeof position == 'number' && position >= 0 && position <= 1) {
 								gradient.addColorStop(position, color);
 							}
 						}
@@ -1343,7 +1343,7 @@
 
 			/**
 			 * Подготавливает код для исполнения в процессах.
-			 * - Автоматически подменяет обычные обращения к полям/свойствам на преимущественно проходящие через classProtected().
+			 * - Автоматически подменяет обычные обращения к полям/свойствам на проходящие через classProtected().
 			 *
 			 * @param {!string} a Сырой код.
 			 */

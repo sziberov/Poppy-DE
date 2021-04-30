@@ -21,10 +21,6 @@ return class {
 		return this.__canvas.height;
 	}
 
-	get canvas() {
-		return this.__canvas;
-	}
-
 	get context() {
 		return this.__context;
 	}
@@ -46,11 +42,11 @@ return class {
 	}
 
 	draw() {
-		_request('fbWrite', this.canvas);
+		_request('fbWrite', this.__canvas);
 	}
 
 	drawLayer(layer, x, y, width, height) {
-		_request('drDraw', this.canvas, 'image', layer.canvas, x, y, width, height);
+		_request('drDraw', this.__canvas, 'image', layer.canvas, x, y, width, height);
 
 		if($CFShared.CGLayer == this) {
 			this.draw();
@@ -58,7 +54,7 @@ return class {
 	}
 
 	drawRectangle(color, x, y, width, height) {
-		_request('drDraw', this.canvas, 'rectangle', color, x, y, width, height);
+		_request('drDraw', this.__canvas, 'rectangle', color, x, y, width, height);
 
 		if($CFShared.CGLayer == this) {
 			this.draw();

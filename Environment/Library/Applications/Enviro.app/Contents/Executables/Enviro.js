@@ -77,7 +77,7 @@ return class {
 		for(let v of _request('readDir', '/Library/Desktop Images')) {
 			table.push(new LFTableRow({ title: v.name, action: function(v) {
 				return () => new LFWorkspace().desktopImage = '/Library/Desktop Images/'+v.name;
-			}(v) }));
+			}.bind(this)(v) }));
 		}
 		window.view.subviews[1].subviews[0].subviews = table;
 	}
