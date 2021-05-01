@@ -5,18 +5,18 @@ return class {
 			return;
 		}
 
-		this.__canvas = _request('drOpen', CFFile.content(URL), format);
+		this.__layer = _request('drOpen', CFFile.content(URL), format);
 	}
 
 	get width() {
-		return this.__canvas.width;
+		return this.__layer.width;
 	}
 
 	get height() {
-		return this.__canvas.height;
+		return this.__layer.height;
 	}
 
-	get canvas() {
-		return this.__canvas;
+	get layer() {
+		return this.__layer;
 	}
 }

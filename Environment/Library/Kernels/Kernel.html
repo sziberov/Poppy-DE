@@ -74,13 +74,13 @@
 							string.value = process ? process.path.split('/').pop()+': '+string.value : string.value;
 
 							if(_.event == 'output' && terminal.current && terminal.mode == 'text') {
-								let canvas = this.drCreate(this.screen.width, this.screen.height),
+								let layer = this.drCreate(this.screen.width, this.screen.height),
 									font = this.drOpen(this.images.font),
 									alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~',
 									width = 8,
 									height = 16;
 
-								this.drDraw(canvas, 'rectangle', this.colors.black, 0, string.id*height-height, string.value.length*width, height);
+								this.drDraw(layer, 'rectangle', this.colors.black, 0, string.id*height-height, string.value.length*width, height);
 								for(let i in string.value) {
 									let position = alphabet.indexOf(string.value[i]);
 
@@ -89,10 +89,10 @@
 
 										this.drDraw(symbol, 'rectangle', this.colors.white, 0, 0, width, height);
 										this.drMask(symbol, this.drClip(font, position*width, 0, width, height));
-										this.drDraw(canvas, 'image', symbol, i*width, string.id*height-height);
+										this.drDraw(layer, 'image', symbol, i*width, string.id*height-height);
 									}
 								}
-								this.fbWrite(undefined, canvas);
+								this.fbWrite(undefined, layer);
 							}
 						});
 
@@ -101,23 +101,38 @@
 						});
 
 						/*
-                        let sh = this.wtExec(`
-                            let wt = require('worker_threads');
-                            wt.parentPort.on('message', message => {
-                                message.Opium.bootState(false);
-                            });
-                        `);
-                        sh.postMessage({ Opium: this });
-                        */
+						let sh = this.wtExec(`
+							let wt = require('worker_threads');
+							wt.parentPort.on('message', message => {
+								message.Opium.bootState(false);
+							});
+						`);
+						sh.postMessage({ Opium: this });
+						*/
 
 						this.timerCreate(undefined, 'single', 125/2, () => {
 							this.bootState(false);
 						});
 
-					//	let canvas = this.drCreate(this.screen.width, this.screen.height);
+						/*
+						let layer = this.drCreate(this.screen.width, this.screen.height),
+							menubar = this.drCreate(this.screen.width, 24),
+							menubarShadow = this.drCreate(menubar.width, menubar.height);
 
-					//	this.drDraw(canvas, 'image', this.drOpen(this.fsRead('/drawing.png'), 'png'), 0, 0, '100', '100');
-					//	this.fbWrite(undefined, canvas);
+						this.drDraw(layer, 'image', this.drOpen(this.fsRead('/Library/Desktop Images/Wave.png'), 'png'), 0, 0, '100', '100');
+						this.drBlur(layer, 0, 0, menubar.width, menubar.height, 4, true, true);
+						this.drDraw(menubar, 'gradient', [
+							[0, this.drColor('100','100','100', '75')],
+							[1, this.drColor('100','100','100', '25')]
+						], 0, 0, menubar.width, menubar.height, 0, 0, 0, menubar.height);
+						this.drDraw(menubarShadow, 'gradient', [
+							[0, this.drColor('0','0','0', '25')],
+							[1, this.drColor('0','0','0', '0')]
+						], 0, 0, menubarShadow.width, menubarShadow.height, 0, 0, 0, menubarShadow.height);
+						this.drDraw(layer, 'image', menubar, 0, 0);
+						this.drDraw(layer, 'image', menubarShadow, 0, menubar.height);
+						this.fbWrite(undefined, layer);
+						*/
 
 						this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
 					} catch(error) {
@@ -209,16 +224,16 @@
 				`);
 				$('kdb').attr('panic', '');
 
-				let canvas = this.drCreate(this.screen.width, this.screen.height),
+				let layer = this.drCreate(this.screen.width, this.screen.height),
 					image = this.drOpen(this.images.panic);
 
-				this.drDraw(canvas, 'rectangle', 'rgba(0%,0%,0%,0.25)', 0, 0, canvas.width, canvas.height);
-				this.drDraw(canvas, 'image', image, canvas.width/2-image.width/2, canvas.height/2-image.height/2);
-				this.fbWrite(undefined, canvas);
+				this.drDraw(layer, 'rectangle', 'rgba(0%,0%,0%,0.25)', 0, 0, layer.width, layer.height);
+				this.drDraw(layer, 'image', image, layer.width/2-image.width/2, layer.height/2-image.height/2);
+				this.fbWrite(undefined, layer);
 			}
 
 			bootState(value) {
-				let canvas = this.drCreate(this.screen.width, this.screen.height);
+				let layer = this.drCreate(this.screen.width, this.screen.height);
 
 				switch(value) {
 					case false:
@@ -235,20 +250,20 @@
 								spinnerBackground = this.drCreate(spinner.width, spinner.height),
 								spinnerIteration = 0;
 
-							this.drDraw(canvas, 'rectangle', this.colors.lightGray, 0, 0, canvas.width, canvas.height);
-							this.drDraw(canvas, 'image', logo, canvas.width/2-logo.width/2, canvas.height/2-logo.height/2);
+							this.drDraw(layer, 'rectangle', this.colors.lightGray, 0, 0, layer.width, layer.height);
+							this.drDraw(layer, 'image', logo, layer.width/2-logo.width/2, layer.height/2-logo.height/2);
 							this.drDraw(spinnerBackground, 'rectangle', this.colors.lightGray, 0, 0, spinnerBackground.width, spinnerBackground.height);
 
 							this.bootHandlerId = this.timerCreate(undefined, 'multiple', 125/2, () => {
 								spinnerIteration = spinnerIteration > 10 ? 0 : ++spinnerIteration;
 
-								let x = canvas.width/2,
-									y = canvas.height/2+(canvas.height+logo.height)/4,
+								let x = layer.width/2,
+									y = layer.height/2+(layer.height+logo.height)/4,
 									angle = 30*spinnerIteration;
 
-								this.drDraw(canvas, 'image', spinnerBackground, x, y, undefined, undefined, angle);
-								this.drDraw(canvas, 'image', spinner, x, y, undefined, undefined, angle);
-								this.fbWrite(undefined, canvas);
+								this.drDraw(layer, 'image', spinnerBackground, x, y, undefined, undefined, angle);
+								this.drDraw(layer, 'image', spinner, x, y, undefined, undefined, angle);
+								this.fbWrite(undefined, layer);
 							});
 						}
 					break
@@ -338,16 +353,16 @@
 					console.error(1); return;
 				}
 
-				let canvas = this.framebuffer;
+				let layer = this.framebuffer;
 
 				if(value == '') {
-					this.drDraw(canvas, 'rectangle', this.colors.black, 0, 0, canvas.width, canvas.height);
+					this.drDraw(layer, 'rectangle', this.colors.black, 0, 0, layer.width, layer.height);
 				} else
 				if(value instanceof Buffer) {
-					this.drDraw(canvas, 'image', this.drOpen(value, 'png'));
+					this.drDraw(layer, 'image', this.drOpen(value, 'png'));
 				} else
 				if(value instanceof HTMLCanvasElement) {
-					this.drDraw(canvas, 'image', value);
+					this.drDraw(layer, 'image', value);
 				}
 				this.eventThrow(undefined, 'fbChanged');
 			}
@@ -357,13 +372,14 @@
 					console.error(0); return;
 				}
 
-				let canvas = $('<canvas/>')[0]
+				let layer = $('<canvas/>')[0]
 
-				canvas.width = width;
-				canvas.height = height;
-				canvas.getContext('2d').imageSmoothingQuality = 'high';
+				layer.width = width;
+				layer.height = height;
+				layer.context2d = layer.getContext('2d');
+				layer.context2d.imageSmoothingQuality = 'high';
 
-				return canvas;
+				return layer;
 			}
 
 			drOpen(data, format) {
@@ -388,11 +404,11 @@
 
 				let image = require('pngjs').PNG.sync.read(data),
 					imageData = new ImageData(new Uint8ClampedArray(image.data), image.width, image.height),
-					canvas = this.drCreate(image.width, image.height);
+					layer = this.drCreate(image.width, image.height);
 
-				canvas.getContext('2d').putImageData(imageData, 0, 0);
+				layer.context2d.putImageData(imageData, 0, 0);
 
-				return canvas;
+				return layer;
 			}
 
 			/*
@@ -423,24 +439,34 @@
 					image.src = 'data:image/'+format+';base64,'+data;
 				}))();
 
-				let canvas = this.drCreate(image.naturalWidth, image.naturalHeight);
+				let layer = this.drCreate(image.naturalWidth, image.naturalHeight);
 
-				canvas.getContext('2d').drawImage(image, 0, 0);
+				layer.context2d.drawImage(image, 0, 0);
 
-				return canvas;
+				return layer;
 			}
 			*/
 
-			drDraw(canvas, type, ...arguments_) {
-				let context = canvas.getContext('2d');
+			drColor(red, green, blue, alpha) {
+				red = typeof red == 'string' ? red+'%': red;
+				green = typeof green == 'string' ? green+'%': green;
+				blue = typeof blue == 'string' ? blue+'%': blue;
+				alpha ??= 1;
+				alpha = typeof alpha == 'string' ? Number(alpha)/100 : alpha;
+
+				return `rgba(${ red }, ${ green }, ${ blue }, ${ alpha })`;
+			}
+
+			drDraw(layer, type, ...arguments_) {
+				let context = layer.context2d;
 
 				return {
 					rectangle: (color, x, y, width, height) => {
 						context.fillStyle = color;
 						context.fillRect(x, y, width, height);
 					},
-					gradient: (colors, x, y, toX, toY) => {
-						let gradient = context.createLinearGradient(x, y, toX, toY);
+					gradient: (colors, x, y, width, height, fromX, fromY, toX, toY) => {
+						let gradient = context.createLinearGradient(x+fromX, y+fromY, x+toX, y+toY);
 
 						for(let v of colors) {
 							let position = v[0],
@@ -452,28 +478,28 @@
 						}
 
 						context.fillStyle = gradient;
-						context.fillRect(x, y, toX, toY);
+						context.fillRect(x, y, width, height);
 					},
-					image: (canvas_, x, y, width, height, angle) => {
-						let context_ = canvas_.getContext('2d');
+					image: (layer_, x, y, width, height, angle) => {
+						let context_ = layer_.context2d;
 
 						if(typeof width == 'string') {
-							width = parseInt(width)/100*canvas.width;
+							width = parseInt(width)/100*layer.width;
 						}
 						if(typeof height == 'string') {
-							height = parseInt(height)/100*canvas.height;
+							height = parseInt(height)/100*layer.height;
 						}
 
 						if(typeof angle !== 'number') {
 							context.imageSmoothingEnabled = width || height ? true : false;
-							context.drawImage(canvas_, x || 0, y || 0, width || canvas_.width, height || canvas_.height);
+							context.drawImage(layer_, x || 0, y || 0, width || layer_.width, height || layer_.height);
 						} else {
 							angle = angle*Math.PI/180;
 
 							context.imageSmoothingEnabled = Math.isEven(angle/90) ? false : true;
 							context.translate(x, y);
 							context.rotate(angle);
-							context.drawImage(canvas_, -canvas_.width/2, -canvas_.height/2);
+							context.drawImage(layer_, -layer_.width/2, -layer_.height/2);
 							context.rotate(-angle);
 							context.translate(-x, -y);
 						}
@@ -487,17 +513,41 @@
 				}[type](...arguments_);
 			}
 
-			drClip(canvas, x, y, width, height) {
-				let canvas_ = this.drCreate(width, height),
-					context = canvas.getContext('2d'),
-					context_ = canvas_.getContext('2d');
+			drClip(layer, x, y, width, height) {
+				let layer_ = this.drCreate(width, height),
+					context = layer.context2d,
+					context_ = layer_.context2d;
 
 				context_.putImageData(context.getImageData(x, y, width, height), 0, 0);
 
-				return canvas_;
+				return layer_;
 			}
 
-			drMove(canvas, type, x = 0, y = 0, width, height, toX = 0, toY = 0, toCanvas) {
+			drBlur(layer, x, y, width, height, amount, sharp, draw) {
+				if(typeof amount !== 'number' || amount < 0) {
+					return;
+				}
+
+				x ??= 0;
+				y ??= 0;
+				width ??= layer.width;
+				height ??= layer.height;
+
+				let layer_ = this.drCreate(!sharp ? width+amount*2 : width, !sharp ? height+amount*2 : height),
+					context_ = layer_.context2d;
+
+				context_.filter = 'blur('+amount+'px)';
+				this.drDraw(layer_, 'image', !sharp ? this.drClip(layer, x, y, width, height) : layer, !sharp ? amount : -x, !sharp ? amount : -y);
+				context_.filter = '';
+
+				if(!draw) {
+					return layer_;
+				} else {
+					this.drDraw(layer, 'image', layer_, !sharp ? x-amount : x, !sharp ? y-amount : y);
+				}
+			}
+
+			drMove(layer, type, x = 0, y = 0, width, height, toX = 0, toY = 0, toLayer) {
 				if(!['cut', 'copy'].includes(type) || [
 					typeof x,
 					typeof y,
@@ -509,37 +559,37 @@
 					console.error(0); return;
 				}
 
-				let context = canvas.getContext('2d'),
+				let context = layer.context2d,
 					data = context.getImageData(x, y, width, height);
 
 				if(type == 'cut') {
-					this.drClear(canvas, x, y, width, height);
+					this.drClear(layer, x, y, width, height);
 				}
-				if(!toCanvas instanceof HTMLCanvasElement) {
+				if(!toLayer instanceof HTMLCanvasElement) {
 					context.putImageData(data, toX, toY);
 				} else {
-					toCanvas.getContext('2d').putImageData(data, toX, toY);
+					toLayer.context2d.putImageData(data, toX, toY);
 				}
 			}
 
-			drMask(canvas, canvas_, ...arguments_) {
-				let canvas__ = this.drCreate(canvas.width, canvas.height);
+			drMask(layer, layer_, ...arguments_) {
+				let layer__ = this.drCreate(layer.width, layer.height);
 
-				this.drDraw(canvas__, 'image', canvas_, ...arguments_);
+				this.drDraw(layer__, 'image', layer_, ...arguments_);
 
-				canvas__.getContext('2d').globalCompositeOperation = 'source-in';
+				layer__.context2d.globalCompositeOperation = 'source-in';
 
-				this.drDraw(canvas__, 'image', canvas);
-				this.drClear(canvas);
-				this.drDraw(canvas, 'image', canvas__);
+				this.drDraw(layer__, 'image', layer);
+				this.drClear(layer);
+				this.drDraw(layer, 'image', layer__);
 			}
 
-			drClear(canvas, x, y, width, height) {
+			drClear(layer, x, y, width, height) {
 				if(!(x && y && width && height)) {
 					x =
 					y = 0;
-					width = canvas.width;
-					height = canvas.height;
+					width = layer.width;
+					height = layer.height;
 				} else
 				if([
 					typeof x,
@@ -550,13 +600,13 @@
 					return;
 				}
 
-				canvas.getContext('2d').clearRect(x, y, width, height);
+				layer.context2d.clearRect(x, y, width, height);
 			}
 
-			drIterate(canvas, function_) {
-				let width = canvas.width,
-					height = canvas.height,
-					context = canvas.getContext('2d'),
+			drIterate(layer, function_) {
+				let width = layer.width,
+					height = layer.height,
+					context = layer.context2d,
 					data = context.getImageData(0, 0, width, height),
 					pixels = data.data;
 
@@ -1014,7 +1064,14 @@
 					fbWrite: (a) => this.fbWrite(process, a),
 					drCreate: (...a) => this.drCreate(...a),
 					drOpen: (...a) => this.drOpen(...a),
+					drColor: (...a) => this.drColor(...a),
 					drDraw: (...a) => this.drDraw(...a),
+					drClip: (...a) => this.drClip(...a),
+					drMove: (...a) => this.drMove(...a),
+					drMask: (...a) => this.drMask(...a),
+					drClear: (...a) => this.drClear(...a),
+					drIterate: (...a) => this.drIterate(...a),
+					drClose: (a) => this.drClose(a),
 					throw: (...a) => this.eventThrow(process.id, ...a),
 					catch: (...a) => this.eventCatch(process.id, ...a),
 					catchRemove: (a) => this.eventCatchRemove(process.id, a),
@@ -1603,6 +1660,7 @@
 			border-radius: 16px;
 		}
 	</style>
+	<link rel="stylesheet" href="../Frameworks/Leaf.framework/Contents/Resources/Appearance.less">
 </head>
 <body>
 	<kdb>

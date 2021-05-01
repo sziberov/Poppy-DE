@@ -1,24 +1,26 @@
 // noinspection JSAnnotator
 return class {
+	static __friends__ = [this]
+
 	constructor({ URL, format, width, height } = {}) {
 		if(typeof URL !== 'string' && !(typeof width == 'number' || typeof height == 'number')) {
 			return;
 		}
 
 		if(typeof URL == 'string') {
-			this.__canvas = _request('drOpen', CFFile.content(URL), format);
+			this.__layer = _request('drOpen', CFFile.content(URL), format);
 		} else {
-			this.__canvas = _request('drCreate', width, height);
+			this.__layer = _request('drCreate', width, height);
 		}
-		this.__context = this.canvas.getContext('2d');
+		this.__context = this.__layer.context2d;
 	}
 
 	get width() {
-		return this.__canvas.width;
+		return this.__layer.width;
 	}
 
 	get height() {
-		return this.__canvas.height;
+		return this.__layer.height;
 	}
 
 	get context() {
@@ -30,7 +32,7 @@ return class {
 			return;
 		}
 
-		this.__canvas.width = value;
+		this.__layer.width = value;
 	}
 
 	set height(value) {
@@ -38,15 +40,15 @@ return class {
 			return;
 		}
 
-		this.__canvas.height = value;
+		this.__layer.height = value;
 	}
 
 	draw() {
-		_request('fbWrite', this.__canvas);
+		_request('fbWrite', this.__layer);
 	}
 
 	drawLayer(layer, x, y, width, height) {
-		_request('drDraw', this.__canvas, 'image', layer.canvas, x, y, width, height);
+		_request('drDraw', this.__layer, 'image', layer.__layer, x, y, width, height);
 
 		if($CFShared.CGLayer == this) {
 			this.draw();
@@ -54,7 +56,7 @@ return class {
 	}
 
 	drawRectangle(color, x, y, width, height) {
-		_request('drDraw', this.__canvas, 'rectangle', color, x, y, width, height);
+		_request('drDraw', this.__layer, 'rectangle', color, x, y, width, height);
 
 		if($CFShared.CGLayer == this) {
 			this.draw();
