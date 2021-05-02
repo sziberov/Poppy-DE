@@ -420,7 +420,7 @@
 					this.drDraw(layer, 'rectangle', this.colors.black, 0, 0, layer.width, layer.height);
 				} else
 				if(value instanceof Buffer) {
-					this.drDraw(layer, 'image', this.drOpen(value, 'png'));
+					this.drDraw(layer, 'image', this.drOpen(value));
 				} else
 				if(value instanceof HTMLCanvasElement) {
 					this.drDraw(layer, 'image', value);
@@ -451,22 +451,31 @@
 				}
 
 				if(typeof data == 'string') {
-					type = [...data.matchAll(regex)][0][1].replace('svg+xml', 'svg');
+					type ??= [...data.matchAll(regex)][0][1]
+						.replace('jpeg', 'jpg')
+						.replace('svg+xml', 'svg');
 					data = new Buffer(data.replace(regex, ''), 'base64');
+				} else {
+					type ??= this.fsType(data)?.match(/(?<=\/)(.*)/gi)[0]
+						.replace('jpeg', 'jpg')
+						.replace('svg+xml', 'svg');
 				}
 
-				if(!['jpg', 'png', 'svg', 'pdf'].includes(type)) {
+				if (!['gif', 'jpg', 'png', 'svg', 'pdf'].includes(type)) {
 					console.error(1); return;
 				}
 
-				if(['gif', 'jpg'].includes(type)) {
-					data = require('child_process').spawnSync('magick', [type+':-', 'png:-'], { input: data }).stdout;
+				if(type == 'gif') {
+					data = require('child_process').spawnSync('magick', ['gif:-[0]', 'png:-'], { input: data }).stdout;
+				}
+				if(type == 'jpg') {
+					data = require('child_process').spawnSync('magick', ['jpg:-', 'png:-'], { input: data }).stdout;
 				}
 				if(type == 'svg') {
 					data = require('child_process').spawnSync('magick', ['-background', 'none', 'svg:-', 'png:-'], { input: data }).stdout;
 				}
 				if(type == 'pdf') {
-					data = require('child_process').spawnSync('magick', ['-density', '96', '-quality', '100', 'pdf:-', 'png:-'], { input: data }).stdout;
+					data = require('child_process').spawnSync('magick', ['-density', '96', '-quality', '100', 'pdf:-[0]', 'png:-'], { input: data }).stdout;
 				}
 
 				let image = require('pngjs').PNG.sync.read(data),
