@@ -1,3 +1,4 @@
+// noinspection JSAnnotator
 return $CFShared.@Title || _single(class extends LFView {
 	constructor(_) {
 		super(_);
@@ -8,6 +9,7 @@ return $CFShared.@Title || _single(class extends LFView {
 			..._
 		}
 
+		this.__layer = new CGLayer(CGScreen.frame.width, CGScreen.frame.height);
 		this.__launchedApplications = new CFArray();
 
 		this.desktopImage = this.desktopImage;

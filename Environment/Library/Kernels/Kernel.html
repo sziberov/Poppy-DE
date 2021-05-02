@@ -270,13 +270,11 @@
 				}
 			}
 
-			fsRead(a) {
+			fsRead(a, b) {
 				try {
-					if(/\.(png|jpe?g|gif|svg)$/gi.test(a)) {
-						return require('fs').readFileSync('.'+a);
-					} else {
-						return require('fs').readFileSync('.'+a).toString();
-					}
+					let c = require('fs').readFileSync('.'+a);
+
+					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(a) || b ? c : c.toString();
 				} catch(error) {
 				//	console.warn(0); return;
 				}
@@ -319,6 +317,69 @@
 						undefined;
 
 				return b ? JSON.parse(b) : undefined;
+			}
+
+			fsType(data, title) {
+				if(!data || !data instanceof Buffer) {
+					console.error(0); return;
+				}
+
+				let types = [
+					{
+						mime: 'image/gif',
+						magic: [71, 73, 70, 56, 57, 97],
+						extension: 'gif'
+					},
+					{
+						mime: 'image/jpeg',
+						magic: [255, 216, 255, 224, 0, 16, 74, 70, 73, 70, 0, 1, 1],
+						extension: 'jpe?g'
+					},
+					{
+						mime: 'image/png',
+						magic: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0],
+						extension: 'png'
+					},
+					{
+						mime: 'image/svg+xml',
+						content: (a) => {
+							try {
+								for(let k in require('fast-xml-parser').parse(a)) {
+									if(k == 'svg') {
+										return true;
+									}
+								}
+							} catch(error) {}
+						},
+						extension: 'svg'
+					},
+					{
+						mime: 'application/pdf',
+						magic: [37, 80, 68, 70, 45, 49, 46],
+						extension: 'pdf'
+					}
+				]
+
+				for(let v of types) {
+					if(v.magic && data.startsWith(v.magic)) {
+						return v.mime;
+					}
+				}
+				for(let v of types) {
+					if(v.content && v.content(data.toString())) {
+						return v.mime;
+					}
+				}
+
+				if(!title) {
+					return;
+				}
+
+				for (let v of types) {
+					if (v.extension && new RegExp('/\.' + v.extension + '$/gi').test(title)) {
+						return v.mime;
+					}
+				}
 			}
 
 			extensionExec(...a) {
@@ -382,7 +443,7 @@
 				return layer;
 			}
 
-			drOpen(data, format) {
+			drOpen(data, type) {
 				let regex = /^data:image\/(.*);base64,/gi;
 
 				if(!data || !data instanceof Buffer && !(typeof data == 'string' || regex.test(data))) {
@@ -390,16 +451,22 @@
 				}
 
 				if(typeof data == 'string') {
-					format = [...data.matchAll(regex)][0][1].replace('svg+xml', 'svg');
+					type = [...data.matchAll(regex)][0][1].replace('svg+xml', 'svg');
 					data = new Buffer(data.replace(regex, ''), 'base64');
 				}
 
-				if(!['png', 'svg'].includes(format)) {
+				if(!['jpg', 'png', 'svg', 'pdf'].includes(type)) {
 					console.error(1); return;
 				}
 
-				if(format == 'svg') {
+				if(['gif', 'jpg'].includes(type)) {
+					data = require('child_process').spawnSync('magick', [type+':-', 'png:-'], { input: data }).stdout;
+				}
+				if(type == 'svg') {
 					data = require('child_process').spawnSync('magick', ['-background', 'none', 'svg:-', 'png:-'], { input: data }).stdout;
+				}
+				if(type == 'pdf') {
+					data = require('child_process').spawnSync('magick', ['-density', '96', '-quality', '100', 'pdf:-', 'png:-'], { input: data }).stdout;
 				}
 
 				let image = require('pngjs').PNG.sync.read(data),
@@ -412,7 +479,7 @@
 			}
 
 			/*
-			async drOpenAsync(data, format) {
+			async drOpenAsync(data, type) {
 				let regex = /^data:image\/(.*);base64,/gi;
 
 				if(!data || !data instanceof Buffer && !(typeof data == 'string' || regex.test(data))) {
@@ -421,12 +488,12 @@
 
 				if(data instanceof Buffer) {
 					data = data.toString('base64');
-					format =
-						format == 'png' ? 'png' :
-						format == 'svg' ? 'svg+xml' :
+					type =
+						type == 'png' ? 'png' :
+						type == 'svg' ? 'svg+xml' :
 						'png';
 				} else {
-					format = [...data.matchAll(regex)][0][1]
+					type = [...data.matchAll(regex)][0][1]
 					data = data.replace(regex, '');
 				}
 
@@ -436,7 +503,7 @@
 					image = $('<img>')[0]
 
 					image.onload = () => resolved(image);
-					image.src = 'data:image/'+format+';base64,'+data;
+					image.src = 'data:image/'+type+';base64,'+data;
 				}))();
 
 				let layer = this.drCreate(image.naturalWidth, image.naturalHeight);
@@ -789,6 +856,13 @@
 				`);
 			}
 
+			/**
+			 * Создаёт общее окружение для передачи информации между процессами.
+			 *
+			 * @param {?number} processId Идентификатор процесса.
+			 * @param {!string} access Уровень доступа.
+			 * @param {?string} title Название общего окружения.
+			 */
 			seCreate(processId, access, title) {
 				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1;
 
@@ -821,6 +895,10 @@
 				return id;
 			}
 
+			/**
+			 * @param {?number} processId Идентификатор процесса.
+			 * @returns Список идентификаторов существующих общих окружений, созданных процессом, чей идентфикатор указан (или всех, если последнего нет).
+			 */
 			seList(processId) {
 				return this.handlers.filter(v => (!processId || v.processId == processId) && v.type == 'se').map(v => v.id);
 			}
@@ -1054,7 +1132,7 @@
 				return {
 					version: (a) => this.version[a],
 					uptime: () => this.uptime,
-					screen: () => this.screen,
+					screen: () => Object.assign({}, this.screen),
 					read: (a) => this.fsRead(a),
 					write: (...a) => this.fsWrite(...a),
 					remove: (a) => this.fsRemove(a),
@@ -1067,6 +1145,7 @@
 					drColor: (...a) => this.drColor(...a),
 					drDraw: (...a) => this.drDraw(...a),
 					drClip: (...a) => this.drClip(...a),
+					drBlur: (...a) => this.drBlur(...a),
 					drMove: (...a) => this.drMove(...a),
 					drMask: (...a) => this.drMask(...a),
 					drClear: (...a) => this.drClear(...a),
@@ -1168,6 +1247,9 @@
 			}
 			*/
 
+			/**
+			 * @returns Список идентификаторов запущенных процессов.
+			 */
 			processList() {
 				return this.processes.map(v => v.id);
 			}
@@ -1227,6 +1309,9 @@
 			}
 			*/
 
+			/**
+			 * Завершает указанный процесс, перед этим удаляя все его хэндлеры.
+			 */
 			processKill(processId, quiet) {
 				let process = this.processes.find(v => v.id == processId);
 
@@ -1262,7 +1347,7 @@
 			/**
 			 * Импортирует классы из фреймворка в окружение процесса.
 			 *
-			 * @param {!number} process Идентификатор процесса.
+			 * @param {!object} process Объект процесса.
 			 * @param {!string} framework Название фреймворка.
 			 * @param {?string} class_ Название класса.
 			 */
@@ -1595,8 +1680,8 @@
 		}
 
 		@keyframes kdb_panic {
-			0%      { --kdb_panic_background: 0%; }
-			100%    { --kdb_panic_background: 100%; }
+			0%		{ --kdb_panic_background: 0%; }
+			100%	{ --kdb_panic_background: 100%; }
 		}
 
 		kdb:not([verbose])[panic] panic {
@@ -1616,8 +1701,8 @@
 		}
 
 		@keyframes kdb_panic_img {
-			0%      { opacity: 0; }
-			100%    { opacity: 1; }
+			0%		{ opacity: 0; }
+			100%	{ opacity: 1; }
 		}
 
 		kdb:not([verbose])[panic] img {

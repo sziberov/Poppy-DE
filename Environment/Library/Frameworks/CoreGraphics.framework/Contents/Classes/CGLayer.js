@@ -2,13 +2,13 @@
 return class {
 	static __friends__ = [this]
 
-	constructor({ URL, format, width, height } = {}) {
+	constructor({ URL, type, width, height } = {}) {
 		if(typeof URL !== 'string' && !(typeof width == 'number' || typeof height == 'number')) {
 			return;
 		}
 
 		if(typeof URL == 'string') {
-			this.__layer = _request('drOpen', CFFile.content(URL), format);
+			this.__layer = _request('drOpen', CFFile.content(URL), type);
 		} else {
 			this.__layer = _request('drCreate', width, height);
 		}

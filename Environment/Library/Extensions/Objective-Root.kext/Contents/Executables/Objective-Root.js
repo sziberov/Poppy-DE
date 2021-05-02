@@ -29,14 +29,38 @@ window.Object.instanceOf = function(object, object_) {
 	}
 
 	return false;
-};
-window.Array.prototype.shallowlyContains = function(value) {
-	if(Object.isObject(value)) {
-		return this.filter(v => Object.isShallowlyEqual(v, value)).length > 0;
-	} else {
-		return this.includes(value);
+}
+
+let arrayMethods = {
+	startsWith: {
+		value: function(value) {
+			for(let k in value) {
+				if(this[k] !== value[k]) {
+					return false;
+				}
+			}
+
+			return true;
+		},
+		enumerable: false,
+		writable: true
+	},
+	shallowlyContains: {
+		value: function(value) {
+			if(Object.isObject(value)) {
+				return this.filter(v => Object.isShallowlyEqual(v, value)).length > 0;
+			} else {
+				return this.includes(value);
+			}
+		},
+		enumerable: false,
+		writable: true
 	}
 }
+
+Object.defineProperties(window.Array.prototype, arrayMethods);
+Object.defineProperties(window.Buffer.prototype, arrayMethods);
+
 window.Number.prototype.toHexString = (n) => {
 	return '0x'+(n+0x10000).toString(16).substr(-4).toUpperCase();
 }

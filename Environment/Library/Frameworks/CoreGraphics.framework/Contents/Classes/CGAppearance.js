@@ -9,21 +9,21 @@ return $CFShared.@Title || class {
 	add() {
 		if(!this.element && this.URL && !@Title.__URLSs.includes(this.URL)) {
 			let file = CFFile.content(this.URL),
-				format =
+				type =
 					this.URL.endsWith('.less') ? 'less' :
 					this.URL.endsWith('.css') ? 'css' :
 					undefined;
 
-			if(file && format) {
+			if(file && type) {
 				let add = $('<style/>');
 
 				@Title.__URLSs.push(this.URL);
-				add.attr('type', 'text/'+format);
+				add.attr('type', 'text/'+type);
 				add.text(file.replace(/@(Resources)/g, this.URL.replace(/(?<=\/Resources\/)(.*)/g, '')));
 
 				this.element = add.appendTo('body');
 
-				if(format == 'less') {
+				if(type == 'less') {
 					less?.refreshStyles();
 				}
 			}

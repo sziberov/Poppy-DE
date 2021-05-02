@@ -1,11 +1,11 @@
 // noinspection JSAnnotator
 return class {
-	constructor({ URL, format } = {}) {
-		if(typeof URL !== 'string' || !['png', 'svg'].includes(format)) {
+	constructor({ URL, type } = {}) {
+		if(typeof URL !== 'string' || !['png', 'svg'].includes(type)) {
 			return;
 		}
 
-		this.__layer = _request('drOpen', CFFile.content(URL), format);
+		this.__layer = _request('drOpen', CFFile.content(URL), type);
 	}
 
 	get width() {

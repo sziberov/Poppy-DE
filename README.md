@@ -1,8 +1,8 @@
 Poppy DE
 --
-Free cross-platform OS X-like user interface and applications implementation.
+Free cross-platform OS X-like user interface and applications implementation (attempt of).
 
-Свободная кроссплатформенная реализация OS X-подобного пользовательского интерфейса и приложений.
+Свободная кроссплатформенная реализация OS X-подобного пользовательского интерфейса и приложений (попытка).
 
 Architecture:
 

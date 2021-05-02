@@ -5,6 +5,7 @@
 
 _import('CoreFoundation');
 
+_import('@Title', 'CGScreen');
 _import('@Title', 'CGLayer');
 _import('@Title', 'CGAppearance');
 _import('@Title', 'CGElement');
@@ -13,7 +14,6 @@ _import('@Title', 'CGFontManager');
 
 new CFProcessInfo().environment.$CGAppearance = new CGAppearance('@Resources/Appearance.css').add();
 
-$CFShared.CGLayer = new CGLayer(_request('screen').width, _request('screen').height);
 $CFShared.CGAppearance = CGAppearance;
 $CFShared.CGCursor = CGCursor;
 $CFShared.CGFontManager = CGFontManager;
