@@ -1,18 +1,19 @@
 // noinspection JSAnnotator
-return class {
+return $CFShared.@Title || class {
 	static __friends__ = [this]
+	static __main;
 
-	constructor({ URL, type, width, height } = {}) {
-		if(typeof URL !== 'string' && !(typeof width == 'number' || typeof height == 'number')) {
+	constructor(width, height) {
+		if(typeof width !== 'number' || typeof height !== 'number') {
 			return;
 		}
 
-		if(typeof URL == 'string') {
-			this.__layer = _request('drOpen', CFFile.content(URL), type);
-		} else {
-			this.__layer = _request('drCreate', width, height);
-		}
+		this.__layer = _request('drCreate', width, height);
 		this.__context = this.__layer.context2d;
+
+		if(!@Title.__main) {
+			@Title.__main = this;
+		}
 	}
 
 	get width() {
@@ -44,22 +45,24 @@ return class {
 	}
 
 	draw() {
-		_request('fbWrite', this.__layer);
-	}
-
-	drawLayer(layer, x, y, width, height) {
-		_request('drDraw', this.__layer, 'image', layer.__layer, x, y, width, height);
-
-		if($CFShared.CGLayer == this) {
-			this.draw();
+		if(@Title.__main == this) {
+			_request('fbWrite', this.__layer);
 		}
 	}
 
 	drawRectangle(color, x, y, width, height) {
 		_request('drDraw', this.__layer, 'rectangle', color, x, y, width, height);
+	}
 
-		if($CFShared.CGLayer == this) {
-			this.draw();
-		}
+	drawGradient(colors, x, y, width, height, fromX, fromY, toX, toY) {
+		_request('drDraw', this.__layer, 'gradient', colors, x, y, width, height, fromX, fromY, toX, toY);
+	}
+
+	drawLayer(layer, x, y, width, height) {
+		_request('drDraw', this.__layer, 'layer', layer.__layer, x, y, width, height);
+	}
+
+	blur(x, y, width, height, amount, sharp, draw) {
+		_request('drBlur', this.__layer, x, y, width, height, amount, sharp, draw)
 	}
 }

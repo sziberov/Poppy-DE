@@ -6,7 +6,9 @@
 _import('CoreFoundation');
 
 _import('@Title', 'CGScreen');
+_import('@Title', 'CGColor');
 _import('@Title', 'CGLayer');
+_import('@Title', 'CGImage');
 _import('@Title', 'CGAppearance');
 _import('@Title', 'CGElement');
 _import('@Title', 'CGCursor');

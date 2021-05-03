@@ -1,8 +1,10 @@
 // noinspection JSAnnotator
 return class {
-	constructor({ URL, type } = {}) {
-		if(typeof URL !== 'string' || !['png', 'svg'].includes(type)) {
-			return;
+	static __friends__ = [CGLayer]
+
+	constructor(URL, type) {
+		if(typeof URL !== 'string') {
+			console.error(0); return;
 		}
 
 		this.__layer = _request('drOpen', CFFile.content(URL), type);
@@ -14,9 +16,5 @@ return class {
 
 	get height() {
 		return this.__layer.height;
-	}
-
-	get layer() {
-		return this.__layer;
 	}
 }

@@ -19,7 +19,7 @@ return class {
 
 		new CGCursor();
 		new CGFontManager('/Environment/Library/Fonts');
-		new LFWorkspace().desktopImage = '/Library/Desktop Images/249785.jpg';
+		new LFWorkspace().desktopImage = '/Library/Desktop Images/249785.png';
 		new LFWorkspace().add();
 
 		new LFMenubar().mainMenu.items = [

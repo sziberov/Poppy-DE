@@ -59,6 +59,31 @@ return $CFShared.@Title || _single(class extends LFView {
 		LFMenu.deactivateAll();
 	}
 
+	draw() {
+		let layer = new CGLayer(CGScreen.frame.width, CGScreen.frame.height),
+			menubar = new CGLayer(CGScreen.frame.width, 24),
+			menubarShadow = new CGLayer(menubar.width, menubar.height);
+
+		layer.drawLayer(new CGImage(this.desktopImage), 0, 0, '100', '100');
+		layer.blur(0, 0, menubar.width, menubar.height, 4, true, true);
+		menubar.drawGradient([
+			[0, CGColor('100','100','100', '75')],
+			[1, CGColor('100','100','100', '25')]
+		], 0, 0, menubar.width, menubar.height, 0, 0, 0, menubar.height);
+		menubarShadow.drawGradient([
+			[0, CGColor('0','0','0', '25')],
+			[1, CGColor('0','0','0', '0')]
+		], 0, 0, menubarShadow.width, menubarShadow.height, 0, 0, 0, menubarShadow.height);
+
+		layer.drawLayer(menubar);
+		layer.drawLayer(menubarShadow, 0, menubar.height);
+
+		this.__layer.drawLayer(layer);
+		this.__layer.draw();
+
+	//	return layer;
+	}
+
 	launchApplication(URL, ...arguments_) {
 		URL = URL.endsWith('.app') ? URL : URL+='.app';
 

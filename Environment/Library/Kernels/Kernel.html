@@ -89,7 +89,7 @@
 
 										this.drDraw(symbol, 'rectangle', this.colors.white, 0, 0, width, height);
 										this.drMask(symbol, this.drClip(font, position*width, 0, width, height));
-										this.drDraw(layer, 'image', symbol, i*width, string.id*height-height);
+										this.drDraw(layer, 'layer', symbol, i*width, string.id*height-height);
 									}
 								}
 								this.fbWrite(undefined, layer);
@@ -110,29 +110,9 @@
 						sh.postMessage({ Opium: this });
 						*/
 
-						this.timerCreate(undefined, 'single', 125/2, () => {
+					//	this.timerCreate(undefined, 'single', 125/2, () => {
 							this.bootState(false);
-						});
-
-						/*
-						let layer = this.drCreate(this.screen.width, this.screen.height),
-							menubar = this.drCreate(this.screen.width, 24),
-							menubarShadow = this.drCreate(menubar.width, menubar.height);
-
-						this.drDraw(layer, 'image', this.drOpen(this.fsRead('/Library/Desktop Images/Wave.png'), 'png'), 0, 0, '100', '100');
-						this.drBlur(layer, 0, 0, menubar.width, menubar.height, 4, true, true);
-						this.drDraw(menubar, 'gradient', [
-							[0, this.drColor('100','100','100', '75')],
-							[1, this.drColor('100','100','100', '25')]
-						], 0, 0, menubar.width, menubar.height, 0, 0, 0, menubar.height);
-						this.drDraw(menubarShadow, 'gradient', [
-							[0, this.drColor('0','0','0', '25')],
-							[1, this.drColor('0','0','0', '0')]
-						], 0, 0, menubarShadow.width, menubarShadow.height, 0, 0, 0, menubarShadow.height);
-						this.drDraw(layer, 'image', menubar, 0, 0);
-						this.drDraw(layer, 'image', menubarShadow, 0, menubar.height);
-						this.fbWrite(undefined, layer);
-						*/
+					//	});
 
 						this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
 					} catch(error) {
@@ -228,7 +208,7 @@
 					image = this.drOpen(this.images.panic);
 
 				this.drDraw(layer, 'rectangle', 'rgba(0%,0%,0%,0.25)', 0, 0, layer.width, layer.height);
-				this.drDraw(layer, 'image', image, layer.width/2-image.width/2, layer.height/2-image.height/2);
+				this.drDraw(layer, 'layer', image, layer.width/2-image.width/2, layer.height/2-image.height/2);
 				this.fbWrite(undefined, layer);
 			}
 
@@ -251,7 +231,7 @@
 								spinnerIteration = 0;
 
 							this.drDraw(layer, 'rectangle', this.colors.lightGray, 0, 0, layer.width, layer.height);
-							this.drDraw(layer, 'image', logo, layer.width/2-logo.width/2, layer.height/2-logo.height/2);
+							this.drDraw(layer, 'layer', logo, layer.width/2-logo.width/2, layer.height/2-logo.height/2);
 							this.drDraw(spinnerBackground, 'rectangle', this.colors.lightGray, 0, 0, spinnerBackground.width, spinnerBackground.height);
 
 							this.bootHandlerId = this.timerCreate(undefined, 'multiple', 125/2, () => {
@@ -261,8 +241,8 @@
 									y = layer.height/2+(layer.height+logo.height)/4,
 									angle = 30*spinnerIteration;
 
-								this.drDraw(layer, 'image', spinnerBackground, x, y, undefined, undefined, angle);
-								this.drDraw(layer, 'image', spinner, x, y, undefined, undefined, angle);
+								this.drDraw(layer, 'layer', spinnerBackground, x, y, undefined, undefined, angle);
+								this.drDraw(layer, 'layer', spinner, x, y, undefined, undefined, angle);
 								this.fbWrite(undefined, layer);
 							});
 						}
@@ -420,10 +400,10 @@
 					this.drDraw(layer, 'rectangle', this.colors.black, 0, 0, layer.width, layer.height);
 				} else
 				if(value instanceof Buffer) {
-					this.drDraw(layer, 'image', this.drOpen(value));
+					this.drDraw(layer, 'layer', this.drOpen(value));
 				} else
 				if(value instanceof HTMLCanvasElement) {
-					this.drDraw(layer, 'image', value);
+					this.drDraw(layer, 'layer', value);
 				}
 				this.eventThrow(undefined, 'fbChanged');
 			}
@@ -478,7 +458,7 @@
 					data = require('child_process').spawnSync('magick', ['-density', '96', '-quality', '100', 'pdf:-[0]', 'png:-'], { input: data }).stdout;
 				}
 
-				let image = require('pngjs').PNG.sync.read(data),
+				let image = require('pngjs').PNG.sync.read(data),	// Fails for some reason if type is JPG
 					imageData = new ImageData(new Uint8ClampedArray(image.data), image.width, image.height),
 					layer = this.drCreate(image.width, image.height);
 
@@ -556,7 +536,7 @@
 						context.fillStyle = gradient;
 						context.fillRect(x, y, width, height);
 					},
-					image: (layer_, x, y, width, height, angle) => {
+					layer: (layer_, x, y, width, height, angle) => {
 						let context_ = layer_.context2d;
 
 						if(typeof width == 'string') {
@@ -613,13 +593,13 @@
 					context_ = layer_.context2d;
 
 				context_.filter = 'blur('+amount+'px)';
-				this.drDraw(layer_, 'image', !sharp ? this.drClip(layer, x, y, width, height) : layer, !sharp ? amount : -x, !sharp ? amount : -y);
+				this.drDraw(layer_, 'layer', !sharp ? this.drClip(layer, x, y, width, height) : layer, !sharp ? amount : -x, !sharp ? amount : -y);
 				context_.filter = '';
 
 				if(!draw) {
 					return layer_;
 				} else {
-					this.drDraw(layer, 'image', layer_, !sharp ? x-amount : x, !sharp ? y-amount : y);
+					this.drDraw(layer, 'layer', layer_, !sharp ? x-amount : x, !sharp ? y-amount : y);
 				}
 			}
 
@@ -651,13 +631,13 @@
 			drMask(layer, layer_, ...arguments_) {
 				let layer__ = this.drCreate(layer.width, layer.height);
 
-				this.drDraw(layer__, 'image', layer_, ...arguments_);
+				this.drDraw(layer__, 'layer', layer_, ...arguments_);
 
 				layer__.context2d.globalCompositeOperation = 'source-in';
 
-				this.drDraw(layer__, 'image', layer);
+				this.drDraw(layer__, 'layer', layer);
 				this.drClear(layer);
-				this.drDraw(layer, 'image', layer__);
+				this.drDraw(layer, 'layer', layer__);
 			}
 
 			drClear(layer, x, y, width, height) {
@@ -1457,28 +1437,31 @@
 
 				if(class_) {
 					var global = environment ? Object.isShallowlyEqual(environment, class_) : false,
-						equals = caller === class_ || (
-							Object.getPrototypeOf(caller) == class_.prototype ||
-							caller.prototype == Object.getPrototypeOf(class_) ||
-							class_.prototype !== undefined && caller.prototype == class_.prototype ||
-							Object.getPrototypeOf(caller) == Object.getPrototypeOf(class_)
-						) && Object.getPrototypeOf(class_) !== Object.getPrototypeOf(class {}),
+						equals = caller === class_ ||
+							Object.getPrototypeOf(class_) !== Object.getPrototypeOf(class {}) && (
+								Object.getPrototypeOf(caller)	=== Object.getPrototypeOf(class_) ||
+								Object.getPrototypeOf(caller)	=== class_.prototype ||
+								caller.prototype				=== Object.getPrototypeOf(class_) ||
+								caller.prototype				=== class_.prototype &&
+								caller.prototype				!== undefined
+							),
 						inherits = Object.instanceOf(caller, class_) || Object.instanceOf(class_, caller),
-						friends = class_.constructor?.__friends__ || class_.prototype?.__friends__ || []
+						friends = Object.getPrototypeOf(class_)?.constructor.__friends__ || class_.prototype?.__friends__ || [],
+						friends = friends.includes(caller) || friends.includes(Object.getPrototypeOf(caller)?.constructor)
 				} else {
 					var global =
 						equals =
 						inherits = false,
-						friends = []
+						friends = false
 				}
 
 				if(field == '__friends__' && !equals) {
 					this.kdbAdd(`classProtected${ processId ? '@'+processId : '' }: Can't access reserved property: ${ field }`); return;
 				}
-				if(!global && private_.test(field) && !equals && !friends.includes(caller)) {
+				if(!global && private_.test(field) && !equals && !friends) {
 					this.kdbAdd(`classProtected${ processId ? '@'+processId : '' }: Can't access private property: ${ field }`); return;
 				}
-				if(!global && protected_.test(field) && !equals && !inherits && !friends.includes(caller)) {
+				if(!global && protected_.test(field) && !equals && !inherits && !friends) {
 					this.kdbAdd(`classProtected${ processId ? '@'+processId : '' }: Can't access protected property: ${ field }`); return;
 				}
 
