@@ -1,7 +1,8 @@
+// noinspection JSAnnotator
 return class {
 	static splitByLast(string = '', value) {
-	    let index = string.lastIndexOf(value);
+		let index = string.lastIndexOf(value);
 
-	    return [string.slice(0, index), string.slice(index+1)]
+		return [string.slice(0, index), string.slice(index+1)]
 	}
 }

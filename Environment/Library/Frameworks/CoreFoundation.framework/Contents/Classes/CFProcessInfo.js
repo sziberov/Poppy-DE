@@ -1,5 +1,20 @@
-return _single(class {
+// noinspection JSAnnotator
+return class {
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
 	constructor() {
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			console.error(0); return;
+		}
+
 		this.__info = _request('info');
 
 		this.identifier = this.__info.id;
@@ -13,4 +28,4 @@ return _single(class {
 	get executable() {
 		return this.environment._executable;
 	}
-});
+}

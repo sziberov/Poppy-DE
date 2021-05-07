@@ -1,5 +1,16 @@
-return _single(class {
+// noinspection JSAnnotator
+return class {
+	static get shared() {
+		return this.__shared;
+	}
+
 	constructor(application) {
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			console.error(0); return;
+		}
+
 		this.__application = application;
 	}
 
@@ -46,4 +57,4 @@ return _single(class {
 	quit(...arguments_) {
 		this.__application.quit(...arguments_);
 	}
-});
+}

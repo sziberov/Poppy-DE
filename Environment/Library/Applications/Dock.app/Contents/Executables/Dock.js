@@ -2,7 +2,7 @@ return class {
 	constructor() {
 		_import('Leaf');
 
-		new LFApp().focusingPolicy = 1;
+		LFApp.focusingPolicy = 1;
 
 		/*
 		<Dock>

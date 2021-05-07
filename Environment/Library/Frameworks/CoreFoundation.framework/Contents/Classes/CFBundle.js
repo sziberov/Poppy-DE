@@ -1,6 +1,22 @@
+// noinspection JSAnnotator
 return class {
+	static __main = new this(CFString.splitByLast(CFProcessInfo.shared.path, '/Contents/')[0]);
+//	static __current = '@Resources' ? new this(CFString.splitByLast('@Resources', '/Contents/')[0]) : this.main;
+
+	static get main() {
+		return this.__main;
+	}
+
+//	static get current() {
+//		return this.__current;
+//	}
+
 	constructor(URL) {
-		this.__URL = URL || CFString.splitByLast(new CFProcessInfo().path, '/Contents/')[0]
+		if(typeof URL != 'string') {
+			console.error(0); return;
+		}
+
+		this.__URL = URL;
 
 		this.properties = {}
 		this.localizations = {}

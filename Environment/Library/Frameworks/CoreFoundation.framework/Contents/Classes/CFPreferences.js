@@ -5,7 +5,7 @@ return class {
 			return;
 		}
 
-		this.__user = new CFProcessInfo().user;
+		this.__user = CFProcessInfo.shared.user;
 		this.__identifier = identifier;
 		this.__properties;
 

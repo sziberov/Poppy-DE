@@ -31,7 +31,7 @@ _import('@Title', 'LFTableRow');
 _import('@Title', 'LFAlert');
 
 new LFApplication();
-new CFProcessInfo().environment.$LFAppearance = new CGAppearance('@Resources/Appearance.less').add();
+CFProcessInfo.shared.environment.$LFAppearance = new CGAppearance('@Resources/Appearance.less').add();
 
 $CFShared.LFMenubar = LFMenubar;
 $CFShared.LFWorkspace = LFWorkspace;

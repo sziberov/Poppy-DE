@@ -1,6 +1,21 @@
-return $CFShared.@Title || _single(class extends LFView {
+// noinspection JSAnnotator
+return $CFShared.@Title || class extends LFView {
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
 	constructor(_) {
 		super(...arguments);
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			console.error(0); return;
+		}
+
 		this.class = '@Title';
 		this._ = {
 			...this._,
@@ -39,4 +54,4 @@ return $CFShared.@Title || _single(class extends LFView {
 		this._.transparent = value;
 		this.attributes['transparent'] = value == true ? '' : undefined;
 	}
-});
+}

@@ -1377,33 +1377,6 @@
 			}
 
 			/**
-			 * Превращает обычный класс в синглтон.
-			 *
-			 * @param {!class} a Класс.
-			 */
-			classSingle(a) {
-				return new Proxy(a, {
-					instance: undefined,
-					construct: function(target, arguments_) {
-						if(!this.instance) {
-							this.instance = new target(...arguments_);
-						}
-
-						return this.instance;
-					},
-					get: function(target, key) {
-						if(key == 'destroyInstance') {
-							return () => {
-								this.instance = undefined;
-							}
-						}
-
-						return target[key]
-					}
-				});
-			}
-
-			/**
 			 * Интерфейс для обращения к полям класса с поддержкой защищённых и приватных полей, а также друзей:
 			 * - classProtected(<process.id>, this, <class>) - Возвращает <class>.
 			 * - classProtected(<process.id>, this, <class>, <field>) - Возвращает поле.

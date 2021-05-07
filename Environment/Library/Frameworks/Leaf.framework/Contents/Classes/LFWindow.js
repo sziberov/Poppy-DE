@@ -26,7 +26,7 @@ return class extends LFView {
 			..._
 		}
 
-		this.__application = new LFApplication();
+		this.__application = LFApplication.shared;
 		this.__hidden = true;
 		this.__main = false;
 
@@ -57,7 +57,7 @@ return class extends LFView {
 		);
 		this.level = [0, 1, 2].includes(this._.level) ? this._.level : 1;
 
-		this.add(new LFWorkspace());
+		this.add(LFWorkspace.shared);
 	}
 
 	get hidden() {
@@ -87,7 +87,7 @@ return class extends LFView {
 	}
 
 	get maximized() {
-		return this.element.position().top == 24 && this.element.position().left == 0 && new LFWorkspace().element.outerWidth() == this.element.outerWidth() && new LFWorkspace().element.outerHeight()-24 == this.element.outerHeight();
+		return this.element.position().top == 24 && this.element.position().left == 0 && LFWorkspace.shared.element.outerWidth() == this.element.outerWidth() && LFWorkspace.shared.element.outerHeight()-24 == this.element.outerHeight();
 	}
 
 	get title() {
@@ -103,7 +103,7 @@ return class extends LFView {
 	}
 
 	get application() {
-		return new LFLaunchedApplication();
+		return LFLaunchedApplication.shared;
 	}
 
 	set hidden(value) {
@@ -129,8 +129,8 @@ return class extends LFView {
 	}
 
 	set origin(value) {
-		value.x = this.element && value.x == 'center' ? Math.round(new LFWorkspace().element.outerWidth()/2-this.element.outerWidth()/2) : Math.round(value.x);
-		value.y = this.element && value.y == 'center' ? Math.round(new LFWorkspace().element.outerHeight()/2-this.element.outerHeight()/2) : Math.round(value.y);
+		value.x = this.element && value.x == 'center' ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : Math.round(value.x);
+		value.y = this.element && value.y == 'center' ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : Math.round(value.y);
 
 		if(typeof value.x === 'number' && typeof value.y === 'number') {
 			this._.x = value.x;
@@ -165,8 +165,8 @@ return class extends LFView {
 	center(_direction) {
 		if(this.element) {
 			this.origin = {
-				x: !_direction || _direction == 'Horizontally' ? Math.round(new LFWorkspace().element.outerWidth()/2-this.element.outerWidth()/2) : this._.x,
-				y: !_direction || _direction == 'Vertically' ? Math.round(new LFWorkspace().element.outerHeight()/2-this.element.outerHeight()/2) : this._.y
+				x: !_direction || _direction == 'Horizontally' ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : this._.x,
+				y: !_direction || _direction == 'Vertically' ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : this._.y
 			}
 		}
 
@@ -229,8 +229,8 @@ return class extends LFView {
 					this.minimize();
 				}
 				this.attributes['animatedResizeIn'] = '';
-				this.style['width'] = new LFWorkspace().element.outerWidth()+'px';
-				this.style['height'] = new LFWorkspace().element.outerHeight()-24+'px';
+				this.style['width'] = LFWorkspace.shared.element.outerWidth()+'px';
+				this.style['height'] = LFWorkspace.shared.element.outerHeight()-24+'px';
 				this.style['transform'] = 'translate3d(0px, 24px, 0)';
 			} else {
 				this.attributes['animatedResizeOut'] = '';

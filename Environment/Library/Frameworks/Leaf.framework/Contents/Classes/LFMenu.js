@@ -66,7 +66,7 @@ return class extends LFView {
 	}
 
 	add(view) {
-		super.add(view?.class == 'LFMenubar' ? view : new LFWorkspace());
+		super.add(view?.class == 'LFMenubar' ? view : LFWorkspace.shared);
 
 		return this;
 	}
@@ -86,7 +86,7 @@ return class extends LFView {
 						let offsetX = element.offset().left || this._.x,
 							offsetY = element.offset().top+element.outerHeight() || this._.y;
 
-						offsetX = offsetX+(offsetX+this.element.outerWidth() > new LFWorkspace().element.outerWidth() ? element.outerWidth()-this.element.outerWidth() : 0);
+						offsetX = offsetX+(offsetX+this.element.outerWidth() > LFWorkspace.shared.element.outerWidth() ? element.outerWidth()-this.element.outerWidth() : 0);
 
 						return { x: Math.round(offsetX), y: Math.round(offsetY), corners: ['topLeft', 'topRight'] }
 					},
@@ -98,7 +98,7 @@ return class extends LFView {
 					}
 				}[element ? side : 'Default']();
 
-			for(let v of [...new LFWorkspace().get('Subviews', this.class), ...new LFWorkspace().get('Subviews', 'LFWindow')]) {
+			for(let v of [...LFWorkspace.shared.get('Subviews', this.class), ...LFWorkspace.shared.get('Subviews', 'LFWindow')]) {
 				topDepth = v.element ? Math.max(topDepth, Number.parseInt(v.element.css('z-index'))) : 0;
 			}
 			this.style['z-index'] = topDepth+1;
@@ -154,7 +154,7 @@ return class extends LFView {
 			}
 
 		exceptCheck();
-		for(let v of new LFWorkspace().get('Subviews', '@Title')) {
+		for(let v of LFWorkspace.shared.get('Subviews', '@Title')) {
 			if(!exceptList.includes(v)) {
 				v.setActivated(false);
 			}

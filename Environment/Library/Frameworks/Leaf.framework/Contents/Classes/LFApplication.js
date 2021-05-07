@@ -1,10 +1,24 @@
-return _single(class {
+return class {
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
 	constructor() {
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			console.error(0); return;
+		}
+
 		this.__menuItems = new CFArray();
 		this.__focusingPolicy = 0;
 		this.__quitableBySingleWindow = false;
 
-		this.process.environment.LFApp = @Title;
+		this.process.environment.LFApp = @Title.shared;
 		/*
 		this.application = new Proxy(this.process.executable, {
 			get: (target, key) => {
@@ -26,9 +40,9 @@ return _single(class {
 		});
 		*/
 
-		new LFWorkspace().launchedApplications.add(new LFLaunchedApplication(this));
-		CFArray.addObserver(new LFWorkspace().subviews, (a) => {
-			if(a.value.application == new LFLaunchedApplication() && a.value.class == 'LFWindow') {
+		LFWorkspace.shared.launchedApplications.add(new LFLaunchedApplication(this));
+		CFArray.addObserver(LFWorkspace.shared.subviews, (a) => {
+			if(a.value.application == LFLaunchedApplication.shared && a.value.class == 'LFWindow') {
 				this.update('Windows');
 			}
 		});
@@ -40,7 +54,7 @@ return _single(class {
 	}
 
 	get windows() {
-		return new LFWorkspace().subviews.filter(v => v.application == new LFLaunchedApplication() && v.class == 'LFWindow');
+		return LFWorkspace.shared.subviews.filter(v => v.application == LFLaunchedApplication.shared && v.class == 'LFWindow');
 	}
 
 	get focusingPolicy() {
@@ -52,7 +66,7 @@ return _single(class {
 	}
 
 	get process() {
-		return new CFProcessInfo();
+		return CFProcessInfo.shared;
 	}
 
 	get application() {
@@ -60,7 +74,7 @@ return _single(class {
 	}
 
 	get bundle() {
-		return new CFBundle();
+		return CFBundle.main;
 	}
 
 	get identifier() {
@@ -110,8 +124,8 @@ return _single(class {
 	update(mode) {
 		return {
 			MenuItems: () => {
-				if(this.focusingPolicy < 1 && new LFWorkspace().getApplication(this.identifier)) {
-					new LFMenubar().applicationMenu.items = [
+				if(this.focusingPolicy < 1 && LFWorkspace.shared.getApplication(this.identifier)) {
+					LFMenubar.shared.applicationMenu.items = [
 						new LFMenuItem({ title: this.title,
 							menu: new LFMenu({ items: [
 								new LFMenuItem({ title: CFLocalizedString('About', '@Resources')+' '+this.title, action: () => this.about() }),
@@ -127,9 +141,9 @@ return _single(class {
 						}),
 						...this.menuItems
 					]
-					new LFMenubar().applicationMenu.application = new LFLaunchedApplication();
+					LFMenubar.shared.applicationMenu.application = LFLaunchedApplication.shared;
 				} else {
-					let applications = new LFWorkspace().launchedApplications;
+					let applications = LFWorkspace.shared.launchedApplications;
 
 					if(applications.length > 1) {
 						applications[1].focus('Menu');
@@ -138,7 +152,7 @@ return _single(class {
 			},
 			Windows: () => {
 				if(this.focusingPolicy < 2) {
-					new LFWorkspace().addSubviews(this.windows);
+					LFWorkspace.shared.addSubviews(this.windows);
 				} else {
 					for(let v of this.windows) {
 						v.remove();
@@ -150,7 +164,7 @@ return _single(class {
 
 	focus(mode) {
 		if(!mode || mode == 'Menu') {
-			if(this.focusingPolicy < 1 && new LFMenubar().applicationMenu.application !== new LFLaunchedApplication()) {
+			if(this.focusingPolicy < 1 && LFMenubar.shared.applicationMenu.application !== LFLaunchedApplication.shared) {
 				this.update('MenuItems');
 			}
 		}
@@ -196,7 +210,7 @@ return _single(class {
 	}
 
 	quit() {
-		if(new LFWorkspace().getApplication(this.identifier)) {
+		if(LFWorkspace.shared.getApplication(this.identifier)) {
 			try {
 				this.process.executable?.willQuit?.();
 			} catch(error) {}
@@ -204,4 +218,4 @@ return _single(class {
 			_request('kill');
 		}
 	}
-});
+}

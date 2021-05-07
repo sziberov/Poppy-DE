@@ -15,19 +15,19 @@ return class {
 			}
 		]
 
-		new LFApp().focusingPolicy = 1;
+		LFApp.focusingPolicy = 1;
 
 		new CGCursor();
 		new CGFontManager('/Environment/Library/Fonts');
-		new LFWorkspace().desktopImage = '/Library/Desktop Images/249785.png';
-		new LFWorkspace().add();
+		LFWorkspace.shared.desktopImage = '/Library/Desktop Images/249785.png';
+		LFWorkspace.shared.add();
 
-		new LFMenubar().mainMenu.items = [
+		LFMenubar.shared.mainMenu.items = [
 			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateLogo' }),
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: CFLocalizedString('About This Poppy'), action: () => this.about() }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: CFLocalizedString('Environment Preferences'), action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') }),
+					new LFMenuItem({ title: CFLocalizedString('Environment Preferences'), action: () => LFWorkspace.shared.launchApplication('/Applications/Environment Preferences') }),
 					new LFMenuItem({ title: CFLocalizedString('Dock'),
 						menu: new LFMenu({ items: [
 							new LFMenuItem({ title: 'Test Alert', action: () => new LFAlert() }),
@@ -41,14 +41,14 @@ return class {
 					}),
 					new LFMenuItem().separator(),
 					new LFMenuItem({ title: CFLocalizedString('Force Quit'), action: () => this.forceQuit() }),
-					new LFMenuItem({ title: CFLocalizedString('Activity Monitor'), action: () => new LFWorkspace().launchApplication('/Applications/Activity Monitor') }),
+					new LFMenuItem({ title: CFLocalizedString('Activity Monitor'), action: () => LFWorkspace.shared.launchApplication('/Applications/Activity Monitor') }),
 					new LFMenuItem().separator(),
 					new LFMenuItem({ title: CFLocalizedString('Relaunch'), action: () => _request('relaunch') }),
 					new LFMenuItem({ title: CFLocalizedString('Quit'), action: () => _request('quit') })
 				] })
 			})
 		]
-		new LFMenubar().statusMenu.items = [
+		LFMenubar.shared.statusMenu.items = [
 			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateNotifications' }), action: () => alert('HUHU') }),
 			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateSearch' }),
 				menu: new LFMenu({ items: [
@@ -72,7 +72,7 @@ return class {
 					new LFMenuItem({ title: CFLocalizedString('View as Analog') }),
 					new LFMenuItem({ title: CFLocalizedString('View as Digital') }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: CFLocalizedString('Date & Time Preferences...'), action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') })
+					new LFMenuItem({ title: CFLocalizedString('Date & Time Preferences...'), action: () => LFWorkspace.shared.launchApplication('/Applications/Environment Preferences') })
 				] })
 			}),
 			new LFMenuItem({ title: '', image: new LFImage({ width: 24, shared: 'TemplateBatteryConnected' }),
@@ -80,20 +80,20 @@ return class {
 					new LFMenuItem({ title: '100% Remaining' }),
 					new LFMenuItem({ title: 'Power Source: Charger' }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: 'Energy Saver Preferences...', action: () => new LFWorkspace().launchApplication('/Applications/Environment Preferences') })
+					new LFMenuItem({ title: 'Energy Saver Preferences...', action: () => LFWorkspace.shared.launchApplication('/Applications/Environment Preferences') })
 				] })
 			})
 		]
 
 		this.launchServices();
-		CFArray.addObserver(new LFWorkspace().launchedApplications, () => this.launchServices());
+		CFArray.addObserver(LFWorkspace.shared.launchedApplications, () => this.launchServices());
 	}
 
 	launchServices() {
 		for(let v of this.__services) {
-			if(!v.error && !new LFWorkspace().getApplication(v.identifier)) {
+			if(!v.error && !LFWorkspace.shared.getApplication(v.identifier)) {
 				try {
-					new LFWorkspace().launchApplication(v.URL);
+					LFWorkspace.shared.launchApplication(v.URL);
 				} catch {
 					v.error = true;
 				}
@@ -127,7 +127,7 @@ return class {
 				return variable;
 			})(),
 			software = _request('version', 'DE').join(' '),
-			window = new LFApp().windows.find(v => v.tag == 'about');
+			window = LFApp.windows.find(v => v.tag == 'about');
 
 		if(!window) {
 			new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
@@ -160,7 +160,7 @@ return class {
 	}
 
 	forceQuit() {
-		let window = new LFApp().windows.find(v => v.tag == 'forceQuit');
+		let window = LFApp.windows.find(v => v.tag == 'forceQuit');
 
 		if(!window) {
 			new LFWindow({ tag: 'forceQuit', width: 384, style: ['titled', 'closable', 'resizable'], title: CFLocalizedString('Force Quit Applications'),
@@ -174,8 +174,8 @@ return class {
 	}
 
 	willQuit() {
-		new CGCursor().remove();
-		new LFWorkspace().remove();
+		CGCursor.shared.remove();
+		LFWorkspace.shared.remove();
 
 	//	_request('quit');
 	}

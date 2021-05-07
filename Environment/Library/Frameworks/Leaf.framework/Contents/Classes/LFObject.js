@@ -88,7 +88,7 @@ return class {
 	}
 
 	destroy() {
-		let environment = new CFProcessInfo().environment;
+		let environment = CFProcessInfo.shared.environment;
 
 		this.remove();
 		environment[this.class].destroyInstance?.();

@@ -1,5 +1,20 @@
-return $CFShared.@Title || _single(class {
+// noinspection JSAnnotator
+return $CFShared.@Title || class {
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
 	constructor() {
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			console.error(0); return;
+		}
+
 		this.__element;
 		this.__event;
 		this.__type;
@@ -51,4 +66,4 @@ return $CFShared.@Title || _single(class {
 
 		return this;
 	}
-});
+}

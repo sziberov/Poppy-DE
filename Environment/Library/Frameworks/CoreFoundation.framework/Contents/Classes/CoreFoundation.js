@@ -11,12 +11,12 @@ _import('@Title', 'CFIdentity');
 _import('@Title', 'CFEventEmitter');
 _import('@Title', 'CFArray');
 _import('@Title', 'CFObject');
-_import('@Title', 'CFBundle');
 _import('@Title', 'CFString');
+_import('@Title', 'CFBundle');
 _import('@Title', 'CFLocalizedString');
 
 if(!_request('seInfo', '@Title')) {
 	_request('seCreate', 'read', '@Title');
 }
 
-new CFProcessInfo().environment.$CFShared = _request('seInfo', '@Title').environment;
+CFProcessInfo.shared.environment.$CFShared = _request('seInfo', '@Title').environment;

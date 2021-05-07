@@ -1,5 +1,16 @@
-return $CFShared.@Title || _single(class {
+// noinspection JSAnnotator
+return $CFShared.@Title || class {
+	static get shared() {
+		return this.__shared;
+	}
+
 	constructor(URL) {
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			console.error(0); return;
+		}
+
 		this.URL = URL;
 		this.element = $('<style type="text/css"/>');
 		this.fonts = []
@@ -50,4 +61,4 @@ return $CFShared.@Title || _single(class {
 
 		return this;
 	}
-});
+}

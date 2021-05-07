@@ -2,9 +2,9 @@ return class {
 	constructor() {
 		_import('Leaf');
 
-		new LFApp().quitableBySingleWindow = true;
+		LFApp.quitableBySingleWindow = true;
 
-		new LFApp().menuItems = [
+		LFApp.menuItems = [
 			new LFMenuItem({ title: CFLocalizedString('File'),
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: CFLocalizedString('Switch'), action: () => this.switch() }),
@@ -21,7 +21,7 @@ return class {
 			new LFMenuItem({ title: CFLocalizedString('Help') })
 		]
 
-		new LFWindow({ x: 'center', y: 'center', width: 512, height: 256, title: new LFApp().title,
+		new LFWindow({ x: 'center', y: 'center', width: 512, height: 256, title: LFApp.title,
 			toolbar: new LFToolbar({ subviews: [
 				new LFButton({ title: undefined, image: new LFImage({ shared: 'TemplateQuit' }), action: () => this.quit() }),
 				new LFButton({ title: undefined, image: new LFImage({ shared: 'TemplateInfo' }), action: () => this.information() })
@@ -31,15 +31,15 @@ return class {
 			] })
 		});
 
-		this.table = new LFApp().windows[0].view.subviews[0]
+		this.table = LFApp.windows[0].view.subviews[0]
 		this.update();
-		CFArray.addObserver(new LFWorkspace().launchedApplications, () => this.update());
+		CFArray.addObserver(LFWorkspace.shared.launchedApplications, () => this.update());
 	}
 
 	update() {
 		let update = []
 
-		for(let v of new LFWorkspace().launchedApplications) {
+		for(let v of LFWorkspace.shared.launchedApplications) {
 			update.push(
 				new LFTableRow({ title: v.title, data: { application: v }, action: function(v) {
 					return () => v.focus()
@@ -61,7 +61,7 @@ return class {
 		let application = this.table.activeRow?.data.application;
 
 		if(application) {
-			let window = new LFApp().windows.find(v => v.tag == application.identifier),
+			let window = LFApp.windows.find(v => v.tag == application.identifier),
 				process = _request('info', application.processIdentifier);
 
 			if(!window) {

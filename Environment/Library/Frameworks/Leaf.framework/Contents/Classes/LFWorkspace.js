@@ -13,8 +13,7 @@ return $CFShared.@Title || class extends LFView {
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;
 		} else {
-			return this.constructor.__shared;
-		//	console.error(0); return;
+			console.error(0); return;
 		}
 
 		this.class = '@Title';
@@ -33,7 +32,7 @@ return $CFShared.@Title || class extends LFView {
 		CFEventEmitter.addHandler('processListChanged', (a) => {
 			if(a.event == 'removed') {
 				let application = this.launchedApplications.find(v => v.processIdentifier == a.value),
-					menu = new LFMenubar().applicationMenu,
+					menu = LFMenubar.shared.applicationMenu,
 					focused = menu.application;
 
 				this.launchedApplications.remove(application);

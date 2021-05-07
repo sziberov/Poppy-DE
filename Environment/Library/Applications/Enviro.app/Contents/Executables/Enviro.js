@@ -2,7 +2,7 @@ return class {
 	constructor() {
 		_import('Leaf');
 
-		new LFApp().menuItems = [
+		LFApp.menuItems = [
 			new LFMenuItem({ title: CFLocalizedString('File'),
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: CFLocalizedString('New Window...'), action: () => this.window() })
@@ -12,7 +12,7 @@ return class {
 			new LFMenuItem({ title: CFLocalizedString('View'),
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: CFLocalizedString('Toggle Menubar Transparency'), action: () => {
-						new LFMenubar().transparent = !new LFMenubar().transparent;
+						LFMenubar.shared.transparent = !LFMenubar.shared.transparent;
 					} })
 				] })
 			}),
@@ -21,21 +21,21 @@ return class {
 			new LFMenuItem({ title: CFLocalizedString('Help') })
 		]
 
-		CFArray.addObserver(new LFWorkspace().subviews, (a) => {
-			if(a.value.application == new LFLaunchedApplication() && a.value.class == 'LFWindow') {
+		CFArray.addObserver(LFWorkspace.shared.subviews, (a) => {
+			if(a.value.application == LFLaunchedApplication.shared && a.value.class == 'LFWindow') {
 				let list = []
 
-				for(let v of new LFApp().windows) {
+				for(let v of LFApp.windows) {
 					if(v.level == 1) {
 						list.push(new LFMenuItem({ title: v.title || '[Titleless]', action: () => v.focus() }));
 					}
 				}
 				if(list.length > 0) {
 					list.unshift(new LFMenuItem().separator());
-					new LFApp().menuItems.find(v => v.title == CFLocalizedString('Window')).menu = new LFMenu({ items: [
-						new LFMenuItem({ title: CFLocalizedString('Close'), action: () => new LFApp().windows.find(v => v.main == true).close() }),
-						new LFMenuItem({ title: CFLocalizedString('Minimize'), action: () => new LFApp().windows.find(v => v.main == true).minimize() }),
-						new LFMenuItem({ title: CFLocalizedString('Maximize'), action: () => new LFApp().windows.find(v => v.main == true).maximize() }),
+					LFApp.menuItems.find(v => v.title == CFLocalizedString('Window')).menu = new LFMenu({ items: [
+						new LFMenuItem({ title: CFLocalizedString('Close'), action: () => LFApp.windows.find(v => v.main == true).close() }),
+						new LFMenuItem({ title: CFLocalizedString('Minimize'), action: () => LFApp.windows.find(v => v.main == true).minimize() }),
+						new LFMenuItem({ title: CFLocalizedString('Maximize'), action: () => LFApp.windows.find(v => v.main == true).maximize() }),
 						new LFMenuItem().separator(),
 						new LFMenuItem({ title: CFLocalizedString('Align Windows'),
 							menu: new LFMenu({ items: [
@@ -46,7 +46,7 @@ return class {
 						...list
 					] });
 				} else {
-					new LFApp().menuItems.find(v => v.title == CFLocalizedString('Window')).menu = undefined;
+					LFApp.menuItems.find(v => v.title == CFLocalizedString('Window')).menu = undefined;
 				}
 			}
 		});
@@ -57,7 +57,7 @@ return class {
 	}
 
 	window() {
-		let window = new LFWindow({ width: 384, height: 256, title: new LFApp().bundle.properties.CFBundleTitle,
+		let window = new LFWindow({ width: 384, height: 256, title: LFApp.bundle.properties.CFBundleTitle,
 				toolbar: new LFToolbar({ subviews: [
 					new LFButton({ title: CFLocalizedString('Alert'), action: () => new LFAlert({ message: 'Clicked.' }) })
 				] }),
@@ -72,11 +72,11 @@ return class {
 			table = []
 
 		table.push(new LFTableRow({ title: 'None', action: () => {
-			new LFWorkspace().desktopImage = '';
+			LFWorkspace.shared.desktopImage = '';
 		} }));
 		for(let v of _request('readDir', '/Library/Desktop Images')) {
 			table.push(new LFTableRow({ title: v.name, action: function(v) {
-				return () => new LFWorkspace().desktopImage = '/Library/Desktop Images/'+v.name;
+				return () => LFWorkspace.shared.desktopImage = '/Library/Desktop Images/'+v.name;
 			}.bind(this)(v) }));
 		}
 		window.view.subviews[1].subviews[0].subviews = table;

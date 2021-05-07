@@ -14,7 +14,7 @@ _import('@Title', 'CGElement');
 _import('@Title', 'CGCursor');
 _import('@Title', 'CGFontManager');
 
-new CFProcessInfo().environment.$CGAppearance = new CGAppearance('@Resources/Appearance.css').add();
+CFProcessInfo.shared.environment.$CGAppearance = new CGAppearance('@Resources/Appearance.css').add();
 
 $CFShared.CGAppearance = CGAppearance;
 $CFShared.CGCursor = CGCursor;
