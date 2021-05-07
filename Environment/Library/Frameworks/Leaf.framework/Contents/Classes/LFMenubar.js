@@ -1,6 +1,6 @@
 return $CFShared.@Title || _single(class extends LFView {
 	constructor(_) {
-		super(_);
+		super(...arguments);
 		this.class = '@Title';
 		this._ = {
 			...this._,

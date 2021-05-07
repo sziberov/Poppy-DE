@@ -1,6 +1,6 @@
 return class extends LFControl {
 	constructor(_) {
-		super(_);
+		super(...arguments);
 		this.class = '@Title';
 		this._ = {
 			...this._,

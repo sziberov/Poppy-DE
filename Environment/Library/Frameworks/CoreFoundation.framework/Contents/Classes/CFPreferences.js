@@ -1,7 +1,12 @@
+// noinspection JSAnnotator
 return class {
 	constructor(identifier) {
+		if(typeof identifier !== 'string') {
+			return;
+		}
+
 		this.__user = new CFProcessInfo().user;
-		this.__identifier;
+		this.__identifier = identifier;
 		this.__properties;
 
 		let file =
@@ -10,11 +15,10 @@ return class {
 				CFFile.content('/Environment/Library/Preferences/'+identifier+'.plist') ||
 				undefined;
 
-		if(!file) {
-			return undefined;
-		} else {
-			this.__identifier = identifier;
+		if(file) {
 			this.__properties = JSON.parse(file);
+		} else {
+			return;
 		}
 	}
 

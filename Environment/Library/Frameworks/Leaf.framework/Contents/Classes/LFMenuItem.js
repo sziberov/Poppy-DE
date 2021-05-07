@@ -1,6 +1,6 @@
 return class extends LFButton {
 	constructor(_) {
-		super(_);
+		super(...arguments);
 		this.class = '@Title';
 		this._ = {
 			...this._,

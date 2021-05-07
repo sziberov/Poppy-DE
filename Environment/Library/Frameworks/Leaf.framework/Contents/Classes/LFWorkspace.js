@@ -1,7 +1,22 @@
 // noinspection JSAnnotator
-return $CFShared.@Title || _single(class extends LFView {
+return $CFShared.@Title || class extends LFView {
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
 	constructor(_) {
-		super(_);
+		super(...arguments);
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			return this.constructor.__shared;
+		//	console.error(0); return;
+		}
+
 		this.class = '@Title';
 		this._ = {
 			...this._,
@@ -85,7 +100,7 @@ return $CFShared.@Title || _single(class extends LFView {
 	}
 
 	launchApplication(URL, ...arguments_) {
-		URL = URL.endsWith('.app') ? URL : URL+='.app';
+		URL = URL.endsWith('.app') ? URL : URL+'.app';
 
 		try {
 			var bundle = new CFBundle(URL),
@@ -126,4 +141,4 @@ return $CFShared.@Title || _single(class extends LFView {
 	getApplication(identifier) {
 		return this.launchedApplications.find(v => v.identifier == identifier);
 	}
-});
+}
