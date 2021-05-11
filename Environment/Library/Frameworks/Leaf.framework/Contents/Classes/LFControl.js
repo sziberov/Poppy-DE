@@ -1,53 +1,58 @@
+// noinspection JSAnnotator
 return class extends LFView {
-	constructor(_) {
+	__action;
+
+	class = '@Title';
+
+	constructor({ action } = {}) {
 		super(...arguments);
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			action: undefined,
-			..._
-		}
-		this.action = this.action;
+
+		this.action = action;
 	}
 
 	get highlighted() {
-		return this.attributes['highlighted'] == '' ? true : false;
+		return this.attributes['highlighted'] === '';
 	}
 
 	get activated() {
-		return this.attributes['activated'] == '' ? true : false;
+		return this.attributes['activated'] === '';
 	}
 
 	get enabled() {
-		return this.attributes['enabled'] == '' ? true : false;
+		return this.attributes['enabled'] === '';
 	}
 
 	get action() {
-		return this._.action;
+		return this.__action;
 	}
 
 	set highlighted(value) {
-		this.attributes['highlighted'] = value == true ? '' : undefined;
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.attributes['highlighted'] = value ? '' : undefined;
 	}
 
 	set activated(value) {
-		this.attributes['activated'] = value == true ? '' : undefined;
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.attributes['activated'] = value ? '' : undefined;
 	}
 
 	set action(value) {
-		if(typeof value === 'function') {
-			this._.action = value;
-			this.attributes['enabled'] = '';
-		} else {
-			this._.action = undefined;
-			this.attributes['enabled'] = undefined;
+		if(value && typeof value !== 'function') {
+			throw new TypeError();
 		}
+
+		this.__action = value;
+		this.attributes['enabled'] = value ? '' : undefined;
 	}
 
 	click() {
-		if(this.action) {
-			this.action();
-		}
+		this.action?.();
 	}
 
 	mouseover() {
@@ -61,7 +66,7 @@ return class extends LFView {
 
 	mousedown(event, exceptView) {
 		event.stopPropagation();
-		if(event.button == 0) {
+		if(event.button === 0) {
 			this.activated = true;
 		}
 		LFMenu.deactivateAll(exceptView);

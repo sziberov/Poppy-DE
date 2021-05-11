@@ -1,74 +1,85 @@
+// noinspection JSAnnotator
 return class extends LFControl {
-	constructor(_) {
+	__minWidth;
+	__title;
+	__image;
+	__menu;
+
+	class = '@Title';
+
+	constructor({ minWidth, title = 'Button', image, menu } = {}) {
 		super(...arguments);
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			minWidth: undefined,
-			title: 'Button',
-			image: undefined,
-			menu: undefined,
-			..._
-		}
-		this.minWidth = this.minWidth;
-		this.title = this.title;
-		this.image = this.image;
-		this.menu = this.menu;
+
+		this.minWidth = minWidth;
+		this.title = title;
+		this.image = image;
+		this.menu = menu;
 
 	//	this.attributes['tabIndex'] = 0;
 	}
 
 	get minWidth() {
-		return this._.minWidth;
+		return this.__minWidth;
 	}
 
 	get title() {
-		return this._.title;
+		return this.__title;
 	}
 
 	get image() {
-		return this._.image;
+		return this.__image;
 	}
 
 	get menu() {
-		return this._.menu;
+		return this.__menu;
 	}
 
 	set minWidth(value) {
-		this._.minWidth = value;
-		this.style['min-width'] = value;
+		if(value) {
+			if(typeof value !== 'number')	throw new TypeError();
+			if(value < 0)					throw new RangeError();
+		}
+
+		this.__minWidth = value;
+		this.style['min-width'] = value || '';
 	}
 
 	set title(value) {
-		this._.title = value;
-		this.attributes['title'] = value?.length > 0 ? value : undefined;
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
+		}
+
+		this.__title = value;
+		this.attributes['title'] = value === '' ? undefined : value;
 	}
 
 	set image(value) {
+		if(value && value.class !== 'LFImage') {
+			throw new TypeError();
+		}
+
+		this.__image = value;
+		this.attributes['image'] = value ? '' : undefined;
 		this.image?.destroy();
-		if(value?.class == 'LFImage') {
-			this._.image = value;
-			this.attributes['image'] = '';
+		if(value) {
 			this.addSubviews([value]);
-		} else {
-			this._.image = undefined;
-			this.attributes['image'] = undefined;
 		}
 	}
 
 	set menu(value) {
+		if(value && value.class !== 'LFMenu') {
+			throw new TypeError();
+		}
+
+		this.__menu = value;
+		this.attributes['menu'] = value ? '' : undefined;
 		this.menu?.destroy();
-		if(value?.class == 'LFMenu') {
-			this._.menu = value;
+		if(value) {
 			this.attributes['enabled'] = '';
-			this.attributes['menu'] = '';
 			this.addSubviews([value]);
-		} else {
-			this._.menu = undefined;
-			if(!this.action) {
-				this.attributes['enabled'] = undefined;
-				this.attributes['menu'] = undefined;
-			}
+		} else
+		if(!this.action) {
+			this.attributes['enabled'] = undefined;
 		}
 	}
 
@@ -84,8 +95,9 @@ return class extends LFControl {
 
 		if(!this.action && this.menu && event.button == 0) {
 			this.menu.setActivated('Toggle', this);
-		} else {
-
+		} else
+		if(this.action && this.menu && event.button == 0) {
+			// TODO
 		}
 	}
 

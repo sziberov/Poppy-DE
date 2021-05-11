@@ -1,7 +1,9 @@
+// noinspection JSAnnotator
 return class extends LFObject {
+	class = '@Title';
+
 	constructor() {
 		super();
-		this.class = '@Title';
 	}
 
 	create() {

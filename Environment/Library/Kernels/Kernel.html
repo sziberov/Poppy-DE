@@ -46,12 +46,15 @@
 					Array: Array,
 					console: console,
 					Date: Date,
+					Error: Error,
 					JSON: JSON,
 					Math: Math,
 					Number: Number,
 					Object: Object,
 					parseInt: parseInt,
-					Proxy: Proxy
+					Proxy: Proxy,
+					RangeError: RangeError,
+					TypeError: TypeError
 				}
 
 				$(() => {
@@ -603,14 +606,27 @@
 				}
 			}
 
-			drMove(layer, type, x = 0, y = 0, width, height, toX = 0, toY = 0, toLayer) {
+			/**
+			 * Переносит часть слоя в другое место.
+			 *
+			 * @param {!HTMLCanvasElement}	layer	Исходный слой.
+			 * @param {!('cut'|'copy')}		type	Тип переноса: вырезка или копирование.
+			 * @param {?number}				x		Исходное положение X.
+			 * @param {?number}				y		Исходное положение Y.
+			 * @param {!number}				width	Ширина области.
+			 * @param {!number}				height	Высота области.
+			 * @param {?HTMLCanvasElement}	layer_	Конечный слой. Если не указан, используется исходный.
+			 * @param {?number}				x_		Конечное положение X.
+			 * @param {?number}				y_		Конечное положение Y.
+			 */
+			drMove(layer, type, x = 0, y = 0, width, height, layer_, x_ = 0, y_ = 0) {
 				if(!['cut', 'copy'].includes(type) || [
 					typeof x,
 					typeof y,
 					typeof width,
 					typeof height,
-					typeof toX,
-					typeof toY
+					typeof x_,
+					typeof y_
 				].some(v => v !== 'number')) {
 					console.error(0); return;
 				}
@@ -621,10 +637,10 @@
 				if(type == 'cut') {
 					this.drClear(layer, x, y, width, height);
 				}
-				if(!toLayer instanceof HTMLCanvasElement) {
-					context.putImageData(data, toX, toY);
+				if(!layer_ instanceof HTMLCanvasElement) {
+					context.putImageData(data, x_, y_);
 				} else {
-					toLayer.context2d.putImageData(data, toX, toY);
+					layer_.context2d.putImageData(data, x_, y_);
 				}
 			}
 
@@ -848,9 +864,9 @@
 			/**
 			 * Создаёт общее окружение для передачи информации между процессами.
 			 *
-			 * @param {?number} processId Идентификатор процесса.
-			 * @param {!string} access Уровень доступа.
-			 * @param {?string} title Название общего окружения.
+			 * @param {?number}					processId	Идентификатор процесса.
+			 * @param {!('read'|'readWrite')}	access		Уровень доступа: чтение и чтение/запись.
+			 * @param {?string}					title		Название общего окружения.
 			 */
 			seCreate(processId, access, title) {
 				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1;
@@ -1336,9 +1352,9 @@
 			/**
 			 * Импортирует классы из фреймворка в окружение процесса.
 			 *
-			 * @param {!object} process Объект процесса.
-			 * @param {!string} framework Название фреймворка.
-			 * @param {?string} class_ Название класса.
+			 * @param {!object} process		Объект процесса.
+			 * @param {!string} framework	Название фреймворка.
+			 * @param {?string} class_		Название класса.
 			 */
 			classImport(process, framework, class_) {
 				class_ = class_ ?? framework;
@@ -1377,24 +1393,24 @@
 			}
 
 			/**
-			 * Интерфейс для обращения к полям класса с поддержкой защищённых и приватных полей, а также друзей:
-			 * - classProtected(<process.id>, this, <class>) - Возвращает <class>.
-			 * - classProtected(<process.id>, this, <class>, <field>) - Возвращает поле.
-			 * - classProtected(<process.id>, this, <class>, <field>, 'call') - Возвращает определение метода.
-			 * - classProtected(<process.id>, this, <class>, <field>, 'assignment') - Возвращает <class> с мыслью о том, что в его поле обязательно будет происходить запись, поэтому возможен пустой объект {} (в случае отказа).
+			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и приватных полей, а также друзей:
+			 * - classProtected(1, this, Class) - Возвращает класс.
+			 * - classProtected(1, this, Class, 'field') - Возвращает поле.
+			 * - classProtected(1, this, Class, 'field', 'call') - Возвращает определение метода.
+			 * - classProtected(1, this, Class, 'field', 'assignment') - Возвращает класс с мыслью о том, что в его поле обязательно будет происходить запись, поэтому возможен пустой объект {} (в случае отказа).
 			 *
 			 * Модификаторами доступа полей являются префиксы:
-			 * - __<field> - Приватное поле, видимое только родителю.
-			 * - _<field> - Защищённое поле, видимое родителю и его детям.
-			 * - <field> - Публичное поле, видимое всем.
+			 * - __field - Приватное поле, видимое только родителю.
+			 * - _field - Защищённое поле, видимое родителю и его детям.
+			 * - field - Публичное поле, видимое всем.
 			 *
-			 * Друзья класса определяются по массиву <class>.\_\_friends__. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только из контекста класса, коему он принадлежит.
+			 * Друзья класса определяются в массиве Class.\_\_friends__. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только из контекста класса, коему он принадлежит.
 			 *
-			 * @param {!number} processId
-			 * @param {!object} caller
-			 * @param {!object} class_
-			 * @param {string} field
-			 * @param {string} type
+			 * @param {?number}					processId	Идентификатор процесса.
+			 * @param {!Object}					caller		Обращающийся контекст.
+			 * @param {!Object}					class_		Класс обращения.
+			 * @param {?string}					field		Поле обращения.
+			 * @param {?('assignment'|'call')}	type		Тип обращения.
 			 */
 			classProtected(processId, caller, class_, field, type) {
 				let environment = this.processes.find(v => v.id == processId)?.environment,

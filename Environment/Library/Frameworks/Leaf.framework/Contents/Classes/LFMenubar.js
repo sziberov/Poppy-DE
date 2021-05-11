@@ -8,7 +8,15 @@ return $CFShared.@Title || class extends LFView {
 		return this.__shared;
 	}
 
-	constructor(_) {
+	static destroyShared() {
+		this.__shared = undefined;
+	}
+
+	__transparent;
+
+	class = '@Title';
+
+	constructor({ transparent = false } = {}) {
 		super(...arguments);
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;
@@ -16,14 +24,8 @@ return $CFShared.@Title || class extends LFView {
 			console.error(0); return;
 		}
 
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			transparent: false,
-			..._
-		}
+		this.transparent = transparent;
 
-		this.attributes['transparent'] = this._.transparent == true ? '' : undefined;
 		this.subviews.add(
 			new LFMenu({ tag: 'main', autoactivatesItems: false }),
 			new LFMenu({ tag: 'application', autoactivatesItems: false }),
@@ -35,23 +37,27 @@ return $CFShared.@Title || class extends LFView {
 	}
 
 	get transparent() {
-		return this._.transparent;
+		return this.__transparent;
 	}
 
 	get mainMenu() {
-		return this.subviews.find(v => v.tag == 'main');
+		return this.subviews.find(v => v.tag === 'main');
 	}
 
 	get applicationMenu() {
-		return this.subviews.find(v => v.tag == 'application');
+		return this.subviews.find(v => v.tag === 'application');
 	}
 
 	get statusMenu() {
-		return this.subviews.find(v => v.tag == 'status');
+		return this.subviews.find(v => v.tag === 'status');
 	}
 
 	set transparent(value) {
-		this._.transparent = value;
-		this.attributes['transparent'] = value == true ? '' : undefined;
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.__transparent = value;
+		this.attributes['transparent'] = value === true ? '' : undefined;
 	}
 }

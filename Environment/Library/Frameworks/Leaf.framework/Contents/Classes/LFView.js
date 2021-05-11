@@ -1,19 +1,35 @@
 // noinspection JSAnnotator
 return class extends LFResponder {
-	constructor(_) {
+	__superview;
+	__subviews = new CFArray();
+	__subviews_;
+	__layer = new CGLayer();
+	__tag;
+	__type;
+	__tight;
+	__xAlign;
+	__yAlign;
+
+//	_constraints = new CFArray();
+
+	class = '@Title';
+
+	constructor({ tag, type = 'horizontal', tight = false, xAlign = 'start', yAlign = 'start', subviews } = {}) {
 		super();
 
-		this.class = '@Title';
-		this._ = {
-			tag: undefined,
-			..._
-		}
+		this.__subviews_ = subviews;
+		this.__type = type;
+		this.__tight = tight;
+		this.__xAlign = xAlign;
+		this.__yAlign = yAlign;
 
-		this._constraints = new CFArray();
-		this.__subviews = new CFArray();
+		this.tag = tag;
 
-		this.superview;
 	//	CFArray.addObserver(this.__subviews, () => {});
+	}
+
+	get superview() {
+		return this.__superview;
 	}
 
 	get subviews() {
@@ -21,38 +37,45 @@ return class extends LFResponder {
 	}
 
 	get tag() {
-		return this._.tag;
+		return this.__tag;
+	}
+
+	set superview(value) {
+		this.__superview = value;
 	}
 
 	set subviews(value) {
+		if(value && !Array.isArray(value)) {
+			throw new TypeError();
+		}
+
 		for(let k = this.subviews.length; k--;) {
 			this.subviews[k].destroy();
 		}
-		this.addSubviews(value);
+		if(value) {
+			this.addSubviews(value);
+		}
 	}
 
 	set tag(value) {
-		this._.tag = value;
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
+		}
+
+		this.__tag = value;
 	}
 
 	create() {
-		if(this.class == '@Title') {
-			this._ = {
-				type: 'horizontal',
-				tight: false,
-				xAlign: 'start',
-				yAlign: 'start',
-				subviews: [],
-				...this._
-			}
-
+		if(this.class === '@Title') {
 			this.attributes = {
-				'vertical': this._.type == 'vertical' ? '' : undefined,
-				'tight': this._.tight == true ? '' : undefined,
-				['x'+this._.xAlign]: ['center', 'end'].includes(this._.xAlign) ? '' : undefined,
-				['y'+this._.yAlign]: ['center', 'end', 'stretch'].includes(this._.yAlign) ? '' : undefined
+				'vertical': this.__type === 'vertical' ? '' : undefined,
+				'tight': this.__tight === true ? '' : undefined,
+				['x'+this.__xAlign]: ['center', 'end'].includes(this.__xAlign) ? '' : undefined,
+				['y'+this.__yAlign]: ['center', 'end', 'stretch'].includes(this.__yAlign) ? '' : undefined
 			}
-			this.subviews.add(...this._.subviews);
+			if(this.__subviews_) {
+				this.subviews = this.__subviews_;
+			}
 		}
 
 		return super.create();
@@ -77,7 +100,7 @@ return class extends LFResponder {
 
 						view.subviews.add(this);
 					}
-					if(!this.element || !$.contains(view.element[0], this.element[0])) {
+					if(!this.element && view.element || view.element && !$.contains(view.element[0], this.element[0])) {
 						did = true;
 
 						this.remove();
@@ -177,7 +200,7 @@ return class extends LFResponder {
 			this.remove();
 			this.superview.subviews.remove(this);
 		//	this.superview.subviews = this.superview.subviews.filter(v => v !== this);
-			window[this.class].destroyInstance?.();
+			this.constructor.destroyShared?.();
 		}
 	}
 }

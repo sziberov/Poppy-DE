@@ -8,7 +8,16 @@ return $CFShared.@Title || class extends LFView {
 		return this.__shared;
 	}
 
-	constructor(_) {
+	static destroyShared() {
+		this.__shared = undefined;
+	}
+
+	__launchedApplications = new CFArray();
+	__desktopImage;
+
+	class = '@Title';
+
+	constructor({ desktopImage } = {}) {
 		super(...arguments);
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;
@@ -16,17 +25,7 @@ return $CFShared.@Title || class extends LFView {
 			console.error(0); return;
 		}
 
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			desktopImage: '',
-			..._
-		}
-
-		this.__layer = new CGLayer(CGScreen.frame.width, CGScreen.frame.height);
-		this.__launchedApplications = new CFArray();
-
-		this.desktopImage = this.desktopImage;
+		this.desktopImage = desktopImage;
 
 		this.subviews.add(new LFMenubar({ transparent: true }));
 		CFEventEmitter.addHandler('processListChanged', (a) => {
@@ -61,12 +60,16 @@ return $CFShared.@Title || class extends LFView {
 	}
 
 	get desktopImage() {
-		return this._.desktopImage;
+		return this.__desktopImage;
 	}
 
 	set desktopImage(value) {
-		this._.desktopImage = value;
-		this.style['background-image'] = 'url(\''+value+'\')';
+		if(value && typeof value !== 'string') {
+			throw new TypeError();
+		}
+
+		this.__desktopImage = value;
+		this.style['background-image'] = `url('${ value || '' }')`;
 	}
 
 	mousedown() {
@@ -74,9 +77,9 @@ return $CFShared.@Title || class extends LFView {
 	}
 
 	draw() {
-		let layer = new CGLayer(CGScreen.frame.width, CGScreen.frame.height),
-			menubar = new CGLayer(CGScreen.frame.width, 24),
-			menubarShadow = new CGLayer(menubar.width, menubar.height);
+		let layer = new CGLayer({ width: CGScreen.frame.width, height: CGScreen.frame.height }),
+			menubar = new CGLayer({ width: CGScreen.frame.width, height: 24 }),
+			menubarShadow = new CGLayer({ width: menubar.width, height: menubar.height });
 
 		layer.drawLayer(new CGImage(this.desktopImage), 0, 0, '100', '100');
 		layer.blur(0, 0, menubar.width, menubar.height, 4, true, true);
@@ -92,10 +95,10 @@ return $CFShared.@Title || class extends LFView {
 		layer.drawLayer(menubar);
 		layer.drawLayer(menubarShadow, 0, menubar.height);
 
+		this.__layer.width = CGScreen.frame.width;
+		this.__layer.height = CGScreen.frame.height;
 		this.__layer.drawLayer(layer);
 		this.__layer.draw();
-
-	//	return layer;
 	}
 
 	launchApplication(URL, ...arguments_) {

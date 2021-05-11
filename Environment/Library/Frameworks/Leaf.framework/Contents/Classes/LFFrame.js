@@ -1,16 +1,14 @@
+// noinspection JSAnnotator
 return class extends LFView {
-	constructor(_) {
-		super(...arguments);
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			type: '',
-			subviews: [],
-			..._
-		}
+	__type;
 
-		this.attributes[this._.type] = ['top', 'bottom'].includes(this._.type) ? '' : undefined;
-		this.subviews.add(...this._.subviews);
+	class = '@Title';
+
+	constructor({ type = 'top', subviews } = {}) {
+		super(...arguments);
+
+		this.type = type;
+		this.subviews = subviews;
 	}
 
 	dblclick() {
@@ -29,5 +27,19 @@ return class extends LFView {
 	//	if(!window._.style.includes('fullscreen')) {
 			window.origin = { x: dragX, y: dragY }
 	//	}
+	}
+
+	get type() {
+		return this.__type;
+	}
+
+	set type(value) {
+		if(value) {
+			if(typeof value !== 'string')			throw new TypeError();
+			if(!['top', 'bottom'].includes(value))	throw new RangeError();
+		}
+
+		this.__type = value;
+		this.attributes[value] = value ? '' : undefined;
 	}
 }

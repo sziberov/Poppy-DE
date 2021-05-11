@@ -1,19 +1,57 @@
+// noinspection JSAnnotator
 return class extends LFView {
-	constructor(_) {
+	__string;
+	__size;
+	__weight;
+
+	class = '@Title';
+
+	constructor({ string = 'Text', size = 'medium', weight } = {}) {
 		super(...arguments);
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			string: 'Text',
-			size: 'medium',
-			weight: 'normal',
-			..._
+
+		this.string = string;
+		this.size = size;
+		this.weight = weight;
+	}
+
+	get string() {
+		return this.__string;
+	}
+
+	get size() {
+		return this.__size;
+	}
+
+	get weight() {
+		return this.__weight;
+	}
+
+	set string(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
 		}
 
-		this.attributes = {
-			[this._.size]: ['small', 'big'].includes(this._.size) ? '' : undefined,
-			'bold': this._.weight == 'bold' ? '' : undefined
+		this.__string = value;
+		this.text = value === '' ? undefined : value;
+	}
+
+	set size(value) {
+		if(typeof value !== 'string')					throw new TypeError();
+		if(!['small', 'medium', 'big'].includes(value))	throw new RangeError();
+
+		this.__size = value;
+		for(let v of ['small', 'medium', 'big']) {
+			this.attributes[v] = v === value ? '' : undefined;
 		}
-		this.text = this._.string;
+	}
+
+	set weight(value) {
+		if(value) {
+			if(typeof value !== 'string')	throw new TypeError();
+			if(value !== 'bold')			throw new RangeError();
+		}
+
+		this.__weight = value;
+		this.attributes['bold'] = value ? '' : undefined;
 	}
 }

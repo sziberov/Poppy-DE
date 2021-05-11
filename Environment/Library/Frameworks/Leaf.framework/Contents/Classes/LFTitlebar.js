@@ -1,15 +1,26 @@
+// noinspection JSAnnotator
 return class extends LFView {
-	constructor(_) {
+	__title;
+
+	class = '@Title';
+
+	constructor({ title, subviews } = {}) {
 		super(...arguments);
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			title: '',
-			subviews: [],
-			..._
+
+		this.title = title;
+		this.subviews = subviews;
+	}
+
+	get title() {
+		return this.__title;
+	}
+
+	set title(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
 		}
 
-		this.attributes['title'] = this._.title;
-		this.subviews.add(...this._.subviews);
+		this.__title = value;
+		this.attributes['title'] = value === '' ? undefined : value;
 	}
 }

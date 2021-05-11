@@ -4,6 +4,8 @@ return class {
 		return this.__shared;
 	}
 
+	__application;
+
 	constructor(application) {
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;

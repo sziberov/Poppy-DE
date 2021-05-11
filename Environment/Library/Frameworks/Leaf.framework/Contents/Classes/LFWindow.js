@@ -1,61 +1,81 @@
 // noinspection JSAnnotator
 return class extends LFView {
-	constructor(_) {
+	__application = LFApplication.shared;
+	__hidden = true;
+	__main = false;
+	__x;
+	__y;
+	__width;
+	__height;
+	__background;
+	__level;
+	__style;
+	__title;
+	__toolbar;
+	__view;
+
+	class = '@Title';
+
+	constructor({
+		x = 24,
+		y = 48,
+		width,
+		height,
+		background,
+		level = 1,	//0 = Desktop, 1 = Normal, 2 = Alert
+		style = [
+			'titled',
+			'closable',
+			'minimizable',
+			'resizable',
+		//	'fullscreen',
+		//	'borderless',
+		//	'unifiedTitlebarAndToolbar'
+		],
+		title = 'Window',
+		toolbar,
+		view
+	}) {
 		super(...arguments);
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			x: 24,
-			y: 48,
-			width: undefined,
-			height: undefined,
-			background: undefined,
-			level: 1,	//0: Desktop, 1: Normal, 2: Alert
-			style: [
-				'titled',
-				'closable',
-				'minimizable',
-				'resizable',
-			//	'fullscreen',
-			//	'borderless',
-			//	'unifiedTitlebarAndToolbar'
-			],
-			title: 'Window',
-			toolbar: undefined,
-			view: undefined,
-			..._
+
+		this.origin = {
+			x: x,
+			y: y
+		}
+		this.frame = {
+			width: width,
+			height: height
 		}
 
-		this.__application = LFApplication.shared;
-		this.__hidden = true;
-		this.__main = false;
+		this.__background = background;
+		this.style['background'] = background;
 
-		this.style = {
-			'width': this._.width+'px',
-			'height': this._.height+'px',
-			'background': this._.background
-		}
+		this.__level = [0, 1, 2].includes(level) ? level : 1;
+		this.__style = style;
+		this.__title = title;
+		this.__toolbar = toolbar;
+		this.__view = view;
+
 		this.attributes = {
-			'fullscreen': this._.style.includes('fullscreen') ? '' : undefined,
-			'borderless': this._.style.includes('borderless') ? '' : undefined,
-			'unifiedTitlebarAndToolbar': this._.style.includes('unifiedTitlebarAndToolbar') ? '' : undefined
+			'fullscreen': style.includes('fullscreen') ? '' : undefined,
+			'borderless': style.includes('borderless') ? '' : undefined,
+			'unifiedTitlebarAndToolbar': style.includes('unifiedTitlebarAndToolbar') ? '' : undefined
 		}
-		this.subviews.add(
-			...!this._.style.includes('borderless') ? [
+		this.subviews = [
+			...!style.includes('borderless') ? [
 				new LFFrame({ type: 'top', subviews: [
-					...this._.style.includes('titled') ? [
+					...style.includes('titled') ? [
 						new LFTitlebar({ title: this.title, subviews: [
-							new LFTitlebarButton({ type: 'close',		action: this._.style.includes('closable')		? () => this.close()	: undefined }),
-							new LFTitlebarButton({ type: 'minimize',	action: this._.style.includes('minimizable')	? () => this.minimize()	: undefined }),
-							new LFTitlebarButton({ type: 'maximize',	action: this._.style.includes('resizable')	? () => this.maximize()	: undefined })
+							new LFTitlebarButton({ type: 'close',		action: style.includes('closable')		? () => this.close()	: undefined }),
+							new LFTitlebarButton({ type: 'minimize',	action: style.includes('minimizable')	? () => this.minimize()	: undefined }),
+							new LFTitlebarButton({ type: 'maximize',	action: style.includes('resizable')		? () => this.maximize()	: undefined })
 						] })
 					] : [],
 					...this.toolbar?.class === 'LFToolbar' ? [this.toolbar] : []
 				] }),
 			] : [],
 			...this.view?.class === 'LFView' ? [this.view] : [new LFView()]
-		);
-		this.level = [0, 1, 2].includes(this._.level) ? this._.level : 1;
+		]
 
 		this.add(LFWorkspace.shared);
 	}
@@ -68,11 +88,18 @@ return class extends LFView {
 		return this.__main;
 	}
 
+	get origin() {
+		return {
+			x: this.__x,
+			y: this.__y
+		}
+	}
+
 	get frame() {
 		if(!this.element) {
 			return {
-				width: this._.width,
-				height: this._.height
+				width: this.__width,
+				height: this.__height
 			}
 		} else {
 			return {
@@ -83,23 +110,27 @@ return class extends LFView {
 	}
 
 	get minimized() {
-		return this.attributes['minimized'] == '' ? true : false;
+		return this.attributes['minimized'] === '';
 	}
 
 	get maximized() {
-		return this.element.position().top == 24 && this.element.position().left == 0 && LFWorkspace.shared.element.outerWidth() == this.element.outerWidth() && LFWorkspace.shared.element.outerHeight()-24 == this.element.outerHeight();
+		return this.element.position().top === 24 && this.element.position().left === 0 && LFWorkspace.shared.element.outerWidth() === this.element.outerWidth() && LFWorkspace.shared.element.outerHeight()-24 === this.element.outerHeight();
+	}
+
+	get level() {
+		return this.__level;
 	}
 
 	get title() {
-		return this._.title;
+		return this.__title;
 	}
 
 	get toolbar() {
-		return this._.toolbar;
+		return this.__toolbar;
 	}
 
 	get view() {
-		return this._.view;
+		return this.__view;
 	}
 
 	get application() {
@@ -121,7 +152,7 @@ return class extends LFView {
 		if([false, true].includes(value)) {
 			this.__main = value;
 			if(value) {
-				for(let v of this.get('Siblings', this.class).filter(v => v.application == this.application)) {
+				for(let v of this.get('Siblings', this.class).filter(v => v.application === this.application)) {
 					v.main = false;
 				}
 			}
@@ -129,21 +160,23 @@ return class extends LFView {
 	}
 
 	set origin(value) {
-		value.x = this.element && value.x == 'center' ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : Math.round(value.x);
-		value.y = this.element && value.y == 'center' ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : Math.round(value.y);
+		value.x = this.element && value.x === 'center' ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : value.x;
+		value.y = this.element && value.y === 'center' ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : value.y;
 
+		this.__x = value.x;
+		this.__y = value.y;
 		if(typeof value.x === 'number' && typeof value.y === 'number') {
-			this._.x = value.x;
-			this._.y = value.y;
-			this.style['transform'] = 'translate3d('+value.x+'px, '+value.y+'px, 0)';
+			this.style['transform'] = 'translate3d('+Math.round(value.x)+'px, '+Math.round(value.y)+'px, 0)';
 		}
 	}
 
 	set frame(value) {
-		if(typeof value.width === 'number' && typeof value.height === 'number') {
-			this._.width = value.width;
-			this._.height = value.height;
+		if(typeof value.width === 'number') {
+			this.__width = value.width;
 			this.style['width'] = value.width+'px';
+		}
+		if(typeof value.height === 'number') {
+			this.__height = value.height;
 			this.style['height'] = value.height+'px';
 		}
 	}
@@ -154,7 +187,7 @@ return class extends LFView {
 	}
 
 	didAdd() {
-		this.origin = this._;
+		this.origin = this.origin;
 		this.frame = this.frame;
 
 		this.hidden = false;
@@ -165,8 +198,8 @@ return class extends LFView {
 	center(_direction) {
 		if(this.element) {
 			this.origin = {
-				x: !_direction || _direction == 'Horizontally' ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : this._.x,
-				y: !_direction || _direction == 'Vertically' ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : this._.y
+				x: !_direction || _direction == 'Horizontally' ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : this.__x,
+				y: !_direction || _direction == 'Vertically' ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : this.__y
 			}
 		}
 
@@ -201,13 +234,13 @@ return class extends LFView {
 	}
 
 	close() {
-		if(this._.style.includes('closable')) {
+		if(this.__style.includes('closable')) {
 			this.destroy();
 		}
 	}
 
 	minimize() {
-		if(this._.style.includes('minimizable')) {
+		if(this.__style.includes('minimizable')) {
 			this.attributes['animatedResize'] = '';
 			if(!this.minimized) {
 				this.attributes['minimized'] = '';
@@ -223,7 +256,7 @@ return class extends LFView {
 	}
 
 	maximize() {
-		if(this._.style.includes('resizable')) {
+		if(this.__style.includes('resizable')) {
 			if(!this.maximized) {
 				if(this.minimized) {
 					this.minimize();
@@ -234,9 +267,9 @@ return class extends LFView {
 				this.style['transform'] = 'translate3d(0px, 24px, 0)';
 			} else {
 				this.attributes['animatedResizeOut'] = '';
-				this.style['width'] = this._.width+'px';
-				this.style['height'] = this._.height+'px';
-				this.style['transform'] = 'translate3d('+this._.x+'px, '+this._.y+'px, 0)';
+				this.style['width'] = this.__width+'px';
+				this.style['height'] = this.__height+'px';
+				this.style['transform'] = 'translate3d('+this.__x+'px, '+this.__y+'px, 0)';
 			}
 			_request('timerCreate', 'single', 250, () => {
 				this.attributes['animatedResizeIn'] = undefined;
@@ -252,7 +285,7 @@ return class extends LFView {
 
 		let application = this.__application;
 
-		if(application.quitableBySingleWindow && application.windows.length == 0) {
+		if(application.quitableBySingleWindow && application.windows.length === 0) {
 			application.quit();
 		}
 	}

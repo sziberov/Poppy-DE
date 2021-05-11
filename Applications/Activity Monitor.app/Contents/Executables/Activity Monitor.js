@@ -23,8 +23,8 @@ return class {
 
 		new LFWindow({ x: 'center', y: 'center', width: 512, height: 256, title: LFApp.title,
 			toolbar: new LFToolbar({ subviews: [
-				new LFButton({ title: undefined, image: new LFImage({ shared: 'TemplateQuit' }), action: () => this.quit() }),
-				new LFButton({ title: undefined, image: new LFImage({ shared: 'TemplateInfo' }), action: () => this.information() })
+				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateQuit' }), action: () => this.quit() }),
+				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateInfo' }), action: () => this.information() })
 			] }),
 			view: new LFView({ tight: true, yAlign: 'stretch', subviews: [
 				new LFTable()

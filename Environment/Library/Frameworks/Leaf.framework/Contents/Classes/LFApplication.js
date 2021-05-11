@@ -7,16 +7,16 @@ return class {
 		return this.__shared;
 	}
 
+	__menuItems = new CFArray();
+	__focusingPolicy = 0;
+	__quitableBySingleWindow = false;
+
 	constructor() {
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;
 		} else {
 			console.error(0); return;
 		}
-
-		this.__menuItems = new CFArray();
-		this.__focusingPolicy = 0;
-		this.__quitableBySingleWindow = false;
 
 		this.process.environment.LFApp = @Title.shared;
 		/*
@@ -108,17 +108,21 @@ return class {
 	}
 
 	set focusingPolicy(value) {
-		if([0, 1, 2].includes(value)) {
-			this.__focusingPolicy = value;
-		}
+		if(typeof value !== 'number')	throw new TypeError();
+		if(value < 0 || value > 2)		throw new RangeError();
+
+		this.__focusingPolicy = value;
+
 		this.update('MenuItems');
 		this.update('Windows');
 	}
 
 	set quitableBySingleWindow(value) {
-		if([false, true].includes(value)) {
-			this.__quitableBySingleWindow = value;
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
 		}
+
+		this.__quitableBySingleWindow = value;
 	}
 
 	update(mode) {

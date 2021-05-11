@@ -1,35 +1,11 @@
+// noinspection JSAnnotator
 return class extends LFButton {
-	constructor(_) {
+	class = '@Title';
+
+	constructor({ title = 'MenuItem', menu } = {}) {
 		super(...arguments);
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			title: 'MenuItem',
-			..._
-		}
-		this.menu = this.menu;
-	}
 
-	get menu() {
-		return this._.menu;
-	}
-
-	set menu(value) {
-		this.menu?.destroy();
-		if(value && value.class == 'LFMenu') {
-			this._.menu = value;
-			this.attributes['enabled'] = '';
-			this.attributes['menu'] = '';
-			this.click = undefined;
-			this.addSubviews([value]);
-		} else {
-			this._.menu = undefined;
-			if(!this.action) {
-				this.attributes['enabled'] = undefined;
-				this.attributes['menu'] = undefined;
-				this.click = super.click;
-			}
-		}
+		this.menu = menu;
 	}
 
 	click() {}
@@ -44,7 +20,7 @@ return class extends LFButton {
 			} else {
 				for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
 					if(v.activated) {
-						shouldActivate = true;
+						shouldActivate = true; break;
 					}
 				}
 			}
@@ -60,7 +36,7 @@ return class extends LFButton {
 	}
 
 	mousedown(event) {
-		if(event.button == 0) {
+		if(event.button === 0) {
 			if(this.action && !this.menu) {
 				this.activated = true;
 				for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {

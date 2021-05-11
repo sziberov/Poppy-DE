@@ -3,17 +3,29 @@ return $CFShared.@Title || class {
 	static __friends__ = [this]
 	static __main;
 
-	constructor(width, height) {
-		if(typeof width !== 'number' || typeof height !== 'number') {
-			return;
-		}
-
-		this.__layer = _request('drCreate', width, height);
+	constructor({ x = 0, y = 0, width = 0, height = 0 } = {}) {
+		this.__x;
+		this.__y;
+		this.__layer = _request('drCreate', 0, 0);
 		this.__context = this.__layer.context2d;
+		this.__sublayers = new CFArray();
 
-		if(!@Title.__main) {
-			@Title.__main = this;
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+
+		if(!this.constructor.__main) {
+			this.constructor.__main = this;
 		}
+	}
+
+	get x() {
+		return this.__x;
+	}
+
+	get y() {
+		return this.__y;
 	}
 
 	get width() {
@@ -24,28 +36,36 @@ return $CFShared.@Title || class {
 		return this.__layer.height;
 	}
 
-	get context() {
-		return this.__context;
+	set x(value) {
+		if(typeof value !== 'number')	throw new TypeError();
+		if(value < 0)					throw new RangeError();
+
+		this.__x = value;
+	}
+
+	set y(value) {
+		if(typeof value !== 'number')	throw new TypeError();
+		if(value < 0)					throw new RangeError();
+
+		this.__y = value;
 	}
 
 	set width(value) {
-		if(typeof value !== 'number') {
-			return;
-		}
+		if(typeof value !== 'number')	throw new TypeError();
+		if(value < 0)					throw new RangeError();
 
 		this.__layer.width = value;
 	}
 
 	set height(value) {
-		if(typeof value !== 'number') {
-			return;
-		}
+		if(typeof value !== 'number')	throw new TypeError();
+		if(value < 0)					throw new RangeError();
 
 		this.__layer.height = value;
 	}
 
 	draw() {
-		if(@Title.__main == this) {
+		if(this.constructor.__main == this) {
 			_request('fbWrite', this.__layer);
 		}
 	}

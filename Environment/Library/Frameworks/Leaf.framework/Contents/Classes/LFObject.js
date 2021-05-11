@@ -2,29 +2,26 @@
 return class {
 	static __friends__ = [CFObject]
 
-	constructor() {
-		this.class = '@Title';
-
-		this.__properties = {
-			style: CFObject.observable({}, (k, v) => {
-				if(this.element) {
-					this.element.css(k, v);
+	__properties = {
+		style: CFObject.observable({}, (k, v) => {
+			if(this.element) {
+				this.element.css(k, v);
+			}
+		}),
+		attributes: CFObject.observable({}, (k, v) => {
+			if(this.element) {
+				if(v !== undefined) {
+					this.element.attr(k, v);
+				} else {
+					this.element.removeAttr(k);
 				}
-			}),
-			attributes: CFObject.observable({}, (k, v) => {
-				if(this.element) {
-					if(v !== undefined) {
-						this.element.attr(k, v);
-					} else {
-						this.element.removeAttr(k);
-					}
-				}
-			}),
-			text: ''
-		}
-
-		this.element;
+			}
+		}),
+		text: ''
 	}
+
+	class = '@Title';
+	element;
 
 	get style() {
 		return this.__properties.style;
@@ -91,7 +88,7 @@ return class {
 		let environment = CFProcessInfo.shared.environment;
 
 		this.remove();
-		environment[this.class].destroyInstance?.();
+		this.constructor.destroyShared?.();
 		for(let v in environment) {
 			if(environment.hasOwnProperty(v) && environment[v] == this) {
 				delete environment[v]

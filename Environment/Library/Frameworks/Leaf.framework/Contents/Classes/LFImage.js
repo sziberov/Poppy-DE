@@ -1,39 +1,82 @@
+// noinspection JSAnnotator
 return class extends LFView {
-	constructor(_) {
+	__width;
+	__height;
+	__url;
+
+	class = '@Title';
+
+	constructor({ width = 16, height = 16, url, shared } = {}) {
 		super(...arguments);
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			width: 16,
-			height: 16,
-			url: '',
-			shared: '',
-			..._
-		}
-		this._.url = this._.shared ? new CFBundle('/Environment/Library/Frameworks/CoreTypes.bundle').resourcesURL+'/'+this._.shared+'.icns' : this._.url;
-		this._.url = this._.url.endsWith('.icns') ? this._.url+='/'+this._.width+'x'+this._.height+'.svg' : this._.url;
+
+		this.width = width;
+		this.height = height;
+		this.url = shared ? new CFBundle('/Environment/Library/Frameworks/CoreTypes.bundle').resourcesURL+'/'+shared+'.icns' : url;
 	}
 
 	create() {
 		this.style = {
-			'width': this._.width+'px',
-			'height': this._.height+'px',
-			'background-image': 'url(\''+this._.url+'\')'
+			'width': this.width+'px',
+			'height': this.height+'px',
+			'background-image': `url('${ this.__url }')`
 		}
-		this.attributes['template'] = this._.url.includes('Template') ? '' : undefined;
+		this.attributes['template'] = this.__url.includes('Template') ? '' : undefined;
 
 		return super.create();
 	}
 
+	get width() {
+		return this.__width;
+	}
+
+	get height() {
+		return this.__height;
+	}
+
+	get size() {
+		return {
+			width: this.__width,
+			height: this.__height
+		}
+	}
+
+	get url() {
+		return this.__url;
+	}
+
+	set width(value) {
+		if(typeof value !== 'number')	throw new TypeError();
+		if(value < 0)					throw new RangeError();
+
+		this.__width = value;
+		this.style['width'] = value+'px';
+	}
+
+	set height(value) {
+		if(typeof value !== 'number')	throw new TypeError();
+		if(value < 0)					throw new RangeError();
+
+		this.__height = value;
+		this.style['height'] = value+'px';
+	}
+
 	set size(value) {
-		this._.width = value.width;
-		this._.height = value.height;
-		this.style['width'] = value.width+'px';
-		this.style['height'] = value.height+'px';
+		if(!Array.isArray(value) || !value.width || !value.height) {
+			throw new TypeError();
+		}
+
+		this.width = value.width;
+		this.height = value.height;
 	}
 
 	set url(value) {
-		this._.url = value;
-		this.style['background-image'] = 'url(\''+value+'\')';
+		if(value) {
+			if(typeof value !== 'string')	throw new TypeError();
+			if(value.length < 1)			throw new RangeError();
+		}
+
+		this.__url = value ? value.endsWith('.icns') ? value+'/'+this.width+'x'+this.height+'.svg' : value : undefined;
+		this.style['background-image'] = value ? `url('${ value }')` : '';
+		this.attributes['template'] = value.includes('Template') ? '' : undefined;
 	}
 }

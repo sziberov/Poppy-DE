@@ -1,19 +1,15 @@
 // noinspection JSAnnotator
 return class extends LFView {
-	constructor(_) {
-		super(...arguments);
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			subviews: [],
-			..._
-		}
+	class = '@Title';
 
-		this.subviews.add(...this._.subviews);
+	constructor({ subviews } = {}) {
+		super(...arguments);
+
+		this.subviews = subviews;
 	}
 
 	get activeRow() {
-		return this.subviews.find(v => v.activated == true);
+		return this.subviews.find(v => v.activated);
 	}
 
 	mousedown() {

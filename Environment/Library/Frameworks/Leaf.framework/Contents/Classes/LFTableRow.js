@@ -1,59 +1,48 @@
 // noinspection JSAnnotator
 return class extends LFControl {
-	constructor(_) {
+	__title;
+
+	class = '@Title';
+	data;
+
+	constructor({ title = 'TableRow', data } = {}) {
 		super(...arguments);
-		this.class = '@Title';
-		this._ = {
-			...this._,
-			title: 'TableRow',
-			data: {},
-			..._
-		}
-		this.title = this.title;
-		this.action = this.action;
+
+		this.title = title;
+		this.data = data;
 	}
 
 	get title() {
-		return this._.title;
+		return this.__title;
 	}
 
 	get activated() {
-		return this.attributes['activated'] == '' ? true : false;
-	}
-
-	get data() {
-		return this._.data;
+		return super.activated;
 	}
 
 	set title(value) {
-		this._.title = value;
-		this.attributes['title'] = value;
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
+		}
+
+		this.__title = value;
+		this.attributes['title'] = value === '' ? undefined : value;
 	}
 
 	set activated(value) {
-		return {
-			true: () => {
-				this.attributes['activated'] = '';
-				for(let v of this.get('Siblings', this.class)) {
-					v.activated = false;
-				}
-			},
-			false: () => {
-				this.attributes['activated'] = undefined;
-			}
-		}[value]();
-	}
+		super.activated = value;
 
-	set data(value) {
-		this._.data = value;
+		if(value) {
+			for(let v of this.get('Siblings', this.class)) {
+				v.activated = false;
+			}
+		}
 	}
 
 	click() {}
 
 	dblclick() {
-		if(this.action) {
-			this.action();
-		}
+		this.action?.();
 	}
 
 	mouseleave() {
