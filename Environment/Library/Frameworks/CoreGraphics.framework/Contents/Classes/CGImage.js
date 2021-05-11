@@ -2,6 +2,8 @@
 return class {
 	static __friends__ = [CGLayer]
 
+	__layer;
+
 	constructor(URL, type) {
 		if(typeof URL !== 'string') {
 			console.error(0); return;

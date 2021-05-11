@@ -2,10 +2,8 @@
 return class extends LFButton {
 	class = '@Title';
 
-	constructor({ title = 'MenuItem', menu } = {}) {
+	constructor({ title = 'MenuItem' } = {}) {
 		super(...arguments);
-
-		this.menu = menu;
 	}
 
 	click() {}

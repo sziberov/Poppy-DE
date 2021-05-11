@@ -173,10 +173,10 @@ return class extends LFResponder {
 				return subview;
 				*/
 
-				return this.subviews.filter(v => v.class == value);
+				return this.subviews.filter(v => v.class === value);
 			},
 			TaggedSubviews: () => {
-				return this.subviews.filter(v => v.tag == value);
+				return this.subviews.filter(v => v.tag === value);
 			}
 		}[mode]();
 	}

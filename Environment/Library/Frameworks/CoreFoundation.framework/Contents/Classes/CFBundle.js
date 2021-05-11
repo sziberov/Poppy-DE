@@ -11,15 +11,36 @@ return class {
 //		return this.__current;
 //	}
 
+	__URL;
+
+	properties = {}
+	localizations = {}
+
 	constructor(URL) {
-		if(typeof URL != 'string') {
-			console.error(0); return;
-		}
+		this.URL = URL;
+	}
 
-		this.__URL = URL;
+	get URL() {
+		return this.__URL;
+	}
 
-		this.properties = {}
-		this.localizations = {}
+	get contentsURL() {
+		return this.URL+'/Contents';
+	}
+
+	get executablesURL() {
+		return this.contentsURL+'/Executables';
+	}
+
+	get resourcesURL() {
+		return this.contentsURL+'/Resources';
+	}
+
+	set URL(value) {
+		if(typeof value !== 'string')	throw new TypeError();
+		if(value.length < 1)			throw new RangeError();
+
+		this.__URL = value;
 
 		for(let directory of CFDirectory.content(this.resourcesURL, 'Directories')) {
 			let directoryExtension = '.lproj';
@@ -56,21 +77,5 @@ return class {
 				...localizedStrings ? localizedStrings : {}
 			}
 		}
-	}
-
-	get URL() {
-		return this.__URL;
-	}
-
-	get contentsURL() {
-		return this.URL+'/Contents';
-	}
-
-	get executablesURL() {
-		return this.contentsURL+'/Executables';
-	}
-
-	get resourcesURL() {
-		return this.contentsURL+'/Resources';
 	}
 }

@@ -3,13 +3,13 @@ return $CFShared.@Title || class {
 	static __friends__ = [this]
 	static __main;
 
-	constructor({ x = 0, y = 0, width = 0, height = 0 } = {}) {
-		this.__x;
-		this.__y;
-		this.__layer = _request('drCreate', 0, 0);
-		this.__context = this.__layer.context2d;
-		this.__sublayers = new CFArray();
+	__layer = _request('drCreate', 0, 0);
+	__context = this.__layer.context2d;
+	__sublayers = new CFArray();
+	__x;
+	__y;
 
+	constructor({ x = 0, y = 0, width = 0, height = 0 } = {}) {
 		this.x = x;
 		this.y = y;
 		this.width = width;
@@ -65,7 +65,7 @@ return $CFShared.@Title || class {
 	}
 
 	draw() {
-		if(this.constructor.__main == this) {
+		if(this.constructor.__main === this) {
 			_request('fbWrite', this.__layer);
 		}
 	}

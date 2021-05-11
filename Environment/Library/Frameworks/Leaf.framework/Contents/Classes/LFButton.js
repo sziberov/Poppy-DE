@@ -108,7 +108,7 @@ return class extends LFControl {
 	}
 
 	didAdd() {
-		this.menu = this.menu;
+		this.menu.add(this);
 	}
 
 	destroy() {

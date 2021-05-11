@@ -1,25 +1,30 @@
 // noinspection JSAnnotator
 return class {
-	constructor(identifier) {
-		if(typeof identifier !== 'string') {
-			return;
-		}
+	__user = CFProcessInfo.shared.user;
+	__identifier;
+	__properties;
 
-		this.__user = CFProcessInfo.shared.user;
-		this.__identifier = identifier;
-		this.__properties;
+	constructor(identifier) {
+		this.identifier = identifier;
+	}
+
+	set identifier(value) {
+		if(typeof value !== 'string') {
+			throw new TypeError();
+		}
 
 		let file =
-				CFFile.content('/Users/'+this.__user+'/Library/Preferences/'+identifier+'.plist') ||
-				CFFile.content('/Library/Preferences/'+identifier+'.plist') ||
-				CFFile.content('/Environment/Library/Preferences/'+identifier+'.plist') ||
-				undefined;
+			CFFile.content('/Users/'+this.__user+'/Library/Preferences/'+value+'.plist') ||
+			CFFile.content('/Library/Preferences/'+value+'.plist') ||
+			CFFile.content('/Environment/Library/Preferences/'+value+'.plist') ||
+			undefined;
 
-		if(file) {
-			this.__properties = JSON.parse(file);
-		} else {
-			return;
+		if(!file) {
+			throw new RangeError();
 		}
+
+		this.__identifier = value;
+		this.__properties = JSON.parse(file);
 	}
 
 	get() {

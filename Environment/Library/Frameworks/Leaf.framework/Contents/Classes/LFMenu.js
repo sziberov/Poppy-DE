@@ -185,10 +185,8 @@ return class extends LFView {
 			}
 
 		exceptCheck();
-		for(let v of LFWorkspace.shared.get('Subviews', '@Title')) {
-			if(!exceptList.includes(v)) {
-				v.setActivated(false);
-			}
+		for(let v of LFWorkspace.shared.get('Subviews', '@Title').filter(v => !exceptList.includes(v))) {
+			v.setActivated(false);
 		}
 	}
 }
