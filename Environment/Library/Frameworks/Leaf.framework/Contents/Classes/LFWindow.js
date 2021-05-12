@@ -14,7 +14,7 @@ return class extends LFView {
 	__toolbar;
 	__view;
 
-	class = '@Title';
+	class = _title;
 
 	constructor({
 		x = 24,
@@ -198,8 +198,8 @@ return class extends LFView {
 	center(_direction) {
 		if(this.element) {
 			this.origin = {
-				x: !_direction || _direction == 'Horizontally' ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : this.__x,
-				y: !_direction || _direction == 'Vertically' ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : this.__y
+				x: !_direction || _direction === 'Horizontally' ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : this.__x,
+				y: !_direction || _direction === 'Vertically' ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : this.__y
 			}
 		}
 

@@ -5,7 +5,7 @@ return class extends LFControl {
 	__image;
 	__menu;
 
-	class = '@Title';
+	class = _title;
 
 	constructor({ minWidth, title = 'Button', image, menu } = {}) {
 		super(...arguments);
@@ -93,10 +93,10 @@ return class extends LFControl {
 	mousedown(event) {
 		super.mousedown(event, this.menu);
 
-		if(!this.action && this.menu && event.button == 0) {
+		if(!this.action && this.menu && event.button === 0) {
 			this.menu.setActivated('Toggle', this);
 		} else
-		if(this.action && this.menu && event.button == 0) {
+		if(this.action && this.menu && event.button === 0) {
 			// TODO
 		}
 	}

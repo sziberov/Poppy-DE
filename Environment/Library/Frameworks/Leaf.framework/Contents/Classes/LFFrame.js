@@ -2,7 +2,7 @@
 return class extends LFView {
 	__type;
 
-	class = '@Title';
+	class = _title;
 
 	constructor({ type = 'top', subviews } = {}) {
 		super(...arguments);

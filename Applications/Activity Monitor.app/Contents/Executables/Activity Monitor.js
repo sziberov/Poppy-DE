@@ -61,7 +61,7 @@ return class {
 		let application = this.table.activeRow?.data.application;
 
 		if(application) {
-			let window = LFApp.windows.find(v => v.tag == application.identifier),
+			let window = LFApp.windows.find(v => v.tag === application.identifier),
 				process = _request('info', application.processIdentifier);
 
 			if(!window) {

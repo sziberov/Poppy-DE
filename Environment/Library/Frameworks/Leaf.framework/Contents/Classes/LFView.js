@@ -12,7 +12,7 @@ return class extends LFResponder {
 
 //	_constraints = new CFArray();
 
-	class = '@Title';
+	class = _title;
 
 	constructor({ tag, type = 'horizontal', tight = false, xAlign = 'start', yAlign = 'start', subviews } = {}) {
 		super();
@@ -66,7 +66,7 @@ return class extends LFResponder {
 	}
 
 	create() {
-		if(this.class === '@Title') {
+		if(this.class === _title) {
 			this.attributes = {
 				'vertical': this.__type === 'vertical' ? '' : undefined,
 				'tight': this.__tight === true ? '' : undefined,
@@ -153,7 +153,7 @@ return class extends LFResponder {
 				return superview;
 			},
 			Siblings: () => {
-				return this.superview.subviews.filter(v => v !== this && v.class == value);
+				return this.superview.subviews.filter(v => v !== this && v.class === value);
 			},
 			Subviews: () => {
 				/*
@@ -162,7 +162,7 @@ return class extends LFResponder {
 
 				function check() {
 					for(var v of current.subviews) {
-						if(v.class == value) {
+						if(v.class === value) {
 							subview = v;
 							return subview;
 						}

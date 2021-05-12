@@ -15,7 +15,7 @@ return class {
 			console.error(0); return;
 		}
 
-		this.__user = new CFPreferences('Global').get().Users.find(v => v.Login == CFProcessInfo.shared.user);
+		this.__user = new CFPreferences('Global').get().Users.find(v => v.Login === CFProcessInfo.shared.user);
 	}
 
 	get id() {

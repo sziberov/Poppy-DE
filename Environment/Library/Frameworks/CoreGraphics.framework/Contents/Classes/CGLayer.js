@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared.@Title || class {
+return $CFShared[_title] || class {
 	static __friends__ = [this]
 	static __main;
 

@@ -2,7 +2,7 @@
 return class extends LFControl {
 	__title;
 
-	class = '@Title';
+	class = _title;
 	data;
 
 	constructor({ title = 'TableRow', data } = {}) {

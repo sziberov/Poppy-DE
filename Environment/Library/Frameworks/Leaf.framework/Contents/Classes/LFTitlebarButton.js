@@ -2,7 +2,7 @@
 return class extends LFControl {
 	__type;
 
-	class = '@Title';
+	class = _title;
 
 	constructor({ type } = {}) {
 		super(...arguments);

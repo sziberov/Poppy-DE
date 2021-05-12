@@ -1,7 +1,7 @@
 return class {
 	constructor(_) {
 		this._ = {
-			tag: '@Title',
+			tag: _title,
 			style: {},
 			attributes: {},
 			text: '',

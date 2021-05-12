@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared.@Title || class {
+return $CFShared[_title] || class {
 	static get shared() {
 		if(!this.__shared) {
 			new this();
@@ -48,7 +48,7 @@ return $CFShared.@Title || class {
 
 	add() {
 		if(!this.__element) {
-			this.__element = $('<@Title>').appendTo('body');
+			this.__element = $('<'+_title+'>').appendTo('body');
 			this.__event = $._data($('body')[0], 'events')?.mousemove?.length+1 || 1;
 			$('body').on('mousemove.'+this.__event, (event) => {
 				this.__element.css('transform', 'translate('+event.pageX+'px, '+event.pageY+'px)');

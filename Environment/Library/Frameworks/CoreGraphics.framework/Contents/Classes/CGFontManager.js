@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared.@Title || class {
+return $CFShared[_title] || class {
 	static get shared() {
 		return this.__shared;
 	}
@@ -25,7 +25,7 @@ return $CFShared.@Title || class {
 
 				this.fonts.push({
 					URL: this.URL+'/'+v,
-					format: c == 'ttf' ? 'truetype' : c,
+					format: c === 'ttf' ? 'truetype' : c,
 					family: v.includes('-') ? v.substr(0, v.lastIndexOf('-')) : v.substr(0, v.lastIndexOf('.')),
 					style: 'normal',
 					weight: ['light', 'medium', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'].includes(b) ? b : 'normal'

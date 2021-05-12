@@ -3,20 +3,21 @@
 		Contains files|process management tools.
 */
 
-_import('@Title', 'CFProcessInfo');
-_import('@Title', 'CFFile');
-_import('@Title', 'CFDirectory');
-_import('@Title', 'CFPreferences');
-_import('@Title', 'CFIdentity');
-_import('@Title', 'CFEventEmitter');
-_import('@Title', 'CFArray');
-_import('@Title', 'CFObject');
-_import('@Title', 'CFString');
-_import('@Title', 'CFBundle');
-_import('@Title', 'CFLocalizedString');
+_import(_title, 'CFProcessInfo');
+_import(_title, 'CFFile');
+_import(_title, 'CFDirectory');
+_import(_title, 'CFPreferences');
+_import(_title, 'CFIdentity');
+_import(_title, 'CFEventEmitter');
+_import(_title, 'CFArray');
+_import(_title, 'CFObject');
+_import(_title, 'CFString');
+_import(_title, 'CFURL');
+_import(_title, 'CFBundle');
+_import(_title, 'CFLocalizedString');
 
-if(!_request('seInfo', '@Title')) {
-	_request('seCreate', 'read', '@Title');
+if(!_request('seInfo', _title)) {
+	_request('seCreate', 'read', _title);
 }
 
-CFProcessInfo.shared.environment.$CFShared = _request('seInfo', '@Title').environment;
+CFProcessInfo.shared.environment.$CFShared = _request('seInfo', _title).environment;

@@ -6,7 +6,7 @@ return class extends LFView {
 	__title;
 	__autoactivatesItems;
 
-	class = '@Title';
+	class = _title;
 	target;
 
 	constructor({ x = 24, y = 48, corners, title = 'Menu', items, autoactivatesItems = true } = {}) {
@@ -185,7 +185,7 @@ return class extends LFView {
 			}
 
 		exceptCheck();
-		for(let v of LFWorkspace.shared.get('Subviews', '@Title').filter(v => !exceptList.includes(v))) {
+		for(let v of LFWorkspace.shared.get('Subviews', _title).filter(v => !exceptList.includes(v))) {
 			v.setActivated(false);
 		}
 	}

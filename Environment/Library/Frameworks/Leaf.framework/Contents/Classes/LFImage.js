@@ -4,7 +4,7 @@ return class extends LFView {
 	__height;
 	__url;
 
-	class = '@Title';
+	class = _title;
 
 	constructor({ width = 16, height = 16, url, shared } = {}) {
 		super(...arguments);

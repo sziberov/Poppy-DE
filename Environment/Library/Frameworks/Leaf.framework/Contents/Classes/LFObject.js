@@ -20,7 +20,7 @@ return class {
 		text: ''
 	}
 
-	class = '@Title';
+	class = _title;
 	element;
 
 	get style() {
@@ -90,7 +90,7 @@ return class {
 		this.remove();
 		this.constructor.destroyShared?.();
 		for(let v in environment) {
-			if(environment.hasOwnProperty(v) && environment[v] == this) {
+			if(environment.hasOwnProperty(v) && environment[v] === this) {
 				delete environment[v]
 			}
 		}

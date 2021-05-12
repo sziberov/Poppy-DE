@@ -105,7 +105,7 @@ return class {
 		var bytesConvert = (a) => {
 				var b = ['Bytes', 'KB', 'MB', 'GB', 'TB'],
 					c = parseInt(Math.floor(Math.log(a) / Math.log(1024))),
-					d = (a == 0 ? '0 Bytes' : Math.round(a / Math.pow(1024, c), 2) + ' ' + b[c]);
+					d = (a === 0 ? '0 Bytes' : Math.round(a / Math.pow(1024, c), 2) + ' ' + b[c]);
 
 				return d;
 			},
@@ -127,7 +127,7 @@ return class {
 				return variable;
 			})(),
 			software = _request('version', 'DE').join(' '),
-			window = LFApp.windows.find(v => v.tag == 'about');
+			window = LFApp.windows.find(v => v.tag === 'about');
 
 		if(!window) {
 			new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
@@ -160,7 +160,7 @@ return class {
 	}
 
 	forceQuit() {
-		let window = LFApp.windows.find(v => v.tag == 'forceQuit');
+		let window = LFApp.windows.find(v => v.tag === 'forceQuit');
 
 		if(!window) {
 			new LFWindow({ tag: 'forceQuit', width: 384, style: ['titled', 'closable', 'resizable'], title: CFLocalizedString('Force Quit Applications'),

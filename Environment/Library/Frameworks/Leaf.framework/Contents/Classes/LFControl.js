@@ -2,7 +2,7 @@
 return class extends LFView {
 	__action;
 
-	class = '@Title';
+	class = _title;
 
 	constructor({ action } = {}) {
 		super(...arguments);

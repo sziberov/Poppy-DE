@@ -1,6 +1,6 @@
 // noinspection JSAnnotator
 return class extends LFObject {
-	class = '@Title';
+	class = _title;
 
 	constructor() {
 		super();
@@ -19,15 +19,15 @@ return class extends LFObject {
 					let dragCache = this.dragCache;
 
 					create.on('mousedown', (e) => {
-						if(e.button == 0) {
+						if(e.button === 0) {
 							dragCache = [true, e.pageX, e.pageY]
 						}
 					});
 					$(document).on('mousemove mouseup', (e) => {
-						if(e.type == 'mousemove' && dragCache[0]) {
+						if(e.type === 'mousemove' && dragCache[0]) {
 							this['drag'](e, dragCache);
 						}
-						if(e.type == 'mouseup') {
+						if(e.type === 'mouseup') {
 							dragCache[0] = false;
 						}
 					});

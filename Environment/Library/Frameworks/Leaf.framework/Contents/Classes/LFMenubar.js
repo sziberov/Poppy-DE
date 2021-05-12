@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared.@Title || class extends LFView {
+return $CFShared[_title] || class extends LFView {
 	static get shared() {
 		if(!this.__shared) {
 			new this();
@@ -14,7 +14,7 @@ return $CFShared.@Title || class extends LFView {
 
 	__transparent;
 
-	class = '@Title';
+	class = _title;
 
 	constructor({ transparent = false } = {}) {
 		super(...arguments);

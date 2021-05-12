@@ -1219,7 +1219,7 @@
 						_protected: (...a) => this.processRequest(process, 'protected', ...a)
 					}, {
 						get: (target, key) => {
-							return key === '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key === 'require' ? undefined : target[key] || this.environment[key]
+							return key === '_path' ? process.path : key === '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key === 'require' ? undefined : target[key] || this.environment[key]
 						}
 					}));
 
@@ -1357,32 +1357,39 @@
 			 * @param {?string} class_		Название класса.
 			 */
 			classImport(process, framework, class_) {
-				class_ = class_ ?? framework;
+				class_ ??= framework;
 
-				let a = [
-						'/Environment',
+				let searchList = [
 						'/Library/Frameworks/'+framework+'.framework/Contents',
-						'/Classes/'+class_+'.js',
-						'/Resources'
+						'/Environment/Library/Frameworks/'+framework+'.framework/Contents'
 					],
-					b = this.fsRead(a[1]+a[2]) ? a[1] : this.fsRead(a[0]+a[1]+a[2]) ? a[0]+a[1] : undefined,
-					c = this.fsRead(a[1]+a[2]) || this.fsRead(a[0]+a[1]+a[2]) || undefined;
+					path,
+					executable;
 
-				if(!c) {
+				for(let v of searchList) {
+					let a = v+'/Classes/'+class_+'.js',
+						b = this.fsRead(a);
+
+					if(b) {
+						path = a;
+						executable = b;
+
+						break;
+					}
+				}
+
+				if(!path) {
 					this.kdbAdd(`classImport: Unable to access requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
 
 					console.error(0); return;
 				}
 
 				try {
-					c = this.codePrepare(c
-						.replace(/@(Resources)/g, b+a[3])
-						.replace(/@(Title)/g, class_)
-					);
+					executable = this.codePrepare(executable);
 
-				//	console.log(class_ + ' : ' + c);
+				//	console.log(class_ + ' : ' + executable);
 
-					this.sbExecute(`var ${ class_ } = (() => { ${ c } })();`, process.environment, class_);
+					this.sbExecute(`var ${ class_ } = (() => { let _title = '${ class_ }', _path = '${ path }'; ${ executable } })();`, process.environment, class_);
 
 					if(framework === class_) {
 						this.kdbAdd(`classImport: Successfully imported ${ framework === class_ ? 'main' : class_ } class of ${ framework } framework into process: ${ process.id }`);

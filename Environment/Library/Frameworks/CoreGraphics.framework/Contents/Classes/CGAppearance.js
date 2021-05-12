@@ -1,4 +1,5 @@
-return $CFShared.@Title || class {
+// noinspection JSAnnotator
+return $CFShared[_title] || class {
 	static __URLSs = []
 
 	constructor(URL) {
@@ -7,7 +8,7 @@ return $CFShared.@Title || class {
 	}
 
 	add() {
-		if(!this.element && this.URL && !@Title.__URLSs.includes(this.URL)) {
+		if(!this.element && this.URL && !this.constructor.__URLSs.includes(this.URL)) {
 			let file = CFFile.content(this.URL),
 				type =
 					this.URL.endsWith('.less') ? 'less' :
@@ -17,13 +18,13 @@ return $CFShared.@Title || class {
 			if(file && type) {
 				let add = $('<style/>');
 
-				@Title.__URLSs.push(this.URL);
+				this.constructor.__URLSs.push(this.URL);
 				add.attr('type', 'text/'+type);
 				add.text(file.replace(/@(Resources)/g, this.URL.replace(/(?<=\/Resources\/)(.*)/g, '')));
 
 				this.element = add.appendTo('body');
 
-				if(type == 'less') {
+				if(type === 'less') {
 					less?.refreshStyles();
 				}
 			}
@@ -34,7 +35,7 @@ return $CFShared.@Title || class {
 
 	remove() {
 		if(this.element) {
-			CFArray.remove(@Title.__URLSs, this.URL);
+			CFArray.remove(this.constructor.__URLSs, this.URL);
 			this.element.remove();
 			this.element = undefined;
 		}

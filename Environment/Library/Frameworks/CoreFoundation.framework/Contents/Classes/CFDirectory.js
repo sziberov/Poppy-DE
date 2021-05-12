@@ -1,3 +1,4 @@
+// noinspection JSAnnotator
 return class {
 	static create(URL) {
 		_request('createDir', URL);

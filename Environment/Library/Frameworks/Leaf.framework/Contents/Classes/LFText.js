@@ -4,7 +4,7 @@ return class extends LFView {
 	__size;
 	__weight;
 
-	class = '@Title';
+	class = _title;
 
 	constructor({ string = 'Text', size = 'medium', weight } = {}) {
 		super(...arguments);

@@ -1,7 +1,7 @@
 // noinspection JSAnnotator
 return class {
-	static __main = new this(CFString.splitByLast(CFProcessInfo.shared.path, '/Contents/')[0]);
-//	static __current = '@Resources' ? new this(CFString.splitByLast('@Resources', '/Contents/')[0]) : this.main;
+	static __main = new this(CFProcessInfo.shared.path);
+//	static __current = new this(_path);
 
 	static get main() {
 		return this.__main;
@@ -37,8 +37,15 @@ return class {
 	}
 
 	set URL(value) {
-		if(typeof value !== 'string')	throw new TypeError();
-		if(value.length < 1)			throw new RangeError();
+		if(typeof value !== 'string') {
+			throw new TypeError();
+		}
+
+		value = value.match(/(.*(?:\.bundle|\.framework|\.app))(?=\/Contents)?/gi)?.[0]
+
+		if(!value) {
+			throw new RangeError();
+		}
 
 		this.__URL = value;
 
@@ -61,7 +68,7 @@ return class {
 					}
 				}
 
-				if(this.localizations[directoryTitle].length == 0) {
+				if(this.localizations[directoryTitle].length === 0) {
 					delete this.localizations[directoryTitle]
 				}
 			}

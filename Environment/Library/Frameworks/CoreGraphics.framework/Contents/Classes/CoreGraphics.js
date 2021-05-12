@@ -5,16 +5,16 @@
 
 _import('CoreFoundation');
 
-_import('@Title', 'CGScreen');
-_import('@Title', 'CGColor');
-_import('@Title', 'CGLayer');
-_import('@Title', 'CGImage');
-_import('@Title', 'CGAppearance');
-_import('@Title', 'CGElement');
-_import('@Title', 'CGCursor');
-_import('@Title', 'CGFontManager');
+_import(_title, 'CGScreen');
+_import(_title, 'CGColor');
+_import(_title, 'CGLayer');
+_import(_title, 'CGImage');
+_import(_title, 'CGAppearance');
+_import(_title, 'CGElement');
+_import(_title, 'CGCursor');
+_import(_title, 'CGFontManager');
 
-CFProcessInfo.shared.environment.$CGAppearance = new CGAppearance('@Resources/Appearance.css').add();
+CFProcessInfo.shared.environment.$CGAppearance = new CGAppearance(new CFBundle(_path).resourcesURL+'/Appearance.css').add();
 
 $CFShared.CGAppearance = CGAppearance;
 $CFShared.CGCursor = CGCursor;
