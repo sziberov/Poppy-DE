@@ -51,7 +51,7 @@ return class {
 			}
 		});
 
-		new LFWindow({ tag: 'desktop', level: 0, style: ['borderless', 'fullscreen'], background: 'none', view:
+		new LFWindow({ tag: 'desktop', level: 0, type: ['borderless', 'fullscreen'], background: 'none', view:
 			new LFView()
 		});
 	}

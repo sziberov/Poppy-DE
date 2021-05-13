@@ -130,7 +130,7 @@ return class {
 			window = LFApp.windows.find(v => v.tag === 'about');
 
 		if(!window) {
-			new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 512, height: 184, style: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
+			new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 512, height: 184, type: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
 				new LFView({ yAlign: 'center', subviews: [
 					new LFImage({ width: 128, height: 128, shared: 'Monoblock' }),
 					new LFView({ type: 'vertical', subviews: [
@@ -163,7 +163,7 @@ return class {
 		let window = LFApp.windows.find(v => v.tag === 'forceQuit');
 
 		if(!window) {
-			new LFWindow({ tag: 'forceQuit', width: 384, style: ['titled', 'closable', 'resizable'], title: CFLocalizedString('Force Quit Applications'),
+			new LFWindow({ tag: 'forceQuit', width: 384, type: ['titled', 'closable', 'resizable'], title: CFLocalizedString('Force Quit Applications'),
 				view: new LFView({ type: 'vertical', subviews: [
 					new LFText({ string: CFLocalizedString('Force Quit Applications_Description'), size: 'small' })
 				] })

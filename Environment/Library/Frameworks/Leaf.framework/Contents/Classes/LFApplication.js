@@ -202,7 +202,7 @@ return class {
 			let window = this.windows.find(v => v.tag === 'about');
 
 			if(!window) {
-				new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 256, style: ['titled', 'closable', 'minimizable'], title: '', view:
+				new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 256, type: ['titled', 'closable', 'minimizable'], title: '', view:
 					new LFView({ type: 'vertical', yAlign: 'center', subviews: [
 						...this.icon ? [new LFImage({ width: 64, height: 64, url: this.icon })] : [],
 						new LFText({ string: this.title, weight: 'bold' }),

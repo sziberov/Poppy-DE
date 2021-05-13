@@ -9,7 +9,7 @@ return class extends LFView {
 	__height;
 	__background;
 	__level;
-	__style;
+	__type;
 	__title;
 	__toolbar;
 	__view;
@@ -23,7 +23,7 @@ return class extends LFView {
 		height,
 		background,
 		level = 1,	//0 = Desktop, 1 = Normal, 2 = Alert
-		style = [
+		type = [
 			'titled',
 			'closable',
 			'minimizable',
@@ -50,25 +50,20 @@ return class extends LFView {
 		this.__background = background;
 		this.style['background'] = background;
 
-		this.__level = [0, 1, 2].includes(level) ? level : 1;
-		this.__style = style;
-		this.__title = title;
+		this.level = level;
+		this.type = type;
+		this.title = title;
 		this.__toolbar = toolbar;
 		this.__view = view;
 
-		this.attributes = {
-			'fullscreen': style.includes('fullscreen') ? '' : undefined,
-			'borderless': style.includes('borderless') ? '' : undefined,
-			'unifiedTitlebarAndToolbar': style.includes('unifiedTitlebarAndToolbar') ? '' : undefined
-		}
 		this.subviews = [
-			...!style.includes('borderless') ? [
+			...!type.includes('borderless') ? [
 				new LFFrame({ type: 'top', subviews: [
-					...style.includes('titled') ? [
+					...type.includes('titled') ? [
 						new LFTitlebar({ title: this.title, subviews: [
-							new LFTitlebarButton({ type: 'close',		action: style.includes('closable')		? () => this.close()	: undefined }),
-							new LFTitlebarButton({ type: 'minimize',	action: style.includes('minimizable')	? () => this.minimize()	: undefined }),
-							new LFTitlebarButton({ type: 'maximize',	action: style.includes('resizable')		? () => this.maximize()	: undefined })
+							new LFTitlebarButton({ type: 'close',		action: type.includes('closable')		? () => this.close()	: undefined }),
+							new LFTitlebarButton({ type: 'minimize',	action: type.includes('minimizable')	? () => this.minimize()	: undefined }),
+							new LFTitlebarButton({ type: 'maximize',	action: type.includes('resizable')		? () => this.maximize()	: undefined })
 						] })
 					] : [],
 					...this.toolbar?.class === 'LFToolbar' ? [this.toolbar] : []
@@ -121,6 +116,10 @@ return class extends LFView {
 		return this.__level;
 	}
 
+	get type() {
+		return [...this.__type]
+	}
+
 	get title() {
 		return this.__title;
 	}
@@ -138,23 +137,23 @@ return class extends LFView {
 	}
 
 	set hidden(value) {
-		if([false, true].includes(value)) {
-			this.__hidden = value;
-			if(!value) {
-				this.attributes['hidden'] = undefined;
-			} else {
-				this.attributes['hidden'] = '';
-			}
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
 		}
+
+		this.__hidden = value;
+		this.attributes['hidden'] = value ? '' : undefined;
 	}
 
 	set main(value) {
-		if([false, true].includes(value)) {
-			this.__main = value;
-			if(value) {
-				for(let v of this.get('Siblings', this.class).filter(v => v.application === this.application)) {
-					v.main = false;
-				}
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.__main = value;
+		if(value) {
+			for(let v of this.get('Siblings', this.class).filter(v => v.application === this.application)) {
+				v.main = false;
 			}
 		}
 	}
@@ -179,6 +178,34 @@ return class extends LFView {
 			this.__height = value.height;
 			this.style['height'] = value.height+'px';
 		}
+	}
+
+	set level(value) {
+		if(typeof value !== 'number')	throw new TypeError();
+		if(value < 0 || value > 2)		throw new RangeError();
+
+		this.__level = value;
+	}
+
+	set type(value) {
+		if(!Array.isArray(value))																											throw new TypeError();
+		for(let v of value) {
+			if(typeof v !== 'string')																										throw new TypeError();
+			if(!['titled', 'closable', 'minimizable', 'resizable', 'fullscreen', 'borderless', 'unifiedTitlebarAndToolbar'].includes(v))	throw new RangeError();
+		}
+
+		this.__type = value;
+		for(let v of ['fullscreen', 'borderless', 'unifiedTitlebarAndToolbar']) {
+			this.attributes[v] = value.includes(v) ? '' : undefined;
+		}
+	}
+
+	set title(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
+		}
+
+		this.__title = value;
 	}
 
 	mousedown() {
@@ -234,13 +261,13 @@ return class extends LFView {
 	}
 
 	close() {
-		if(this.__style.includes('closable')) {
+		if(this.type.includes('closable')) {
 			this.destroy();
 		}
 	}
 
 	minimize() {
-		if(this.__style.includes('minimizable')) {
+		if(this.type.includes('minimizable')) {
 			this.attributes['animatedResize'] = '';
 			if(!this.minimized) {
 				this.attributes['minimized'] = '';
@@ -256,7 +283,7 @@ return class extends LFView {
 	}
 
 	maximize() {
-		if(this.__style.includes('resizable')) {
+		if(this.type.includes('resizable')) {
 			if(!this.maximized) {
 				if(this.minimized) {
 					this.minimize();

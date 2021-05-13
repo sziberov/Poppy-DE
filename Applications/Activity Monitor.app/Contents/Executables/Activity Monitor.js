@@ -65,7 +65,7 @@ return class {
 				process = _request('info', application.processIdentifier);
 
 			if(!window) {
-				new LFWindow({ tag: application.identifier, width: 384, style: ['titled', 'closable', 'minimizable'], title: application.title,
+				new LFWindow({ tag: application.identifier, width: 384, type: ['titled', 'closable', 'minimizable'], title: application.title,
 					view: new LFView({ type: 'vertical', subviews: [
 						new LFView({ subviews: [
 							new LFView({ type: 'vertical', tight: true, subviews: [

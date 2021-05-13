@@ -1441,7 +1441,7 @@
 								caller.prototype				=== class_.prototype &&
 								caller.prototype				!== undefined
 							),
-						inherits = Object.instanceOf(caller, class_) || Object.instanceOf(class_, caller),
+						inherits = Object.instanceOf(caller, class_),
 						friends = Object.getPrototypeOf(class_)?.constructor.__friends__ || class_.prototype?.__friends__ || [],
 						friends = friends.includes(caller) || friends.includes(Object.getPrototypeOf(caller)?.constructor)
 				} else {

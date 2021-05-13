@@ -18,7 +18,8 @@ window.Object.instanceOf = function(object, object_) {
 	let proto = object.__proto__;
 
 	while(proto) {
-		if(proto.constructor && proto.constructor == object_ || proto == Object.getPrototypeOf(object_)) {
+	//	if(proto.constructor && proto.constructor === object_ || proto === object_.__proto__ || proto === object_) {
+		if(proto.constructor && proto.constructor === object_ || proto === Object.getPrototypeOf(object_)) {
 			return true;
 		}
 		if(proto.__proto__) {
