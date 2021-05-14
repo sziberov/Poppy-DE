@@ -2,7 +2,7 @@
 return class extends LFView {
 	__x;
 	__y;
-	__corners;
+	__corners = []
 	__title;
 	__autoactivatesItems;
 
@@ -61,7 +61,7 @@ return class extends LFView {
 
 		this.__x = value.x;
 		this.__y = value.y;
-		this.__corners = value.corners;
+		this.__corners = value.corners || []
 		this.style['transform'] = 'translate('+value.x+'px, '+value.y+'px)';
 		for(let v of ['topLeft', 'topRight', 'bottomLeft', 'bottomRight']) {
 			this.attributes[v] = (value.corners || []).includes(v) ? '' : undefined;

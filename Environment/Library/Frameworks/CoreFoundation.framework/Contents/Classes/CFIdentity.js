@@ -1,5 +1,7 @@
 // noinspection JSAnnotator
 return class {
+	static __shared;
+
 	static get shared() {
 		if(!this.__shared) {
 			new this();

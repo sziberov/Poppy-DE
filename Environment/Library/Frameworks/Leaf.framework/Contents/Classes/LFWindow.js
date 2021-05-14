@@ -9,7 +9,7 @@ return class extends LFView {
 	__height;
 	__background;
 	__level;
-	__type;
+	__type = []
 	__title;
 	__toolbar;
 	__view;

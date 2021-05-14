@@ -1431,30 +1431,32 @@
 					return class_;
 				}
 
+				let global,
+					equals,
+					owns,
+					inherits,
+					friends;
+
 				if(class_) {
-					var global = environment ? Object.isShallowlyEqual(environment, class_) : false,
-						equals = caller === class_ ||
-							Object.getPrototypeOf(class_) !== Object.getPrototypeOf(class {}) && (
-								Object.getPrototypeOf(caller)	=== Object.getPrototypeOf(class_) ||
-								Object.getPrototypeOf(caller)	=== class_.prototype ||
-								caller.prototype				=== Object.getPrototypeOf(class_) ||
-								caller.prototype				=== class_.prototype &&
-								caller.prototype				!== undefined
-							),
-						inherits = Object.instanceOf(caller, class_),
-						friends = Object.getPrototypeOf(class_)?.constructor.__friends__ || class_.prototype?.__friends__ || [],
-						friends = friends.includes(caller) || friends.includes(Object.getPrototypeOf(caller)?.constructor)
-				} else {
-					var global =
-						equals =
-						inherits = false,
-						friends = false
+					global = environment ? Object.isShallowlyEqual(environment, class_) : false;
+					equals =
+						caller				=== class_												||
+						caller.constructor	=== class_				&& typeof class_ === 'function'	||
+						caller				=== class_.constructor	&& typeof caller === 'function';
+					owns = equals && (
+						typeof class_[field] === 'undefined' ||
+						({}).hasOwnProperty.call(caller.constructor, field) ||
+						({}).hasOwnProperty.call(caller, field)
+					);
+					inherits = Object.instanceOf(caller, class_);
+					friends = (class_.constructor || class_).__friends__ || []
+					friends = friends.includes(caller) || friends.includes(caller.constructor);
 				}
 
 				if(field === '__friends__' && !equals) {
 					this.kdbAdd(`classProtected${ processId ? '@'+processId : '' }: Can't access reserved property: ${ field }`); return;
 				}
-				if(!global && private_.test(field) && !equals && !friends) {
+				if(!global && private_.test(field) && !owns && !friends) {
 					this.kdbAdd(`classProtected${ processId ? '@'+processId : '' }: Can't access private property: ${ field }`); return;
 				}
 				if(!global && protected_.test(field) && !equals && !inherits && !friends) {

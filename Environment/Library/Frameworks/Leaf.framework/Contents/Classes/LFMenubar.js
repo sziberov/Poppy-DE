@@ -1,5 +1,7 @@
 // noinspection JSAnnotator
 return $CFShared[_title] || class extends LFView {
+	static __shared;
+
 	static get shared() {
 		if(!this.__shared) {
 			new this();

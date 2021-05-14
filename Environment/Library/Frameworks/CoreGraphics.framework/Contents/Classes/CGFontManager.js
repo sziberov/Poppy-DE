@@ -1,5 +1,7 @@
 // noinspection JSAnnotator
 return $CFShared[_title] || class {
+	static __shared;
+
 	static get shared() {
 		return this.__shared;
 	}
