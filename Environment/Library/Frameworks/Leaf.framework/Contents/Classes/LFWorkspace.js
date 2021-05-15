@@ -123,7 +123,7 @@ return $CFShared[_title] || class extends LFView {
 			try {
 				let user = new CFPreferences('Global').get().Users.find(v => v.Group === 1);
 
-				_request('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
+				_request('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable, ...arguments_);
 
 				return this.getApplication(identifier);
 			} catch(error) {
