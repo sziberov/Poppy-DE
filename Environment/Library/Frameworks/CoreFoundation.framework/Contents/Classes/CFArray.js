@@ -14,7 +14,7 @@ return class extends Array {
 		for(let v of value) {
 			super.push(v);
 
-			CFEventEmitter.dispatch(_title+'Changed', this, { event: 'added', value: v });
+			CFEventEmitter.dispatch(undefined, _title+'Changed', this, { event: 'added', value: v });
 		}
 
 		return this;
@@ -25,7 +25,7 @@ return class extends Array {
 			if(this.contains?.(v)) {
 				super.splice(this.indexOf(v), 1);
 
-				CFEventEmitter.dispatch(_title+'Changed', this, { event: 'removed', value: v });
+				CFEventEmitter.dispatch(undefined, _title+'Changed', this, { event: 'removed', value: v });
 			}
 		}
 
@@ -36,7 +36,7 @@ return class extends Array {
 		/*
 		super.length = 0;
 
-		CFEventEmitter.dispatch(_title+'Changed', this, { event: 'removedAll' });
+		CFEventEmitter.dispatch(undefined, _title+'Changed', this, { event: 'removedAll' });
 		*/
 		this.remove(...this);
 

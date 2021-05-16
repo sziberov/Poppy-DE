@@ -100,7 +100,7 @@
 						});
 
 						this.timerCreate(undefined, 'multiple', 1000, () => {
-							this.eventThrow(undefined, 'dateChanged');
+							this.eventThrow(undefined, undefined, 'dateChanged');
 						});
 
 						/*
@@ -268,7 +268,7 @@
 					let event = this.fsRead(a) ? 'written' : 'created';
 
 					require('fs').writeFileSync('.'+a, b, { flag: 'w' });	// b.toString();
-					this.eventThrow(undefined, 'fsChanged', { event: event, value: a });
+					this.eventThrow(undefined, undefined, 'fsChanged', { event: event, value: a });
 
 					return true;
 				} catch(error) {
@@ -408,7 +408,7 @@
 				if(value instanceof HTMLCanvasElement) {
 					this.drDraw(layer, 'layer', value);
 				}
-				this.eventThrow(undefined, 'fbChanged');
+				this.eventThrow(undefined, undefined, 'fbChanged');
 			}
 
 			drCreate(width, height) {
@@ -726,23 +726,39 @@
 				return Buffer.from(Buffer.from(data.replace(regex, ''), 'base64'));
 			}
 
-			eventThrow(processId, event, ...arguments_) {
+			eventThrow(processId, processId_, event, ...arguments_) {
 				if(processId && this.eventsReserved.includes(event)) {
 					this.kdbAdd(`
 						eventThrow@${ processId }: Processes aren't allowed to throw reserved events:
+						    Process ID: ${ processId_ || 'Not set' }
 						    Event: "${ event }"
 					`);
 
 					console.error(0); return;
 				}
+				if(processId && processId_ && processId !== processId_) {
+					let process = this.processes.find(v => v.id === processId),
+						group = this.fsReadPreferences('Global').Users.find(v => v.Login === process.user)?.Group;
 
-				for(let handler of this.handlers.filter(v => v.event === event && v.type === 'event')) {
+					if(group > 0) {
+						this.kdbAdd(`
+							eventThrow@${ processId }: Non-root processes allowed to throw events process-widely to themselves only:
+							    Process ID: ${ processId_ }
+							    Event: "${ event }"
+						`);
+
+						console.error(1); return;
+					}
+				}
+
+				for(let handler of this.handlers.filter(v => (processId_ ? v.processId === processId_ : true) && v.event === event && v.type === 'event')) {
 					try {
 						handler.function(...arguments_);
 					} catch(error) {
 						error.fileName = this.processes.find(v => v.id === handler.processId)?.path;
 						this.kdbAdd(`
 							eventThrow@${ handler.processId }: Handler failed to execute:
+							    Process ID: ${ processId_ || 'Not set' }
 							    Event: "${ event }"
 						`, error.stack);
 					}
@@ -995,7 +1011,7 @@
 					}
 
 				this.terminals.push(terminal);
-				this.eventThrow(undefined, 'terminalListChanged', { event: 'added', value: id });
+				this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'added', value: id });
 
 				return id;
 			}
@@ -1013,7 +1029,7 @@
 			}
 
 			terminalInput(processId, value) {
-				this.eventThrow(undefined, 'terminalChanged', { event: 'input', processId: processId, value: value });
+				this.eventThrow(undefined, undefined, 'terminalChanged', { event: 'input', processId: processId, value: value });
 			}
 
 			terminalOutput(process, value, terminalId) {
@@ -1042,7 +1058,7 @@
 					}
 
 				terminal.strings.push(string);
-				this.eventThrow(undefined, 'terminalChanged', {
+				this.eventThrow(undefined, undefined, 'terminalChanged', {
 					event: 'output',
 					terminalId: terminal.id,
 					stringId: id,
@@ -1057,7 +1073,7 @@
 					set: (target, key, value) => {
 						if(key === 'value') {
 							target[key] = value;
-							this.eventThrow(undefined, 'terminalChanged', {
+							this.eventThrow(undefined, undefined, 'terminalChanged', {
 								event: 'output',
 								terminalId: terminal.id,
 								stringId: id,
@@ -1122,7 +1138,7 @@
 					terminalRemove: Terminal removed:
 					    ID: ${ terminal.id }
 				`);
-				this.eventThrow(undefined, 'terminalListChanged', { event: 'removed', value: terminal.id });
+				this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'removed', value: terminal.id });
 			}
 
 			sbCreate(a) {
@@ -1239,7 +1255,7 @@
 						    User: ${ process.user }
 						    Path: ${ process.path }
 					`);
-					this.eventThrow(undefined, 'processListChanged', { event: 'added', value: process.id });
+					this.eventThrow(undefined, undefined, 'processListChanged', { event: 'added', value: process.id });
 
 					return this.processInfo(process.id);
 				} catch(error) {
@@ -1351,7 +1367,7 @@
 						    ID: ${processId}
 					`);
 				}
-				this.eventThrow(undefined, 'processListChanged', { event: 'removed', value: processId });
+				this.eventThrow(undefined, undefined, 'processListChanged', { event: 'removed', value: processId });
 			}
 
 			/**

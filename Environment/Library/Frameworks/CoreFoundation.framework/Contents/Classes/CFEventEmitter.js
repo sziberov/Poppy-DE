@@ -11,12 +11,12 @@ return class {
 	}
 	*/
 
-	static dispatch(event, ...value) {
-		_request('throw', event, ...value);
+	static dispatch(processId, event, ...arguments_) {
+		_request('throw', processId, event, ...arguments_);
 	}
 
-	static addHandler(event, _function) {
-		return _request('catch', event, _function);
+	static addHandler(event, function_) {
+		return _request('catch', event, function_);
 	}
 
 	static removeHandler(handler) {

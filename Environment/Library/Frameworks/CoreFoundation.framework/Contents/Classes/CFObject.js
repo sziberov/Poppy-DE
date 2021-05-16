@@ -9,7 +9,7 @@ return class extends Object {
 
 				target[key] = value;
 
-				CFEventEmitter.dispatch(_title+'Changed', this.__proxy, { event: event, key: key, value: value });
+				CFEventEmitter.dispatch(undefined, _title+'Changed', this.__proxy, { event: event, key: key, value: value });
 
 				return true;
 			},
@@ -17,7 +17,7 @@ return class extends Object {
 				if(key in target) {
 					delete target[key]
 
-					CFEventEmitter.dispatch(_title+'Changed', this.__proxy, { event: 'removed', key: key });
+					CFEventEmitter.dispatch(undefined, _title+'Changed', this.__proxy, { event: 'removed', key: key });
 
 					return true;
 				}
