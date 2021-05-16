@@ -2,9 +2,9 @@
 return $CFShared[_title] || class {
 	static __instance;
 
-	layer = new CGLayer({ width: CGScreen.frame.width, height: CGScreen.frame.height });
-	spaces = []
-	windows = []
+	__layer = new CGLayer({ width: CGScreen.frame.width, height: CGScreen.frame.height });
+	__workspaces = []
+	__windows = []
 
 	constructor() {
 		if(!this.constructor.__instance) {
@@ -15,22 +15,38 @@ return $CFShared[_title] || class {
 	}
 
 	__draw() {
-		_request('fbWrite', this.layer);
+		_request('fbWrite', this.__layer);
 	}
 
-	createSpace() {}
+	createWorkspace() {}
 
-	switchSpace() {}
+	getCurrentWorkspace() {}
 
-	destroySpace() {}
+	setCurrentWorkspace() {}
+
+	destroyWorkspace() {}
 
 	createWindow() {}
+
+	getWindowWorkspace() {}
+
+	getWindowOrigin() {}
+
+	getWindowFrame() {}
+
+	getWindowLevel() {}
+
+	getWindowDepth() {}
 
 	setWindowSpace() {}
 
 	setWindowOrigin() {}
 
 	setWindowFrame() {}
+
+	setWindowLevel() {}
+
+	setWindowDepth() {}
 
 	destroyWindow() {}
 }
