@@ -102,6 +102,11 @@
 						this.timerCreate(undefined, 'multiple', 1000, () => {
 							this.eventThrow(undefined, undefined, 'dateChanged');
 						});
+						/*
+						$(document).on('click dblclick contextmenu mouseover mouseenter mouseout mouseleave mousedown mouseup mousemove', '*', (e) => {
+							this.eventThrow(undefined, undefined, 'mouseChanged', { event: e.type, value: e.originalEvent });
+						});
+						*/
 
 						/*
 						let sh = this.wtExec(`

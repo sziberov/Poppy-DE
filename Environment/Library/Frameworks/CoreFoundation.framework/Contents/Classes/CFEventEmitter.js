@@ -1,16 +1,5 @@
 // noinspection JSAnnotator
 return class {
-	/*
-	constructor() {
-		$(document).on('click dblclick contextmenu mouseover mouseout mousedown mouseup', '*', (e) => {
-			this.dispatch('Mouse', e);
-		});
-		this.handle('Mouse', (value) => {
-			console.log(value);
-		});
-	}
-	*/
-
 	static dispatch(processId, event, ...arguments_) {
 		_request('throw', processId, event, ...arguments_);
 	}

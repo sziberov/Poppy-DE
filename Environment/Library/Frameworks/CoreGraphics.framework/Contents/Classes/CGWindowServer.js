@@ -12,6 +12,12 @@ return $CFShared[_title] || class {
 		} else {
 			console.error(0); return;
 		}
+
+		CFEventEmitter.addHandler('mouseChanged', (a) => {
+			if(a.event === 'mousemove') {
+				this.setCursorOrigin(a.value.x, a.value.y);
+			}
+		});
 	}
 
 	__draw() {
@@ -49,4 +55,12 @@ return $CFShared[_title] || class {
 	setWindowDepth() {}
 
 	destroyWindow() {}
+
+	createCursor() {}
+
+	getCursorOrigin() {}
+
+	setCursorOrigin() {}
+
+	destroyCursor() {}
 }
