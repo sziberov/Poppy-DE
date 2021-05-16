@@ -1381,6 +1381,7 @@
 				class_ ??= framework;
 
 				let searchList = [
+					//	'/Frameworks/'+framework+'.framework/Contents',
 						'/Library/Frameworks/'+framework+'.framework/Contents',
 						'/Environment/Library/Frameworks/'+framework+'.framework/Contents'
 					],
@@ -1409,7 +1410,8 @@
 					this.sbExecute(`var ${ class_ } = (() => { let _title = '${ class_ }', _path = '${ path }'; ${ this.codePrepare(executable) } })();`, process.environment, class_);
 
 					if(framework === class_) {
-						this.kdbAdd(`classImport: Successfully imported ${ framework === class_ ? 'main' : class_ } class of ${ framework } framework into process: ${ process.id }`);
+						this.kdbAdd(`classImport: Successfully imported main class of ${ framework } framework into process: ${ process.id }`);
+						this.eventThrow(undefined, process.id, 'frameworkListChanged', { event: 'added', title: framework, path: path });
 					}
 				} catch(error) {
 					this.kdbAdd(`classImport: Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework: "${ error.name }: ${ error.message }"`, error.stack);
