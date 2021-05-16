@@ -13,6 +13,7 @@ _import(_title, 'CGAppearance');
 _import(_title, 'CGElement');
 _import(_title, 'CGCursor');
 _import(_title, 'CGFontManager');
+_import(_title, 'CGWindowServer');
 
 CFProcessInfo.shared.environment.$CGAppearance = new CGAppearance(new CFBundle(_path).resourcesURL+'/Appearance.css').add();
 

@@ -79,26 +79,14 @@ return $CFShared[_title] || class extends LFView {
 	}
 
 	draw() {
-		let layer = new CGLayer({ width: CGScreen.frame.width, height: CGScreen.frame.height }),
-			menubar = new CGLayer({ width: CGScreen.frame.width, height: 24 }),
-			menubarShadow = new CGLayer({ width: menubar.width, height: menubar.height });
+		let layer = this.__layer;
+
+		this.layer.width = CGScreen.frame.width;
+		this.layer.height = CGScreen.frame.height;
 
 		layer.drawLayer(new CGImage(this.desktopImage), 0, 0, '100', '100');
 		layer.blur(0, 0, menubar.width, menubar.height, 4, true, true);
-		menubar.drawGradient([
-			[0, CGColor('100','100','100', '75')],
-			[1, CGColor('100','100','100', '25')]
-		], 0, 0, menubar.width, menubar.height, 0, 0, 0, menubar.height);
-		menubarShadow.drawGradient([
-			[0, CGColor('0','0','0', '25')],
-			[1, CGColor('0','0','0', '0')]
-		], 0, 0, menubarShadow.width, menubarShadow.height, 0, 0, 0, menubarShadow.height);
 
-		layer.drawLayer(menubar);
-		layer.drawLayer(menubarShadow, 0, menubar.height);
-
-		this.__layer.width = CGScreen.frame.width;
-		this.__layer.height = CGScreen.frame.height;
 		this.__layer.drawLayer(layer);
 		this.__layer.draw();
 	}
@@ -123,7 +111,7 @@ return $CFShared[_title] || class extends LFView {
 			try {
 				let user = new CFPreferences('Global').get().Users.find(v => v.Group === 1);
 
-				_request('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable, ...arguments_);
+				_request('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
 
 				return this.getApplication(identifier);
 			} catch(error) {

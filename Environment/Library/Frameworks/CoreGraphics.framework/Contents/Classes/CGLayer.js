@@ -1,7 +1,6 @@
 // noinspection JSAnnotator
 return $CFShared[_title] || class {
 	static __friends__ = [this]
-	static __main;
 
 	__layer = _request('drCreate', 0, 0);
 	__context = this.__layer.context2d;
@@ -14,10 +13,6 @@ return $CFShared[_title] || class {
 		this.y = y;
 		this.width = width;
 		this.height = height;
-
-		if(!this.constructor.__main) {
-			this.constructor.__main = this;
-		}
 	}
 
 	get x() {
@@ -64,12 +59,6 @@ return $CFShared[_title] || class {
 		this.__layer.height = value;
 	}
 
-	draw() {
-		if(this.constructor.__main === this) {
-			_request('fbWrite', this.__layer);
-		}
-	}
-
 	drawRectangle(color, x, y, width, height) {
 		_request('drDraw', this.__layer, 'rectangle', color, x, y, width, height);
 	}
@@ -82,7 +71,27 @@ return $CFShared[_title] || class {
 		_request('drDraw', this.__layer, 'layer', layer.__layer, x, y, width, height);
 	}
 
+	clip(x, y, width, height) {
+		_request('drClip', this.__layer, x, y, width, height);
+	}
+
 	blur(x, y, width, height, amount, sharp, draw) {
-		_request('drBlur', this.__layer, x, y, width, height, amount, sharp, draw)
+		_request('drBlur', this.__layer, x, y, width, height, amount, sharp, draw);
+	}
+
+	move(type, x, y, width, height, layer, x_, y_) {
+		_request('drMove', this.__layer, type, x, y, width, height, layer, x_, y_);
+	}
+
+	mask(layer, ...arguments_) {
+		_request('drMask', this.__layer, layer, ...arguments_);
+	}
+
+	clear(x, y, width, height) {
+		_request('drClear', this.__layer, x, y, width, height);
+	}
+
+	iterate(function_) {
+		_request('drIterate', this.__layer, function_);
 	}
 }

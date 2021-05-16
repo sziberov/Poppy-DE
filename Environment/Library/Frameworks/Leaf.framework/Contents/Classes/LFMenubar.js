@@ -62,4 +62,22 @@ return $CFShared[_title] || class extends LFView {
 		this.__transparent = value;
 		this.attributes['transparent'] = value === true ? '' : undefined;
 	}
+
+	draw() {
+		let layer = this.__layer;
+
+		layer.width = CGScreen.frame.width;
+		layer.height = 48;
+
+	//	layer.drawLayer(new CGImage(LFWorkspace.shared.desktopImage), 0, 0, '100', '100');
+	//	layer.blur(0, 0, layer.width, layer.height/2, 4, true, true);
+		layer.drawGradient([
+			[0, CGColor('100','100','100', '75')],
+			[1, CGColor('100','100','100', '25')]
+		], 0, 0, layer.width, layer.height/2, 0, 0, 0, layer.height/2);
+		layer.drawGradient([
+			[0, CGColor('0','0','0', '25')],
+			[1, CGColor('0','0','0', '0')]
+		], 0, layer.height/2, layer.width, layer.height/2, 0, 0, 0, layer.height/2);
+	}
 }

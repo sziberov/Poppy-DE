@@ -117,7 +117,7 @@
 							this.bootState(false);
 					//	});
 
-						this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login');
+						this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
 					} catch(error) {
 						this.kdbPanic(error);
 					}
@@ -1181,20 +1181,7 @@
 
 			processExecute(terminalId, processId, login, password, path, ...arguments_) {
 				let user = this.fsReadPreferences('Global').Users.find(v => v.Login === login && v.Password === password),
-					executable,
-					compiled;
-
-				for(let v of ['.jsc', '.js']) {
-					let a = path+v,
-						b = this.fsRead(a);
-
-					if(b) {
-						executable = b;
-						compiled = v === '.jsc';
-
-						break;
-					}
-				}
+					executable = this.fsRead(path);
 
 				if(terminalId && !this.terminals.find(v => v.id === terminalId)) {
 					this.kdbAdd(`processExec${ processId ? '@'+processId : '' }: Terminal incorrect`);
@@ -1209,10 +1196,15 @@
 
 					console.error(1); return;
 				}
-				if(!compiled && (!executable.startsWith('return class {') || !executable.endsWith('}'))) {
-					this.kdbAdd(`processExec${ processId ? '@'+processId : '' }: Non-executable format`);
+				if(!executable) {
+					this.kdbAdd(`processExec${ processId ? '@'+processId : '' }: Unable to access executable`);
 
 					console.error(2); return;
+				}
+				if(!executable.startsWith('return class {') || !executable.endsWith('}')) {
+					this.kdbAdd(`processExec${ processId ? '@'+processId : '' }: Non-executable format`);
+
+					console.error(3); return;
 				}
 
 				var process = {
@@ -1238,12 +1230,7 @@
 
 				this.processes.push(process);
 				try {
-					if(!compiled) {
-						executable = this.codePrepare(executable);
-
-						this.fsWrite(path+'.jsc', executable);
-					}
-					this.sbExecute(`var _executable = new ((() => { ${ executable } })())(..._arguments);`, process.environment, process.path);
+					this.sbExecute(`var _executable = new ((() => { ${ this.codePrepare(executable) } })())(..._arguments);`, process.environment, process.path);
 					this.kdbAdd(`
 						processExec: Process started:
 						    ID: ${ process.id }
@@ -1382,22 +1369,17 @@
 						'/Environment/Library/Frameworks/'+framework+'.framework/Contents'
 					],
 					path,
-					executable,
-					compiled;
+					executable;
 
-				loop:
 				for(let v of searchList) {
-					for(let v_ of ['.jsc', '.js']) {
-						let a = v+'/Classes/'+class_,
-							b = this.fsRead(a+v_);
+					let a = v+'/Classes/'+class_+'.js',
+						b = this.fsRead(a);
 
-						if(b) {
-							path = a;
-							executable = b;
-							compiled = v_ === '.jsc';
+					if(b) {
+						path = a;
+						executable = b;
 
-							break loop;
-						}
+						break;
 					}
 				}
 
@@ -1408,15 +1390,7 @@
 				}
 
 				try {
-					if(!compiled) {
-						executable = this.codePrepare(executable);
-
-						this.fsWrite(path+'.jsc', executable);
-					}
-
-				//	console.log(class_+': '+executable);
-
-					this.sbExecute(`var ${ class_ } = (() => { let _title = '${ class_ }', _path = '${ path }'; ${ executable } })();`, process.environment, class_);
+					this.sbExecute(`var ${ class_ } = (() => { let _title = '${ class_ }', _path = '${ path }'; ${ this.codePrepare(executable) } })();`, process.environment, class_);
 
 					if(framework === class_) {
 						this.kdbAdd(`classImport: Successfully imported ${ framework === class_ ? 'main' : class_ } class of ${ framework } framework into process: ${ process.id }`);

@@ -46,15 +46,12 @@ return class extends LFView {
 			width: width,
 			height: height
 		}
-
-		this.__background = background;
-		this.style['background'] = background;
-
+		this.background = background;
 		this.level = level;
 		this.type = type;
 		this.title = title;
-		this.__toolbar = toolbar;
-		this.__view = view;
+		this.toolbar = toolbar;
+		this.view = view;
 
 		this.subviews = [
 			...!type.includes('borderless') ? [
@@ -66,10 +63,10 @@ return class extends LFView {
 							new LFTitlebarButton({ type: 'maximize',	action: type.includes('resizable')		? () => this.maximize()	: undefined })
 						] })
 					] : [],
-					...this.toolbar?.class === 'LFToolbar' ? [this.toolbar] : []
+					...this.toolbar ? [this.toolbar] : []
 				] }),
 			] : [],
-			...this.view?.class === 'LFView' ? [this.view] : [new LFView()]
+			...this.view ? [this.view] : [new LFView()]
 		]
 
 		this.add(LFWorkspace.shared);
@@ -110,6 +107,10 @@ return class extends LFView {
 
 	get maximized() {
 		return this.element.position().top === 24 && this.element.position().left === 0 && LFWorkspace.shared.element.outerWidth() === this.element.outerWidth() && LFWorkspace.shared.element.outerHeight()-24 === this.element.outerHeight();
+	}
+
+	get background() {
+		return this.__background;
 	}
 
 	get level() {
@@ -180,6 +181,15 @@ return class extends LFView {
 		}
 	}
 
+	set background(value) {
+		if(value && typeof value !== 'string') {
+			throw new TypeError();
+		}
+
+		this.__background = value;
+		this.style['background'] = value ? value : '';
+	}
+
 	set level(value) {
 		if(typeof value !== 'number')	throw new TypeError();
 		if(value < 0 || value > 2)		throw new RangeError();
@@ -206,6 +216,22 @@ return class extends LFView {
 		}
 
 		this.__title = value;
+	}
+
+	set toolbar(value) {
+		if(value && value.class !== 'LFToolbar') {
+			throw new TypeError();
+		}
+
+		this.__toolbar = value;
+	}
+
+	set view(value) {
+		if(value && value.class !== 'LFView') {
+			throw new TypeError();
+		}
+
+		this.__view = value;
 	}
 
 	mousedown() {
