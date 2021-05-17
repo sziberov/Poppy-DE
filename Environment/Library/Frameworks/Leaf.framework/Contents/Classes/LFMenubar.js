@@ -69,15 +69,35 @@ return $CFShared[_title] || class extends LFView {
 		layer.width = CGScreen.frame.width;
 		layer.height = 48;
 
-	//	layer.drawLayer(new CGImage(LFWorkspace.shared.desktopImage), 0, 0, '100', '100');
-	//	layer.blur(0, 0, layer.width, layer.height/2, 4, true, true);
+		let width = layer.width,
+			height = layer.height/2;
+
+		if(!this.transparent) {
+			layer.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, height);
+			layer.drawGradient([
+				[0, CGColor('100', '100', '100', 0.0625)],
+				[1, CGColor(0, 0, 0, 0.5)]
+			], 0, 0, width, height, 0, 0, 0, height);
+			layer.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, 1);
+			layer.drawRectangle(CGColor('25', '25', '25'), 0, height-1, width, 1);
+		} else {
+			let blurMask = new CGLayer({ width: width, height: height });
+
+			blurMask.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, height);
+
+			layer.backgroundFilters = [{ title: 'blur', mask: blurMask, amount: 4 }]
+
+			layer.drawGradient([
+				[0, CGColor('100', '100', '100', 0.75)],
+				[1, CGColor('100', '100', '100', 0.25)]
+			], 0, 0, width, height, 0, 0, 0, height);
+			layer.drawRectangle(CGColor('100', '100', '100', 0.75), 0, 0, width, 1);
+			layer.drawRectangle(CGColor(0, 0, 0, 0.25), 0, height-1, width, 1);
+		}
+
 		layer.drawGradient([
-			[0, CGColor('100','100','100', '75')],
-			[1, CGColor('100','100','100', '25')]
-		], 0, 0, layer.width, layer.height/2, 0, 0, 0, layer.height/2);
-		layer.drawGradient([
-			[0, CGColor('0','0','0', '25')],
-			[1, CGColor('0','0','0', '0')]
-		], 0, layer.height/2, layer.width, layer.height/2, 0, 0, 0, layer.height/2);
+			[0, CGColor(0, 0, 0, 0.25)],
+			[1, CGColor(0, 0, 0, 0)]
+		], 0, height, width, height, 0, 0, 0, height);
 	}
 }

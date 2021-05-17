@@ -421,7 +421,7 @@
 					console.error(0); return;
 				}
 
-				let layer = $('<canvas/>')[0]
+				let layer = document.createElement('canvas');
 
 				layer.width = width;
 				layer.height = height;
@@ -587,27 +587,28 @@
 				return layer_;
 			}
 
-			drBlur(layer, x, y, width, height, amount, sharp, draw) {
+			drBlur(layer, amount, sharp, apply, layer_, x, y, ...arguments_) {
 				if(typeof amount !== 'number' || amount < 0) {
-					return;
+					console.error(0); return;
 				}
 
-				x ??= 0;
-				y ??= 0;
-				width ??= layer.width;
-				height ??= layer.height;
+				let layer__ = this.drCreate(!sharp ? layer.width+amount*2 : layer.width, !sharp ? layer.height+amount*2 : layer.height);
 
-				let layer_ = this.drCreate(!sharp ? width+amount*2 : width, !sharp ? height+amount*2 : height),
-					context_ = layer_.context2d;
+				layer__.context2d.filter = 'blur('+amount+'px)';
 
-				context_.filter = 'blur('+amount+'px)';
-				this.drDraw(layer_, 'layer', !sharp ? this.drClip(layer, x, y, width, height) : layer, !sharp ? amount : -x, !sharp ? amount : -y);
-				context_.filter = '';
-
-				if(!draw) {
-					return layer_;
+				if(!sharp) {
+					this.drDraw(layer__, 'layer', this.drMask(layer, layer_, false, x, y, ...arguments_), amount, amount);
 				} else {
-					this.drDraw(layer, 'layer', layer_, !sharp ? x-amount : x, !sharp ? y-amount : y);
+					this.drDraw(layer__, 'layer', layer);
+					this.drMask(layer__, layer_, true, x, y);
+				}
+
+				layer__.context2d.filter = 'none';
+
+				if(!apply) {
+					return layer__;
+				} else {
+					this.drDraw(layer, 'layer', layer__, !sharp ? 0-amount : 0, !sharp ? 0-amount : 0);
 				}
 			}
 
@@ -649,16 +650,29 @@
 				}
 			}
 
-			drMask(layer, layer_, ...arguments_) {
+			drMask(layer, layer_, apply = true, ...arguments_) {
 				let layer__ = this.drCreate(layer.width, layer.height);
-
-				this.drDraw(layer__, 'layer', layer_, ...arguments_);
 
 				layer__.context2d.globalCompositeOperation = 'source-in';
 
+				this.drDraw(layer__, 'layer', layer_, ...arguments_);
 				this.drDraw(layer__, 'layer', layer);
-				this.drClear(layer);
-				this.drDraw(layer, 'layer', layer__);
+
+				layer__.context2d.globalCompositeOperation = 'source-over';
+
+				if(apply) {
+					let context = layer.context2d,
+						filters = context.filter;
+
+					context.filter = 'none';
+
+					this.drClear(layer);
+					this.drDraw(layer, 'layer', layer__);
+
+					context.filter = filters;
+				} else {
+					return layer__;
+				}
 			}
 
 			drClear(layer, x, y, width, height) {

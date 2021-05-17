@@ -21,7 +21,7 @@ return $CFShared[_title] || class {
 	}
 
 	__draw() {
-		_request('fbWrite', this.__layer);
+		_request('fbWrite', this.__layer.draw().__layer);
 	}
 
 	createWorkspace() {}
