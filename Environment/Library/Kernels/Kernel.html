@@ -1020,27 +1020,26 @@
 			}
 
 			terminalCreate(process) {
-				let id = this.terminals.length > 0 ? Math.max(...this.terminals.map(v => v.id))+1 : 1,
-					terminal = {
-						id: id,
-						parentId: process?.terminalId || 0,
-						mode: 'text',
-						current: !this.terminals.some(v => v.current),
-						strings: []
-					}
+				let id = this.terminals.length > 0 ? Math.max(...this.terminals.map(v => v.id))+1 : 1;
 
-				this.terminals.push(terminal);
+				this.terminals.push({
+					id: id,
+					parentId: process?.terminalId || 0,
+					mode: 'text',
+					current: !this.terminals.some(v => v.current),
+					strings: []
+				});
 				this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'added', value: id });
 
 				return id;
 			}
 
 			get terminalCurrent() {
-				return this.terminals.filter(v => v.current);
+				return this.terminals.find(v => v.current).id;
 			}
 
 			set terminalCurrent(terminalId) {
-				if(this.terminals.find(v => v.terminalId === terminalId)) {
+				if(this.terminals.find(v => v.id === terminalId)) {
 					for(let v of this.terminals) {
 						v.current = v.id === terminalId;
 					}
