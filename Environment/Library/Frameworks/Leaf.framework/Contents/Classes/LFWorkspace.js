@@ -14,7 +14,7 @@ return $CFShared[_title] || class extends LFView {
 		this.__shared = undefined;
 	}
 
-//	__windowServer = new CGWindowServer();
+	__windowServer = new CGWindowServer();
 	__launchedApplications = new CFArray();
 	__desktopImage;
 

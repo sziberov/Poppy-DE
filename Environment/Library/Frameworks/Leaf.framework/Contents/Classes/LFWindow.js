@@ -1,5 +1,16 @@
 // noinspection JSAnnotator
 return class extends LFView {
+	static level = Object.freeze({
+		background:	0,
+		desktop:	4,
+		normal:		8,
+		panel:		12,
+		dock:		16,
+		floating:	20,
+		menu:		24,
+		menubar:	28
+	});
+
 	__application = LFApplication.shared;
 	__hidden = true;
 	__main = false;
@@ -22,7 +33,7 @@ return class extends LFView {
 		width,
 		height,
 		background,
-		level = 1,	//0 = Desktop, 1 = Normal, 2 = Alert
+		level = 1,
 		type = [
 			'titled',
 			'closable',

@@ -8,6 +8,7 @@ return $CFShared[_title] || class {
 	__x;
 	__y;
 	__backgroundFilters = []
+	__hidden;
 
 	constructor({ x = 0, y = 0, width = 0, height = 0 } = {}) {
 		this.x = x;
@@ -40,6 +41,10 @@ return $CFShared[_title] || class {
 		return this.__backgroundFilters;
 	}
 
+	get hidden() {
+		return this.__layer.hidden;
+	}
+
 	set sublayers(value) {
 		if(value && !Array.isArray(value)) {
 			throw new TypeError();
@@ -52,15 +57,17 @@ return $CFShared[_title] || class {
 	}
 
 	set x(value) {
-		if(typeof value !== 'number')	throw new TypeError();
-		if(value < 0)					throw new RangeError();
+		if(typeof value !== 'number') {
+			throw new TypeError();
+		}
 
 		this.__x = value;
 	}
 
 	set y(value) {
-		if(typeof value !== 'number')	throw new TypeError();
-		if(value < 0)					throw new RangeError();
+		if(typeof value !== 'number') {
+			throw new TypeError();
+		}
 
 		this.__y = value;
 	}
@@ -90,11 +97,22 @@ return $CFShared[_title] || class {
 		}
 	}
 
+	set hidden(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.__hidden = value;
+	}
+
 	draw() {
 		let layer = new CGLayer({ x: this.x, y: this.y, width: this.width, height: this.height });
 
-		layer.drawLayer(this);
+		layer.drawLayer(this, 0, 0);
 		for(let v of this.__sublayers) {
+			if(v.hidden) {
+				continue;
+			}
 			for(let v_ of v.__backgroundFilters) {
 				if(v_.title === 'blur') {
 					layer.blur(v_.amount, true, true, v_.mask, v.x+v_.mask.x, v.y+v_.mask.y);
@@ -115,7 +133,7 @@ return $CFShared[_title] || class {
 	}
 
 	drawLayer(layer, x, y, width, height) {
-		_request('drDraw', this.__layer, 'layer', layer.__layer, x || layer.x, y || layer.y, width, height);
+		_request('drDraw', this.__layer, 'layer', layer.__layer, x ?? layer.x, y ?? layer.y, width, height);
 	}
 
 	clip(x, y, width, height) {
@@ -123,7 +141,7 @@ return $CFShared[_title] || class {
 	}
 
 	blur(amount, sharp, apply, layer, x, y, ...arguments_) {
-		_request('drBlur', this.__layer, amount, sharp, apply, layer.__layer, x || layer.x, y || layer.y, ...arguments_);
+		_request('drBlur', this.__layer, amount, sharp, apply, layer.__layer, x ?? layer.x, y ?? layer.y, ...arguments_);
 	}
 
 	move(type, x, y, width, height, layer, x_, y_) {
@@ -131,7 +149,7 @@ return $CFShared[_title] || class {
 	}
 
 	mask(layer, apply, x, y, ...arguments_) {
-		_request('drMask', this.__layer, layer.__layer, apply, x || layer.x, y || layer.y, ...arguments_);
+		_request('drMask', this.__layer, layer.__layer, apply, x ?? layer.x, y ?? layer.y, ...arguments_);
 	}
 
 	clear(x, y, width, height) {

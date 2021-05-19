@@ -556,7 +556,7 @@
 
 						if(typeof angle !== 'number') {
 							context.imageSmoothingEnabled = !!(width || height);
-							context.drawImage(layer_, x || 0, y || 0, width || layer_.width, height || layer_.height);
+							context.drawImage(layer_, x ?? 0, y ?? 0, width ?? layer_.width, height ?? layer_.height);
 						} else {
 							angle = angle*Math.PI/180;
 
@@ -1482,8 +1482,10 @@
 						caller				=== class_.constructor	&& typeof caller === 'function';
 					owns = equals && (
 						typeof class_[field] === 'undefined' ||
+						({}).hasOwnProperty.call(caller, field) ||
 						({}).hasOwnProperty.call(caller.constructor, field) ||
-						({}).hasOwnProperty.call(caller, field)
+						({}).hasOwnProperty.call(caller.__proto__, field) ||
+						({}).hasOwnProperty.call(caller.prototype || {}, field)
 					);
 					inherits = Object.instanceOf(caller, class_);
 					friends = (class_.constructor || class_).__friends__ || []
