@@ -1,10 +1,10 @@
 Poppy DE
 --
-Free cross-platform OS X-like user interface and applications implementation (attempt of).
-
 Свободная кроссплатформенная реализация OS X-подобного пользовательского интерфейса и приложений (попытка).
 
-Architecture:
+Free cross-platform OS X-like user interface and applications implementation (attempt of).
+
+Архитектура (Architecture):
 
 	NW.JS + ImageMagick				Native
 		Opium Kernel				HTML + CSS + JS + Node.JS
@@ -15,3 +15,5 @@ Architecture:
 				Enviro			.app Bundles
 				Dock
 				...
+
+Приоритетная задача (Primary task): Переход с DOM-интерфейса на Canvas (Replacing DOM-interface with Canvas).
