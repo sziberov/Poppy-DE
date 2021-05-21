@@ -53,7 +53,7 @@ return class extends LFResponder {
 			this.subviews[k].destroy();
 		}
 		if(value) {
-			this.addSubviews(value);
+			this.addSubviews(value.filter(v => v));
 		}
 	}
 

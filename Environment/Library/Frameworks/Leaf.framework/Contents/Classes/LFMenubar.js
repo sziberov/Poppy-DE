@@ -91,8 +91,8 @@ return $CFShared[_title] || class extends LFView {
 				[0, CGColor('100', '100', '100', 0.75)],
 				[1, CGColor('100', '100', '100', 0.25)]
 			], 0, 0, width, height, 0, 0, 0, height);
-			layer.drawRectangle(CGColor('100', '100', '100', 0.75), 0, 0, width, 1);
-			layer.drawRectangle(CGColor(0, 0, 0, 0.25), 0, height-1, width, 1);
+			layer.drawRectangle(CGColor('100', '100', '100', 0.25), 0, 0, width, 1);
+			layer.drawRectangle(CGColor(0, 0, 0, 0.5), 0, height-1, width, 1);
 		}
 
 		layer.drawGradient([

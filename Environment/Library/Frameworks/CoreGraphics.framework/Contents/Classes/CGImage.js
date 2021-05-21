@@ -1,22 +1,14 @@
 // noinspection JSAnnotator
 return class {
-	static __friends__ = [CGLayer]
-
-	__layer;
-
 	constructor(URL, type) {
 		if(typeof URL !== 'string') {
 			console.error(0); return;
 		}
 
-		this.__layer = _request('drOpen', CFFile.content(URL), type);
-	}
+		let layer = new CGLayer();
 
-	get width() {
-		return this.__layer.width;
-	}
+		layer.__layer = _request('drOpen', CFFile.content(URL), type);
 
-	get height() {
-		return this.__layer.height;
+		return layer;
 	}
 }

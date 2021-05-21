@@ -60,7 +60,7 @@ return $CFShared[_title] || class {
 
 		layer.sublayers = [
 			...layers,
-			this.__cursor.layer
+			...this.__cursor ? [this.__cursor.layer] : []
 		]
 
 		layer.drawRectangle(CGColor('100', '100', '100'), 0, 0, layer.width, layer.height);

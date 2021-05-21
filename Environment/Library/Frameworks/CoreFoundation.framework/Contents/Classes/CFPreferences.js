@@ -1,6 +1,5 @@
 // noinspection JSAnnotator
 return class {
-	__user = CFProcessInfo.shared.user;
 	__identifier;
 	__properties;
 
@@ -13,18 +12,8 @@ return class {
 			throw new TypeError();
 		}
 
-		let file =
-			CFFile.content('/Users/'+this.__user+'/Library/Preferences/'+value+'.plist') ||
-			CFFile.content('/Library/Preferences/'+value+'.plist') ||
-			CFFile.content('/Environment/Library/Preferences/'+value+'.plist') ||
-			undefined;
-
-		if(!file) {
-			throw new RangeError();
-		}
-
 		this.__identifier = value;
-		this.__properties = JSON.parse(file);
+		this.__properties = _request('readPref', value);
 	}
 
 	get() {
@@ -34,6 +23,6 @@ return class {
 	set(value) {
 		this.__properties[value] = value;
 
-		CFFile.content('/Users/'+this.__user+'/Library/Preferences/'+this.__identifier+'.plist', JSON.stringify(this.__properties));
+		_request('writePref', this.__identifier, this.__properties);
 	}
 }

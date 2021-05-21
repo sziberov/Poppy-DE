@@ -1,13 +1,12 @@
 // noinspection JSAnnotator
 return $CFShared[_title] || class {
-	static __friends__ = [this, CGWindowServer]
+	static __friends__ = [this, CGWindowServer, CGImage]
 
 	__layer = _request('drCreate', 0, 0);
-	__context = this.__layer.context2d;
 	__sublayers = new CFArray();
 	__x;
 	__y;
-	__backgroundFilters = []
+	__backgroundFilters = new CFArray();
 	__hidden;
 
 	constructor({ x = 0, y = 0, width = 0, height = 0 } = {}) {
@@ -15,6 +14,10 @@ return $CFShared[_title] || class {
 		this.y = y;
 		this.width = width;
 		this.height = height;
+	}
+
+	get __context() {
+		return this.__layer.context2d;
 	}
 
 	get sublayers() {
@@ -52,7 +55,7 @@ return $CFShared[_title] || class {
 
 		this.__sublayers.removeAll();
 		if(value) {
-			this.__sublayers.add(...value);
+			this.__sublayers.add(...value.filter(v => v));
 		}
 	}
 
@@ -93,7 +96,7 @@ return $CFShared[_title] || class {
 
 		this.__backgroundFilters.removeAll();
 		if(value) {
-			this.__backgroundFilters.add(...value);
+			this.__backgroundFilters.add(...value.filter(v => v));
 		}
 	}
 
@@ -115,7 +118,7 @@ return $CFShared[_title] || class {
 			}
 			for(let v_ of v.__backgroundFilters) {
 				if(v_.title === 'blur') {
-					layer.blur(v_.amount, true, true, v_.mask, v.x+v_.mask.x, v.y+v_.mask.y);
+					layer.blur(v_.amount, true, true, v_.mask ?? v, v_.mask ? v.x+v_.mask.x : v.x, v_.mask ? v.y+v_.mask.y : v.y);
 				}
 			}
 			layer.drawLayer(v.draw());

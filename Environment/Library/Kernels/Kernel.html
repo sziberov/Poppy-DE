@@ -102,11 +102,11 @@
 						this.timerCreate(undefined, 'multiple', 1000, () => {
 							this.eventThrow(undefined, undefined, 'dateChanged');
 						});
-						/*
 						$(document).on('click dblclick contextmenu mouseover mouseenter mouseout mouseleave mousedown mouseup mousemove', '*', (e) => {
-							this.eventThrow(undefined, undefined, 'mouseChanged', { event: e.type, value: e.originalEvent });
+							if(this.verbose) {
+								this.eventThrow(undefined, undefined, 'mouseChanged', { event: e.type, value: e.originalEvent });
+							}
 						});
-						*/
 
 						/*
 						let sh = this.wtExec(`
@@ -153,6 +153,10 @@
 					width: a.width,
 					height: a.height
 				}
+			}
+
+			get verbose() {
+				return $('kdb, boot').is('[verbose]');
 			}
 
 			set verbose(value) {
@@ -258,22 +262,43 @@
 				}
 			}
 
-			fsRead(a, b) {
+			fsRead(path, a) {
 				try {
-					let c = require('fs').readFileSync('.'+a);
+					let c = require('fs').readFileSync('.'+path);
 
-					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(a) || b ? c : c.toString();
+					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || a ? c : c.toString();
 				} catch(error) {
-				//	console.warn(0); return;
+					if(this.verbose) {
+						this.kdbAdd('fsRead: Unable to access file: '+path);
+					}
+
+					return;
 				}
 			}
 
-			fsWrite(a, b) {
+			fsReadDirectory(path) {
 				try {
-					let event = this.fsRead(a) ? 'written' : 'created';
+					return require('fs').readdirSync('.'+path, { withFileTypes: true });
+				} catch(error) {
+					return []
+				}
+			}
 
-					require('fs').writeFileSync('.'+a, b, { flag: 'w' });	// b.toString();
-					this.eventThrow(undefined, undefined, 'fsChanged', { event: event, value: a });
+			fsReadPreferences(process, identifier) {
+				let properties =
+						(process ? this.fsRead('/Users/'+process.user+'/Library/Preferences/'+identifier+'.plist') : undefined) ||
+						this.fsRead('/Library/Preferences/'+identifier+'.plist') ||
+						this.fsRead('/Environment/Library/Preferences/'+identifier+'.plist');
+
+				return properties ? JSON.parse(properties) : undefined;
+			}
+
+			fsWrite(path, content) {
+				try {
+					let event = this.fsRead(path) ? 'written' : 'created';
+
+					require('fs').writeFileSync('.'+path, content, { flag: 'w' });	// content.toString();
+					this.eventThrow(undefined, undefined, 'fsChanged', { event: event, value: path });
 
 					return true;
 				} catch(error) {
@@ -281,30 +306,42 @@
 				}
 			}
 
-			fsRemove(a) {
+			fsWritePreferences(process, identifier, properties, type) {
+				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
+
+				if(!type) {
+					type = process ? 'user' : 'shared';
+				}
+				if(type && !['user', 'shared', 'environment'].includes(type)) {
+					console.error(0); return;
+				}
+				if(type === 'user' && !process) {
+					console.error(1); return;
+				}
+				if(type === 'environment' && group > 0) {
+					console.error(2); return;
+				}
+				if(!Object.isObject(properties)) {
+					console.error(3); return;
+				}
+
+				properties = JSON.stringify(properties);
+
+				return {
+					user:			() => this.fsWrite('/Users/'+process.user+'/Library/Preferences/'+identifier+'.plist', properties),
+					shared:			() => this.fsWrite('/Library/Preferences/'+identifier+'.plist', properties),
+					environment:	() => this.fsWrite('/Environment/Library/Preferences/'+identifier+'.plist', properties)
+				}[type]();
+			}
+
+			fsRemove(path) {
 				try {
-					require('fs').unlinkSync('.'+a);
+					require('fs').unlinkSync('.'+path);
 
 					return true;
 				} catch(error) {
 					console.error(0); return;
 				}
-			}
-
-			fsReadDirectory(a) {
-				try {
-					return require('fs').readdirSync('.'+a, { withFileTypes: true });
-				} catch(error) {
-					return []
-				}
-			}
-
-			fsReadPreferences(a) {
-				let b = this.fsRead('/Library/Preferences/'+a+'.plist') ||
-						this.fsRead('/Environment/Library/Preferences/'+a+'.plist') ||
-						undefined;
-
-				return b ? JSON.parse(b) : undefined;
 			}
 
 			fsType(data, title) {
@@ -393,7 +430,7 @@
 			}
 
 			fbWrite(process, value) {
-				let group = this.fsReadPreferences('Global').Users.find(v => v.Login === process?.user)?.Group;
+				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
 					console.error(0); return;
@@ -653,9 +690,10 @@
 			drMask(layer, layer_, apply = true, ...arguments_) {
 				let layer__ = this.drCreate(layer.width, layer.height);
 
+				this.drDraw(layer__, 'layer', layer_, ...arguments_);
+
 				layer__.context2d.globalCompositeOperation = 'source-in';
 
-				this.drDraw(layer__, 'layer', layer_, ...arguments_);
 				this.drDraw(layer__, 'layer', layer);
 
 				layer__.context2d.globalCompositeOperation = 'source-over';
@@ -757,7 +795,7 @@
 				}
 				if(processId && processId_ && processId !== processId_) {
 					let process = this.processes.find(v => v.id === processId),
-						group = this.fsReadPreferences('Global').Users.find(v => v.Login === process.user)?.Group;
+						group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process.user)?.Group;
 
 					if(group > 0) {
 						this.kdbAdd(`
@@ -1173,7 +1211,9 @@
 					uptime: () => this.uptime,
 					screen: () => Object.assign({}, this.screen),
 					read: (a) => this.fsRead(a),
+					readPref: (a) => this.fsReadPreferences(process, a),
 					write: (...a) => this.fsWrite(...a),
+					writePref: (...a) => this.fsWritePreferences(process, ...a),
 					remove: (a) => this.fsRemove(a),
 					createDir: () => {},
 					readDir: (a) => this.fsReadDirectory(a),
@@ -1214,7 +1254,7 @@
 			}
 
 			processExecute(terminalId, processId, login, password, path, ...arguments_) {
-				let user = this.fsReadPreferences('Global').Users.find(v => v.Login === login && v.Password === password),
+				let user = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === login && v.Password === password),
 					executable = this.fsRead(path);
 
 				if(terminalId && !this.terminals.find(v => v.id === terminalId)) {
@@ -1461,8 +1501,11 @@
 					private_ = /^__./i,
 					protected_ = /^_[^_]/i;
 
-				if(!caller) {
-					this.kdbAdd(`classProtected${ processId ? '@'+processId : '' }: No caller's context set: ${ field }`); return;
+				if(!caller || this.verbose ? !class_ : false) {
+					this.kdbAdd(`classProtected${ processId ? '@'+processId : '' }: No ${ !caller ? 'caller\'s context' : 'class' } set${ field ? ' for: "'+field+'"' : '' }`); return;
+				}
+				if(!class_) {
+					return;
 				}
 				if(field === undefined || field == null) {
 					return class_;
@@ -1496,6 +1539,11 @@
 					this.kdbAdd(`classProtected${ processId ? '@'+processId : '' }: Can't access reserved property: ${ field }`); return;
 				}
 				if(!global && private_.test(field) && !owns && !friends) {
+					console.log('Caller:');
+					console.log(caller);
+					console.log('Class:');
+					console.log(class_);
+					console.log(global, equals, owns, inherits, friends);
 					this.kdbAdd(`classProtected${ processId ? '@'+processId : '' }: Can't access private property: ${ field }`); return;
 				}
 				if(!global && protected_.test(field) && !equals && !inherits && !friends) {
@@ -1563,6 +1611,7 @@
 							property = node.property,
 							propertyName = property.name || property.value,
 							propertyComputed = node.computed,
+						//	propertyOptional = node.optional,
 							assignment = parentNode.type === 'AssignmentExpression' && parentNode.left === node,
 							call = ['OptionalCallExpression', 'CallExpression'].includes(parentNode.type) && parentNode.callee === node;
 
@@ -1598,7 +1647,7 @@
 			}
 
 			environmentRelaunch(process) {
-				let group = this.fsReadPreferences('Global').Users.find(v => v.Login === process?.user)?.Group;
+				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
 					console.error(0); return;
@@ -1608,13 +1657,31 @@
 			}
 
 			environmentQuit(process) {
-				let group = this.fsReadPreferences('Global').Users.find(v => v.Login === process?.user)?.Group;
+				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
 					console.error(0); return;
 				}
 
 				require('nw.gui').App.quit();
+			}
+
+			__test() {
+				$('framebuffer').css('z-index', 2);
+				Opium.verbose = true;
+				let serv = Opium.processes[0].environment.LFWorkspace.shared.__windowServer;
+				serv.createWorkspace();
+				serv.createWorkspace();
+				serv.__workspaces[1].layer.drawRectangle('rgba(255,120,5,1)', 0, 16, 32, 64);
+			//	let f = new Opium.processes[0].environment.CGLayer({ x: 16, y: 32, width: 512, height: 256 });
+			//	f.drawRectangle('rgba(255,255,255,0.25)', 0, 0, 512, 256);
+			//	f.backgroundFilters = [{ title: 'blur', amount: 4 }]
+				let f = new Opium.processes[0].environment.CGLayer({ width: Opium.screen.width, height: Opium.screen.height });
+				f.drawLayer(new Opium.processes[0].environment.CGImage('/Library/Desktop Images/Wave.png'), 0, 0, '100', '100');
+				let menubar = Opium.processes[0].environment.LFMenubar.shared;
+				menubar.draw();
+				serv.__workspaces[1].layer.sublayers = [f, menubar.__layer]
+				serv.setCurrentWorkspace(2);
 			}
 		}
 	</script>
@@ -1774,7 +1841,6 @@
 			border-radius: 16px;
 		}
 	</style>
-	<link rel="stylesheet" href="../Frameworks/Leaf.framework/Contents/Resources/Appearance.less">
 </head>
 <body>
 	<kdb>
