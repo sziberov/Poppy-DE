@@ -486,7 +486,7 @@
 						.replace('svg+xml', 'svg');
 				}
 
-				if (!['gif', 'jpg', 'png', 'svg', 'pdf'].includes(type)) {
+				if(!['gif', 'jpg', 'png', 'svg', 'pdf'].includes(type)) {
 					console.error(1); return;
 				}
 
@@ -503,7 +503,7 @@
 					data = require('child_process').spawnSync('magick', ['-density', '96', '-quality', '100', 'pdf:-[0]', 'png:-'], { input: data }).stdout;
 				}
 
-				let image = require('pngjs').PNG.sync.read(data),	// Fails for some reason if type is JPG
+				let image = require('pngjs').PNG.sync.read(data),	// Падает на ровном месте, если тип - jpg
 					imageData = new ImageData(new Uint8ClampedArray(image.data), image.width, image.height),
 					layer = this.drCreate(image.width, image.height);
 
@@ -1057,6 +1057,21 @@
 				`);
 			}
 
+			dlLoad(processId, path, symbol) {
+				let id = this.handlers.length > 0 ? Math.max(...this.handlers.map(v => v.id))+1 : 1;
+
+				// Load one library (one big class-containing library or single class) per handler
+				// If first import - eval code
+				// Use library own Proxified context with link to caller's context (sync warning!)
+				// Link to caller's context get's set using process id that passed by his Proxy as call to dylib's symbol every time
+				// If loaded - add attached process to id list
+				// All caller-specific data wrote by/to library should be in fact stored in callers context using Proxy
+			}
+
+			dlUnload(processId, path) {
+
+			}
+
 			terminalCreate(process) {
 				let id = this.terminals.length > 0 ? Math.max(...this.terminals.map(v => v.id))+1 : 1;
 
@@ -1173,7 +1188,7 @@
 			}
 
 			terminalRemove(process, terminalId) {
-				let terminal = this.terminals.find(v => v.id == terminalId);
+				let terminal = this.terminals.find(v => v.id === terminalId);
 
 				if(!terminal) {
 					this.kdbAdd(`terminalRemove${ process ? '@'+process.id : '' }: Unable to find terminal`);
