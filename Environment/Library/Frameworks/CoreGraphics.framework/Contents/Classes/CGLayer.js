@@ -7,6 +7,7 @@ return $CFShared[_title] || class {
 	__x;
 	__y;
 	__backgroundFilters = new CFArray();
+	__mask;
 	__hidden;
 
 	constructor({ x = 0, y = 0, width = 0, height = 0 } = {}) {

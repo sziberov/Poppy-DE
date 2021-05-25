@@ -64,7 +64,7 @@ return $CFShared[_title] || class {
 		]
 
 		layer.drawRectangle(CGColor('100', '100', '100'), 0, 0, layer.width, layer.height);
-		layer.drawRectangle(CGColor(0, 0, 0, 0.125), 0, 0, layer.width, layer.height);
+		layer.drawRectangle(CGColor(0, 0, 0, 0.25), 0, 0, layer.width, layer.height);
 
 		_request('fbWrite', this.__layer.draw().__layer);
 	}

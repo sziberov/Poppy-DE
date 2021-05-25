@@ -9,7 +9,7 @@ return class {
 		this.message = message;
 		this.information = information;
 
-		return new LFWindow({ x: 'center', width: 512, level: 2, type: ['closable'], view:
+		return new LFWindow({ x: 'center', width: 512, level: 'floating', type: ['closable'], view:
 			new LFView({ type: 'vertical', yAlign: 'stretch', subviews: [
 				new LFView({ subviews: [
 					new LFImage({ width: 64, height: 64, shared: this.type[0].toUpperCase()+this.type.substring(1) }),

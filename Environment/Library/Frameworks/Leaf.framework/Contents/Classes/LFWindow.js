@@ -1,14 +1,16 @@
 // noinspection JSAnnotator
 return class extends LFView {
 	static level = Object.freeze({
-		background:	0,
-		desktop:	4,
-		normal:		8,
-		panel:		12,
-		dock:		16,
+		base:		0,
+		background:	4,
+		desktop:	8,
+		normal:		12,
+		panel:		16,
 		floating:	20,
-		menu:		24,
-		menubar:	28
+		launchpad:	24,
+		dock:		28,
+		menu:		32,
+		menubar:	36
 	});
 
 	__application = LFApplication.shared;
@@ -16,6 +18,25 @@ return class extends LFView {
 	__main = false;
 	__x;
 	__y;
+	/*
+	__this = this;
+	__origin = {
+		__x,
+		__y,
+		get x() {
+			return this.__x;
+		},
+		get y() {
+			return this.__y;
+		},
+		set x(value) {
+			this.__x = value;
+		},
+		set y(value) {
+			this.__y = value;
+		}
+	}
+	*/
 	__width;
 	__height;
 	__background;
@@ -33,15 +54,12 @@ return class extends LFView {
 		width,
 		height,
 		background,
-		level = 1,
+		level = 'normal',
 		type = [
 			'titled',
 			'closable',
 			'minimizable',
-			'resizable',
-		//	'fullscreen',
-		//	'borderless',
-		//	'unifiedTitlebarAndToolbar'
+			'resizable'
 		],
 		title = 'Window',
 		toolbar,
@@ -202,10 +220,10 @@ return class extends LFView {
 	}
 
 	set level(value) {
-		if(typeof value !== 'number')	throw new TypeError();
-		if(value < 0 || value > 2)		throw new RangeError();
+		if(typeof value !== 'string' && typeof value !== 'number')						throw new TypeError();
+		if(typeof value === 'string' && this.constructor.level[value] === undefined)	throw new RangeError()
 
-		this.__level = value;
+		this.__level = typeof value === 'string' ? this.constructor.level[value] : value;
 	}
 
 	set type(value) {

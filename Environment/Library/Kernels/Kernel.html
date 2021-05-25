@@ -1530,7 +1530,7 @@
 						({}).hasOwnProperty.call(caller.__proto__, field) ||
 						({}).hasOwnProperty.call(caller.prototype || {}, field)
 					);
-					inherits = Object.instanceOf(caller, class_);
+					inherits = Object.isKindOf(caller, class_);
 					friends = (class_.constructor || class_).__friends__ || []
 					friends = friends.includes(caller) || friends.includes(caller.constructor);
 				}
@@ -1683,6 +1683,12 @@
 				serv.__workspaces[1].layer.sublayers = [f, menubar.__layer]
 				serv.setCurrentWorkspace(2);
 			}
+
+			/**
+			 * @todo Перевести DOM-интерфейс на Canvas
+			 * @todo Выделять под каждый .framework свой участок памяти
+			 * @todo Добавить слоям поддержку масок
+			 */
 		}
 	</script>
 	<style type="text/css">

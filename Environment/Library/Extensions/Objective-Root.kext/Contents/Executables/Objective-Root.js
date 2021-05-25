@@ -14,7 +14,7 @@ window.Object.isShallowlyEqual = (object, object_) => {
 
 	return true;
 }
-window.Object.instanceOf = function(object, object_) {
+window.Object.isKindOf = function(object, object_) {
 	let proto = object.__proto__;
 
 	while(proto) {
