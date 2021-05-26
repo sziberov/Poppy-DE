@@ -56,6 +56,17 @@ let arrayMethods = {
 		},
 		enumerable: false,
 		writable: true
+	},
+	initialize: {
+		value: function(value) {
+			if(this.length < 1) {
+				this.push(value);
+			}
+
+			return this;
+		},
+		enumerable: false,
+		writable: true
 	}
 }
 

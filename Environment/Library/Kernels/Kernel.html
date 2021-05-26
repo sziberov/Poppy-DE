@@ -808,7 +808,7 @@
 					}
 				}
 
-				for(let event of this.objects.filter(v => (processId_ ? v.processId === processId_ : true) && v.title === title && v.type === 'event')) {
+				for(let event of this.objects.filter(v => v.type === 'event' && (processId_ ? v.processId === processId_ : true) && v.title === title)) {
 					try {
 						event.function(...arguments_);
 					} catch(error) {
@@ -823,11 +823,11 @@
 			}
 
 			eventCatch(processId, title, function_) {
-				let id = this.objects.length > 0 ? Math.max(...this.objects.map(v => v.id))+1 : 1;
+				let id = Math.max(...this.objects.filter(v => v.type === 'event').map(v => v.id).initialize(0))+1;
 
 				this.objects.push({
-					id: id,
 					type: 'event',
+					id: id,
 					processId: processId || undefined,
 					title: title,
 					function: function_
@@ -842,7 +842,7 @@
 			}
 
 			eventCatchRemove(processId, eventId) {
-				let event = this.objects.find(v => v.id === eventId && v.type === 'event');
+				let event = this.objects.find(v => v.type === 'event' && v.id === eventId);
 
 				if(!event) {
 					this.kdbAdd(`eventCatchRemove${ processId ? '@'+processId : '' }: Unable to find handler`);
@@ -880,7 +880,7 @@
 					console.error(2); return;
 				}
 
-				let id = this.objects.length > 0 ? Math.max(...this.objects.map(v => v.id))+1 : 1,
+				let id = Math.max(...this.objects.filter(v => v.type === 'timer').map(v => v.id).initialize(0))+1,
 					timer;
 
 				if(variant === 'single') {
@@ -892,9 +892,9 @@
 					timer = setInterval(function_, delay, ...arguments_);
 				}
 				this.objects.push({
+					type: 'timer',
 					id: id,
 					processId: processId || undefined,
-					type: 'timer',
 					variant: variant,
 					timer: timer
 				});
@@ -908,7 +908,7 @@
 			}
 
 			timerRemove(processId, timerId) {
-				let timer = this.objects.find(v => v.id === timerId && v.type === 'timer');
+				let timer = this.objects.find(v => v.type === 'timer' && v.id === timerId);
 
 				if(!timer) {
 					this.kdbAdd(`timerRemove${ processId ? '@'+processId : '' }: Unable to find handler`);
@@ -942,23 +942,23 @@
 			 * @param {?string}					title		Название общего окружения.
 			 */
 			seCreate(processId, access, title) {
-				let id = this.objects.length > 0 ? Math.max(...this.objects.map(v => v.id))+1 : 1;
+				let id = Math.max(...this.objects.filter(v => v.type === 'se').map(v => v.id).initialize(0))+1;
 
 				if(!['read', 'readWrite'].includes(access)) {
 					this.kdbAdd(`seCreate${ processId ? '@'+processId : '' }: Access incorrect`);
 
 					console.error(0); return;
 				}
-				if(title && this.objects.find(v => v.title === title && v.type === 'se')) {
+				if(title && this.objects.find(v => v.type === 'se' && v.title === title)) {
 					this.kdbAdd(`seCreate${ processId ? '@'+processId : '' }: Handler with same title already set`);
 
 					console.error(1); return;
 				}
 
 				this.objects.push({
+					type: 'se',
 					id: id,
 					processId: processId || undefined,
-					type: 'se',
 					access: access,
 					title: title || undefined,
 					environment: {}
@@ -978,13 +978,13 @@
 			 * @returns Список идентификаторов существующих общих окружений, созданных процессом, чей идентфикатор указан (или всех, если последнего нет).
 			 */
 			seList(processId) {
-				return this.objects.filter(v => (!processId || v.processId === processId) && v.type === 'se').map(v => v.id);
+				return this.objects.filter(v => v.type === 'se' && (!processId || v.processId === processId)).map(v => v.id);
 			}
 
 			seInfo(processId, seSearch) {
 				let se =
-					typeof seSearch == 'number' ? this.objects.find(v => v.id === seSearch && v.type === 'se') :
-					typeof seSearch == 'string' ? this.objects.find(v => v.title === seSearch && v.type === 'se') :
+					typeof seSearch == 'number' ? this.objects.find(v => v.type === 'se' && v.id === seSearch) :
+					typeof seSearch == 'string' ? this.objects.find(v => v.type === 'se' && v.title === seSearch) :
 					undefined;
 
 				if(!['number', 'string'].includes(typeof seSearch)) {
@@ -1030,8 +1030,8 @@
 
 			seRemove(processId, seSearch) {
 				let se =
-						typeof seSearch == 'number' ? this.objects.find(v => v.id === seSearch && v.type === 'se') :
-						typeof seSearch == 'string' ? this.objects.find(v => v.title === seSearch && v.type === 'se') :
+						typeof seSearch == 'number' ? this.objects.find(v => v.type === 'se' && v.id === seSearch) :
+						typeof seSearch == 'string' ? this.objects.find(v => v.type === 'se' && v.title === seSearch) :
 						undefined;
 
 				if(!['number', 'string'].includes(typeof seSearch)) {
@@ -1065,7 +1065,7 @@
 				// If loaded - add attached process to id list
 				// All caller-specific data wrote by/to library should be in fact stored in callers context using Proxy
 
-				let id = this.objects.length > 0 ? Math.max(...this.objects.map(v => v.id))+1 : 1;
+				let id = Math.max(...this.objects.filter(v => v.type === 'dl').map(v => v.id).initialize(0))+1;
 			}
 
 			dlUnload(processId, path) {
