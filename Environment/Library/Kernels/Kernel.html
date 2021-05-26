@@ -315,24 +315,30 @@
 				}
 			}
 
+			fsExists(path) {
+				return require('fs').existsSync('.'+path) && require('fs').lstatSync('.'+path).isFile();
+			}
+
+			fsExistsDirectory(path) {
+				return require('fs').existsSync('.'+path) && require('fs').lstatSync('.'+path).isDirectory();
+			}
+
 			fsRead(path, a) {
-				try {
+				if(this.fsExists(path)) {
 					let c = require('fs').readFileSync('.'+path);
 
 					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || a ? c : c.toString();
-				} catch(error) {
+				} else {
 					if(this.verbose) {
 						this.kdbAdd('fsRead: Unable to access file: '+path);
 					}
-
-					return;
 				}
 			}
 
 			fsReadDirectory(path) {
-				try {
+				if(this.fsExistsDirectory(path)) {
 					return require('fs').readdirSync('.'+path, { withFileTypes: true });
-				} catch(error) {
+				} else {
 					return []
 				}
 			}
@@ -1107,19 +1113,117 @@
 				`);
 			}
 
-			dlLoad(processId, path, symbol) {
-				// Load one library (one big class-containing library or single class) per handler
-				// If first import - eval code
-				// Use library own Proxified context with link to caller's context (sync warning!)
-				// Link to caller's context get's set using process id that passed by his Proxy as call to dylib's symbol every time
-				// If loaded - add attached process to id list
-				// All caller-specific data wrote by/to library should be in fact stored in callers context using Proxy
+			/**
+			 * Load one library (one big class-containing library or single class) per object.
+			 * If loaded - add attached process to id list.
+			 *
+			 * Should:
+			 * If first load - eval code.
+			 * Use library own Proxified context with link to caller's context (sync warning!).
+			 * Link to caller's context get's set using process id that passed by his Proxy as call to dylib's symbol every time.
+			 * All caller-specific data wrote by/to library should be in fact stored in callers context using Proxy.
+			 *
+			 * Reality:
+			 * Just caches loaded libraries code.
+ 			 */
+			dlLoad(processId, path, title) {
+				if(!processId || !path || !title) {
+					console.error(0); return;
+				}
 
-				let id = Math.max(...this.dl.map(v => v.id).initialize(0))+1;
+				let dl = this.dl.find(v => v.path === path);
+
+				if(dl?.processId.includes(processId)) {
+					if(this.verbose) {
+						this.kdbAdd(`dlLoad@${ processId }: Library already attached to process: ${ path }`);
+					}
+
+					return dl.id;
+				}
+
+				if(!dl) {
+					if(!this.fsExists(path)) {
+						this.kdbAdd(`dlLoad@${ processId }: Unable to access requested library: ${ path }`);
+
+						console.error(1); return;
+					}
+
+					dl = {
+						id: Math.max(...this.dl.map(v => v.id).initialize(0))+1,
+						processId: [],
+						path: path,
+						code: undefined,
+					//	environment: undefined
+					}
+
+					try {
+						dl.code = this.codePrepare(this.fsRead(path));
+						/*
+						dl.environment = this.sbCreate(new Proxy({}, {
+							get: (target, key) => {
+								return this.processes.find(v => v.id === dl.processId).environment[key] || target[key]
+							}
+						}));
+						*/
+					} catch(error) {
+						this.kdbAdd(`dlLoad@${ processId }: Unable to parse requested library: ${ path }`);
+
+						console.error(2); return;
+					}
+
+					this.dl.push(dl);
+				}
+
+				dl.processId.push(processId);
+
+				let process = this.processes.find(v => v.id === processId);
+
+				try {
+					this.sbExecute(`var ${ title } = (() => { let _title = '${ title }', _path = '${ path }'; ${ dl.code } })();`, process.environment, title);
+				} catch(error) {
+					this.dlUnload(processId, dl.id);
+					this.kdbAdd(`dlLoad@${ processId }: Unable to execute requested library: "${ error.name }: ${ error.message }"@${ path }`, error.stack);
+
+					console.error(3); return;
+				}
+				if(this.verbose) {
+					this.kdbAdd(`
+						dlLoad@${ processId }: Successfully set handler:
+						    ID: ${ dl.id }
+						    Path: ${ path }
+					`);
+				}
+
+				return dl.id;
 			}
 
-			dlUnload(processId, path) {
+			dlUnload(processId, dlId) {
+				if(!processId || !dlId) {
+					console.error(0); return;
+				}
 
+				let dl = this.dl.find(v => v.id === dlId);
+
+				if(!dl) {
+					this.kdbAdd(`dlUnload${ processId }: Unable to find handler`);
+
+					console.error(1); return;
+				}
+				if(!dl.processId.includes(processId)) {
+					this.kdbAdd(`dlUnload@${ processId }: Processes aren't attached`); return;
+				}
+
+				dl.processId = dl.processId.filter(v => v !== processId);
+				if(dl.processId.length === 0) {
+					this.dl = this.dl.filter(v => v !== dl);
+				}
+				if(this.verbose) {
+					this.kdbAdd(`
+						dlUnload@${ processId }: Successfully removed handler:
+						    ID: ${ dl.id }
+						    Path: ${ dl.path }
+					`);
+				}
 			}
 
 			terminalCreate(process) {
@@ -1359,11 +1463,32 @@
 						_request: (...a) => this.processRequest(process, ...a),
 					//	_fork: (...a) => this.processRequest(process, 'fork', ...a),
 						_import: (...a) => this.processRequest(process, 'import', ...a),
-						_single: (...a) => this.processRequest(process, 'single', ...a),
 						_protected: (...a) => this.processRequest(process, 'protected', ...a)
 					}, {
 						get: (target, key) => {
-							return key === '_path' ? process.path : key === '_arguments' ? [...process.arguments] : ['_environment', 'window'].includes(key) ? target : key === 'require' ? undefined : target[key] || this.environment[key]
+							if(key === 'path') {
+								return process.path;
+							}
+							if(key === '_arguments') {
+								return [...process.arguments]
+							}
+							if(['_environment', 'window'].includes(key)) {
+								return target;
+							}
+							if(key === 'require') {
+								return;
+							}
+							/*
+							for(let v of this.dl.filter(v => v.processId === process.id).reverse()) {
+								if(v.environment[key]) {
+									v.environment.__process = process.environment;
+
+									return v.environment[key]
+								}
+							}
+							*/
+
+							return target[key] || this.environment[key]
 						}
 					}));
 
@@ -1481,6 +1606,9 @@
 				for(let v of this.se.filter(v => v.processId === processId)) {
 					this.seRemove(processId, v.id);
 				}
+				for(let v of this.dl.filter(v => v.processId.includes(processId))) {
+					this.dlUnload(processId, v.id);
+				}
 				this.processes = this.processes.filter(v => v !== process);
 				if(!quiet) {
 					this.kdbAdd(`
@@ -1506,18 +1634,14 @@
 						'/Library/Frameworks/'+framework+'.framework/Contents',
 						'/Environment/Library/Frameworks/'+framework+'.framework/Contents'
 					],
-					path,
-					executable;
+					path;
 
 				for(let v of searchList) {
 					let a = v+'/Classes/'+class_+'.js',
-						b = this.fsRead(a);
+						b = this.fsExists(a);
 
 					if(b) {
-						path = a;
-						executable = b;
-
-						break;
+						path = a; break;
 					}
 				}
 
@@ -1527,15 +1651,17 @@
 					console.error(0); return;
 				}
 
-				try {
-					this.sbExecute(`var ${ class_ } = (() => { let _title = '${ class_ }', _path = '${ path }'; ${ this.codePrepare(executable) } })();`, process.environment, class_);
-
+				if(this.dlLoad(process.id, path, class_)) {
 					if(framework === class_) {
 						this.kdbAdd(`classImport: Successfully imported main class of ${ framework } framework into process: ${ process.id }`);
 						this.eventThrow(undefined, process.id, 'frameworkListChanged', { event: 'added', title: framework, path: path });
+					} else {
+						if(this.verbose) {
+							this.kdbAdd(`classImport: Successfully imported ${ class_ } class of ${ framework } framework into process: ${ process.id }`);
+						}
 					}
-				} catch(error) {
-					this.kdbAdd(`classImport: Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework: "${ error.name }: ${ error.message }"`, error.stack);
+				} else {
+					this.kdbAdd(`classImport: Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
 				}
 			}
 
