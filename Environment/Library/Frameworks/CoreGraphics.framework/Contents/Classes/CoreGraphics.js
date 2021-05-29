@@ -9,6 +9,7 @@ _import(_title, 'CGScreen');
 _import(_title, 'CGColor');
 _import(_title, 'CGWindowServer');
 _import(_title, 'CGImage');
+_import(_title, 'CGContext');
 _import(_title, 'CGLayer');
 _import(_title, 'CGAppearance');
 _import(_title, 'CGElement');

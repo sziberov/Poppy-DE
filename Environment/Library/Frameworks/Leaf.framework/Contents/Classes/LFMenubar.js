@@ -73,29 +73,29 @@ return $CFShared[_title] || class extends LFView {
 			height = layer.height/2;
 
 		if(!this.transparent) {
-			layer.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, height);
-			layer.drawGradient([
+			layer.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, height);
+			layer.context.drawGradient([
 				[0, CGColor('100', '100', '100', 0.0625)],
 				[1, CGColor(0, 0, 0, 0.5)]
 			], 0, 0, width, height, 0, 0, 0, height);
-			layer.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, 1);
-			layer.drawRectangle(CGColor('25', '25', '25'), 0, height-1, width, 1);
+			layer.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, 1);
+			layer.context.drawRectangle(CGColor('25', '25', '25'), 0, height-1, width, 1);
 		} else {
 			let blurMask = new CGLayer({ width: width, height: height });
 
-			blurMask.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, height);
+			blurMask.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, height);
 
 			layer.backgroundFilters = [{ title: 'blur', mask: blurMask, amount: 4 }]
 
-			layer.drawGradient([
+			layer.context.drawGradient([
 				[0, CGColor('100', '100', '100', 0.75)],
 				[1, CGColor('100', '100', '100', 0.25)]
 			], 0, 0, width, height, 0, 0, 0, height);
-			layer.drawRectangle(CGColor('100', '100', '100', 0.25), 0, 0, width, 1);
-			layer.drawRectangle(CGColor(0, 0, 0, 0.5), 0, height-1, width, 1);
+			layer.context.drawRectangle(CGColor('100', '100', '100', 0.25), 0, 0, width, 1);
+			layer.context.drawRectangle(CGColor(0, 0, 0, 0.5), 0, height-1, width, 1);
 		}
 
-		layer.drawGradient([
+		layer.context.drawGradient([
 			[0, CGColor(0, 0, 0, 0.25)],
 			[1, CGColor(0, 0, 0, 0)]
 		], 0, height, width, height, 0, 0, 0, height);

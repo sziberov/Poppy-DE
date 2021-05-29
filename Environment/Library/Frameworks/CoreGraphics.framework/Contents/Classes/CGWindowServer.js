@@ -50,6 +50,7 @@ return $CFShared[_title] || class {
 			if(!v.current) {
 				v.layer.hidden = true;
 			} else {
+				v.layer.hidden = false;
 				currentPosition = workspaces.indexOf(v);
 			}
 			layers.push(v.layer);
@@ -63,8 +64,8 @@ return $CFShared[_title] || class {
 			...this.__cursor ? [this.__cursor.layer] : []
 		]
 
-		layer.drawRectangle(CGColor('100', '100', '100'), 0, 0, layer.width, layer.height);
-		layer.drawRectangle(CGColor(0, 0, 0, 0.25), 0, 0, layer.width, layer.height);
+		layer.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, layer.width, layer.height);
+		layer.context.drawRectangle(CGColor(0, 0, 0, 0.25), 0, 0, layer.width, layer.height);
 
 		_request('fbWrite', this.__layer.draw().__layer);
 	}
@@ -144,7 +145,7 @@ return $CFShared[_title] || class {
 
 		let layer = this.__cursor.layer;
 
-		layer.drawRectangle(CGColor(0, 0, 0), 0, 0, layer.width, layer.height);
+		layer.context.drawRectangle(CGColor(0, 0, 0), 0, 0, layer.width, layer.height);
 	}
 
 	getCursorOrigin() {

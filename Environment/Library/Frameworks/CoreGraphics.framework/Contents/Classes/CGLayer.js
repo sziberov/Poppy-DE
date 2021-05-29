@@ -1,8 +1,9 @@
 // noinspection JSAnnotator
 return $CFShared[_title] || class {
-	static __friends__ = [this, CGWindowServer, CGImage]
+	static __friends__ = [this, CGContext, CGImage, CGWindowServer]
 
 	__layer = _request('drCreate', 0, 0);
+	__context = new CGContext(this);
 	__sublayers = new CFArray();
 	__x;
 	__y;
@@ -17,8 +18,8 @@ return $CFShared[_title] || class {
 		this.height = height;
 	}
 
-	get __context() {
-		return this.__layer.context2d;
+	get context() {
+		return this.__context;
 	}
 
 	get sublayers() {
@@ -45,8 +46,12 @@ return $CFShared[_title] || class {
 		return this.__backgroundFilters;
 	}
 
+	get mask() {
+		return this.__mask;
+	}
+
 	get hidden() {
-		return this.__layer.hidden;
+		return this.__hidden;
 	}
 
 	set sublayers(value) {
@@ -101,6 +106,14 @@ return $CFShared[_title] || class {
 		}
 	}
 
+	set mask(value) {
+		if(!Object.isKindOf(value, this)) {	// Не сработает между процессами
+			throw new TypeError();
+		}
+
+		this.__mask = value;
+	}
+
 	set hidden(value) {
 		if(typeof value !== 'boolean') {
 			throw new TypeError();
@@ -112,55 +125,22 @@ return $CFShared[_title] || class {
 	draw() {
 		let layer = new CGLayer({ x: this.x, y: this.y, width: this.width, height: this.height });
 
-		layer.drawLayer(this, 0, 0);
-		for(let v of this.__sublayers) {
+		layer.context.drawLayer(this, 0, 0);
+		for(let v of this.sublayers) {
 			if(v.hidden) {
 				continue;
 			}
-			for(let v_ of v.__backgroundFilters) {
+			for(let v_ of v.backgroundFilters) {
 				if(v_.title === 'blur') {
-					layer.blur(v_.amount, true, true, v_.mask ?? v, v_.mask ? v.x+v_.mask.x : v.x, v_.mask ? v.y+v_.mask.y : v.y);
+					layer.context.blur(v_.amount, true, true, v_.mask ?? v, v_.mask ? v.x+v_.mask.x : v.x, v_.mask ? v.y+v_.mask.y : v.y);
 				}
 			}
-			layer.drawLayer(v.draw());
+			layer.context.drawLayer(v.draw());
+		}
+		if(this.mask) {
+			layer.context.mask(this.mask, true);
 		}
 
 		return layer;
-	}
-
-	drawRectangle(color, x, y, width, height) {
-		_request('drDraw', this.__layer, 'rectangle', color, x, y, width, height);
-	}
-
-	drawGradient(colors, x, y, width, height, fromX, fromY, toX, toY) {
-		_request('drDraw', this.__layer, 'gradient', colors, x, y, width, height, fromX, fromY, toX, toY);
-	}
-
-	drawLayer(layer, x, y, width, height) {
-		_request('drDraw', this.__layer, 'layer', layer.__layer, x ?? layer.x, y ?? layer.y, width, height);
-	}
-
-	clip(x, y, width, height) {
-		_request('drClip', this.__layer, x, y, width, height);
-	}
-
-	blur(amount, sharp, apply, layer, x, y, ...arguments_) {
-		_request('drBlur', this.__layer, amount, sharp, apply, layer.__layer, x ?? layer.x, y ?? layer.y, ...arguments_);
-	}
-
-	move(type, x, y, width, height, layer, x_, y_) {
-		_request('drMove', this.__layer, type, x, y, width, height, layer.__layer, x_, y_);
-	}
-
-	mask(layer, apply, x, y, ...arguments_) {
-		_request('drMask', this.__layer, layer.__layer, apply, x ?? layer.x, y ?? layer.y, ...arguments_);
-	}
-
-	clear(x, y, width, height) {
-		_request('drClear', this.__layer, x, y, width, height);
-	}
-
-	iterate(function_) {
-		_request('drIterate', this.__layer, function_);
 	}
 }

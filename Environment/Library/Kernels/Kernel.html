@@ -368,9 +368,8 @@
 			fsWritePreferences(process, identifier, properties, type) {
 				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
 
-				if(!type) {
-					type = process ? 'user' : 'shared';
-				}
+				type ??= process ? 'user' : 'shared';
+
 				if(type && !['user', 'shared', 'environment'].includes(type)) {
 					console.error(0); return;
 				}
@@ -459,8 +458,8 @@
 					return;
 				}
 
-				for (let v of types) {
-					if (v.extension && new RegExp('/\.' + v.extension + '$/gi').test(title)) {
+				for(let v of types) {
+					if(v.extension && new RegExp('/\.' + v.extension + '$/gi').test(title)) {
 						return v.mime;
 					}
 				}
@@ -704,7 +703,7 @@
 				if(!apply) {
 					return layer__;
 				} else {
-					this.drDraw(layer, 'layer', layer__, !sharp ? 0-amount : 0, !sharp ? 0-amount : 0);
+					this.drDraw(layer, 'layer', layer__, !sharp ? -amount : 0, !sharp ? -amount : 0);
 				}
 			}
 
@@ -1379,6 +1378,8 @@
 					version: (a) => this.version[a],
 					uptime: () => this.uptime,
 					screen: () => Object.assign({}, this.screen),
+					exists: (a) => this.fsExists(a),
+					existsDir: (a) => this.fsExistsDirectory(a),
 					read: (a) => this.fsRead(a),
 					readPref: (a) => this.fsReadPreferences(process, a),
 					write: (...a) => this.fsWrite(...a),
@@ -1584,7 +1585,7 @@
 			*/
 
 			/**
-			 * Завершает указанный процесс, перед этим удаляя все его хэндлеры.
+			 * Завершает указанный процесс, перед этим удаляя все связанные с ним объекты.
 			 */
 			processKill(processId, quiet) {
 				let process = this.processes.find(v => v.id === processId);
@@ -1861,12 +1862,12 @@
 				let serv = Opium.processes[0].environment.LFWorkspace.shared.__windowServer;
 				serv.createWorkspace();
 				serv.createWorkspace();
-				serv.__workspaces[1].layer.drawRectangle('rgba(255,120,5,1)', 0, 16, 32, 64);
+				serv.__workspaces[1].layer.context.drawRectangle('rgba(255,120,5,1)', 0, 16, 32, 64);
 			//	let f = new Opium.processes[0].environment.CGLayer({ x: 16, y: 32, width: 512, height: 256 });
-			//	f.drawRectangle('rgba(255,255,255,0.25)', 0, 0, 512, 256);
+			//	f.context.drawRectangle('rgba(255,255,255,0.25)', 0, 0, 512, 256);
 			//	f.backgroundFilters = [{ title: 'blur', amount: 4 }]
 				let f = new Opium.processes[0].environment.CGLayer({ width: Opium.screen.width, height: Opium.screen.height });
-				f.drawLayer(new Opium.processes[0].environment.CGImage('/Library/Desktop Images/Wave.png'), 0, 0, '100', '100');
+				f.context.drawLayer(new Opium.processes[0].environment.CGImage('/Library/Desktop Images/Wave.png'), 0, 0, '100', '100');
 				let menubar = Opium.processes[0].environment.LFMenubar.shared;
 				menubar.draw();
 				serv.__workspaces[1].layer.sublayers = [f, menubar.__layer]
@@ -1874,9 +1875,9 @@
 			}
 
 			/**
-			 * @todo Перевести DOM-интерфейс на Canvas
-			 * @todo Выделять под каждый .framework свой участок памяти
-			 * @todo Добавить слоям поддержку масок
+			 * @todo [!] Перевести DOM-интерфейс на Canvas
+			 * @todo [~] Разрешить identity-crisis классов между процессами
+			 * @todo [X] Выделять под каждый .framework свой участок памяти
 			 */
 		}
 	</script>
