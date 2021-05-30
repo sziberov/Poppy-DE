@@ -4,7 +4,7 @@ return $CFShared[_title] || class {
 
 	__layer = new CGLayer({ width: CGScreen.frame.width, height: CGScreen.frame.height });
 	__workspaces = new CFArray();
-	__windows = []
+	__windows = new CFArray();
 	__cursor;
 
 	constructor() {
@@ -104,16 +104,21 @@ return $CFShared[_title] || class {
 	}
 
 	createWindow(workspaceId, x, y, width, height) {
-		let id = this.__windows.length > 0 ? Math.max(...this.__windows.map(v => v.id))+1 : 1;
+		if(typeof workspaceId !== 'number')						throw new TypeError();
+		if(!this.__workspaces.find(v => v.id === workspaceId))	throw new RangeError();
 
-		this.__windows.add({
-			id: id,
+		let window = {
+			id: this.__windows.length > 0 ? Math.max(...this.__windows.map(v => v.id))+1 : 1,
 			workspaceId: workspaceId ?? this.getCurrentWorkspace(),
-			layer: new CGLayer()
-		});
-		CFEventEmitter.dispatch(CFProcessInfo.shared.identifier, 'windowsListChanged', { event: 'added', value: id });
+			layer: new CGLayer({ x: x, y: y, width: width, height: height })
+		}
 
-		return id;
+		window.layer.context.drawRectangle(CGColor(0, 0, 0), 0, 0, width, height);
+
+		this.__windows.add(window);
+		CFEventEmitter.dispatch(CFProcessInfo.shared.identifier, 'windowsListChanged', { event: 'added', value: window.id });
+
+		return window.id;
 	}
 
 	getWindowWorkspace() {}

@@ -56,6 +56,23 @@ return $CFShared[_title] || class extends LFView {
 				}
 			}
 		});
+		CFArray.addObserver(this.subviews, (a) => {
+			if(a.value.class !== 'LFWindow') {
+				return;
+			}
+			if(a.event === 'added') {
+				a.value.id = this.__windowServer.createWindow(
+					undefined,
+					a.value.origin.x,
+					a.value.origin.y,
+					a.value.frame.width,
+					a.value.frame.height
+				);
+			} else
+			if(a.event === 'removed') {
+				this.__windowServer.destroyWindow(a.value.id);
+			}
+		});
 	}
 
 	get launchedApplications() {
@@ -77,19 +94,6 @@ return $CFShared[_title] || class extends LFView {
 
 	mousedown() {
 		LFMenu.deactivateAll();
-	}
-
-	draw() {
-		let layer = this.__layer;
-
-		this.layer.width = CGScreen.frame.width;
-		this.layer.height = CGScreen.frame.height;
-
-		layer.drawLayer(new CGImage(this.desktopImage), 0, 0, '100', '100');
-		layer.blur(0, 0, menubar.width, menubar.height, 4, true, true);
-
-		this.__layer.drawLayer(layer);
-		this.__layer.draw();
 	}
 
 	launchApplication(URL, ...arguments_) {
