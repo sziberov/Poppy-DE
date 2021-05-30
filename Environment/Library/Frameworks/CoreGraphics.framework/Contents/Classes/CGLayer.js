@@ -107,7 +107,7 @@ return $CFShared[_title] || class {
 	}
 
 	set mask(value) {
-		if(!Object.isKindOf(value, this)) {	// Не сработает между процессами
+		if(!Object.isKindOf(value, this)) {
 			throw new TypeError();
 		}
 

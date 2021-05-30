@@ -14,15 +14,42 @@ window.Object.isShallowlyEqual = (object, object_) => {
 
 	return true;
 }
-window.Object.isKindOf = function(object, object_) {
-	let proto = object.__proto__;
+window.Object.isKindOf = function(value, value_) {
+	if(
+		typeof value !== 'object' && typeof value !== 'function' ||
+		typeof value_ !== 'object' && typeof value_ !== 'function'
+	) {
+	//	throw new TypeError();
+		return false;
+	}
 
-	while(proto) {
-	//	if(proto.constructor && proto.constructor === object_ || proto === object_.__proto__ || proto === object_) {
-		if(proto.constructor && proto.constructor === object_ || proto === Object.getPrototypeOf(object_)) {
+	if(typeof value_ === 'object') {
+		if(typeof value_.__proto__?.constructor === 'function') {
+			value_ = value_.__proto__.constructor;
+		} else {
+			return false;
+		}
+	}
+
+	let toString = Function.prototype.toString,	// (class {}).toString
+		proto = value;
+
+	while(true) {
+		value = proto;
+
+		if(typeof value === 'object') {
+			if(typeof value.__proto__?.constructor === 'function') {
+				value = value.__proto__.constructor;
+			} else {
+				return false;
+			}
+		}
+
+		if(value === value_ || toString.call(value) === toString.call(value_)) {
 			return true;
 		}
-		if(proto.__proto__) {
+
+		if(proto.__proto__ && proto.__proto__ !== Object.__proto__) {
 			proto = proto.__proto__;
 		} else {
 			break;

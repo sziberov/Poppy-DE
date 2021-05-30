@@ -3,7 +3,7 @@ return class {
 	__externalLayer;
 
 	constructor(layer) {
-		if(!Object.isKindOf(layer, CGLayer)) {	// Не сработает между процессами
+		if(!Object.isKindOf(layer, CGLayer)) {
 			throw new TypeError();
 		}
 
