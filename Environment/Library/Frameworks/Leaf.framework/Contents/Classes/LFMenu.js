@@ -18,6 +18,7 @@ return class extends LFView {
 			corners: corners
 		}
 		this.items = items;
+		this.autoactivatesItems = autoactivatesItems;
 	}
 
 	get activated() {
@@ -53,11 +54,11 @@ return class extends LFView {
 	}
 
 	set origin(value) {
-		if(!Object.isObject(value))										throw new TypeError('');
-		if(!value.x || !value.y)										throw new TypeError('');
-		if(typeof value.x !== 'number' || typeof value.y !== 'number')	throw new TypeError('');
-		if(value.corners && !Array.isArray(value.corners))				throw new TypeError('');
-		if(value.x < 0 || value.y < 0)									throw new RangeError('');
+		if(!Object.isObject(value))										throw new TypeError();
+		if(!value.x || !value.y)										throw new TypeError();
+		if(typeof value.x !== 'number' || typeof value.y !== 'number')	throw new TypeError();
+		if(value.corners && !Array.isArray(value.corners))				throw new TypeError();
+		if(value.x < 0 || value.y < 0)									throw new RangeError();
 
 		this.__x = value.x;
 		this.__y = value.y;
