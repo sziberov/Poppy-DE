@@ -54,7 +54,7 @@ return class extends LFControl {
 	}
 
 	set image(value) {
-		if(value && value.class !== 'LFImage') {
+		if(value && !Object.isKindOf(value, LFImage)) {
 			throw new TypeError();
 		}
 
@@ -67,7 +67,7 @@ return class extends LFControl {
 	}
 
 	set menu(value) {
-		if(value && value.class !== 'LFMenu') {
+		if(value && !Object.isKindOf(value, LFMenu)) {
 			throw new TypeError();
 		}
 

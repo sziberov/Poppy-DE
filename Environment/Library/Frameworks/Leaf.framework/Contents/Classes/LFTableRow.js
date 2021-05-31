@@ -33,7 +33,7 @@ return class extends LFControl {
 		super.activated = value;
 
 		if(value) {
-			for(let v of this.get('Siblings', this.class)) {
+			for(let v of this.get('Siblings', this)) {
 				v.activated = false;
 			}
 		}

@@ -12,11 +12,11 @@ return class extends LFView {
 	}
 
 	dblclick() {
-		this.get('Superview', 'LFWindow').minimize();
+		this.get('Superview', LFWindow).minimize();
 	}
 
 	drag(event, dragCache) {
-		let window = this.get('Superview', 'LFWindow'),
+		let window = this.get('Superview', LFWindow),
 			dragX = window.element.offset().left-(dragCache[1]-event.pageX),
 			dragY = window.element.offset().top-(dragCache[2]-event.pageY);
 

@@ -182,7 +182,7 @@ return class extends LFView {
 
 		this.__main = value;
 		if(value) {
-			for(let v of this.get('Siblings', this.class).filter(v => v.application === this.application)) {
+			for(let v of this.get('Siblings', this).filter(v => v.application === this.application)) {
 				v.main = false;
 			}
 		}
@@ -248,7 +248,7 @@ return class extends LFView {
 	}
 
 	set toolbar(value) {
-		if(value && value.class !== 'LFToolbar') {
+		if(value && !Object.isKindOf(value, LFToolbar)) {
 			throw new TypeError();
 		}
 
@@ -293,7 +293,7 @@ return class extends LFView {
 		if(this.element) {
 			let topDepth = 0;
 
-			for(let v of this.get('Siblings', this.class)) {
+			for(let v of this.get('Siblings', this)) {
 				let depth = v.element ? Number.parseInt(v.element.css('z-index')) : 0;
 
 				if(v.level <= this.level) {

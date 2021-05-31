@@ -104,8 +104,10 @@ return $CFShared[_title] || class {
 	}
 
 	createWindow(workspaceId, x, y, width, height) {
-		if(typeof workspaceId !== 'number')						throw new TypeError();
-		if(!this.__workspaces.find(v => v.id === workspaceId))	throw new RangeError();
+		if(workspaceId) {
+			if(typeof workspaceId !== 'number')						throw new TypeError();
+			if(!this.__workspaces.find(v => v.id === workspaceId))	throw new RangeError();
+		}
 
 		let window = {
 			id: this.__windows.length > 0 ? Math.max(...this.__windows.map(v => v.id))+1 : 1,

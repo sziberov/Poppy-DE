@@ -37,7 +37,7 @@ return class extends LFView {
 	}
 
 	get items() {
-		return this.subviews.filter(v => v.class === 'LFMenuItem');
+		return this.subviews.filter(v => Object.isKindOf(v, LFMenuItem));
 	}
 
 	get autoactivatesItems() {
@@ -81,7 +81,7 @@ return class extends LFView {
 			throw new TypeError();
 		}
 
-		this.subviews = value ? value.filter(v => v.class === 'LFMenuItem') : undefined
+		this.subviews = value ? value.filter(v => Object.isKindOf(v, LFMenuItem)) : undefined
 	}
 
 	set autoactivatesItems(value) {
@@ -97,7 +97,7 @@ return class extends LFView {
 	}
 
 	add(view) {
-		super.add(view?.class === 'LFMenubar' ? view : LFWorkspace.shared);
+		super.add(Object.isKindOf(view, LFMenubar) ? view : LFWorkspace.shared);
 
 		return this;
 	}
@@ -108,7 +108,7 @@ return class extends LFView {
 		if((mode === true || mode === 'Toggle') && this.activated === false) {
 			let topDepth = 0,
 				element = this.target?.element,
-				side = this.target?.get('Superview', 'LFMenubar') ? 'Bottom' : 'TopRight',
+				side = this.target?.get('Superview', LFMenubar) ? 'Bottom' : 'TopRight',
 				origin = {
 					Default: () => {
 						return { x: Math.round(this.__x), y: Math.round(this.__y), corners: [] }
@@ -129,12 +129,12 @@ return class extends LFView {
 					}
 				}[element ? side : 'Default']();
 
-			for(let v of [...LFWorkspace.shared.get('Subviews', this.class), ...LFWorkspace.shared.get('Subviews', 'LFWindow')]) {
+			for(let v of [...LFWorkspace.shared.get('Subviews', this), ...LFWorkspace.shared.get('Subviews', LFWindow)]) {
 				topDepth = v.element ? Math.max(topDepth, Number.parseInt(v.element.css('z-index'))) : 0;
 			}
 			this.style['z-index'] = topDepth+1;
-			if(['LFButton', 'LFMenuItem'].includes(this.target?.class)) {
-				if(this.target?.class === 'LFButton') {
+			if(Object.isKindOf(this.target, LFButton) || Object.isKindOf(this.target, LFMenuItem)) {
+				if(Object.isKindOf(this.target, LFButton)) {
 					this.target.menu = this;
 				}
 				this.target.activated = true;
@@ -143,7 +143,7 @@ return class extends LFView {
 			this.activated = true;
 		} else
 		if((mode === false || mode === 'Toggle') && this.activated === true) {
-			if(['LFButton', 'LFMenuItem'].includes(this.target?.class)) {
+			if(Object.isKindOf(this.target, LFButton) || Object.isKindOf(this.target, LFMenuItem)) {
 				this.target.activated = false;
 			}
 			this.activated = false;
@@ -170,12 +170,12 @@ return class extends LFView {
 		let exceptList = [],
 			exceptCheck = () => {
 				if(view) {
-					if(view.class === 'LFMenu') {
+					if(Object.isKindOf(view, LFMenu)) {
 						exceptList.push(view);
 
 						view = view.target;
 					} else
-					if(view.class === 'LFMenuItem') {
+					if(Object.isKindOf(view, LFMenuItem)) {
 						view = view.superview;
 					} else {
 						view = undefined;
@@ -185,7 +185,7 @@ return class extends LFView {
 			}
 
 		exceptCheck();
-		for(let v of LFWorkspace.shared.get('Subviews', _title).filter(v => !exceptList.includes(v))) {
+		for(let v of LFWorkspace.shared.get('Subviews', this).filter(v => !exceptList.includes(v))) {
 			v.setActivated(false);
 		}
 	}

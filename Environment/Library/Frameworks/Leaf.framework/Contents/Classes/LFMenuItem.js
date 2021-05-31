@@ -16,7 +16,7 @@ return class extends LFButton {
 			if(this.superview.autoactivatesItems) {
 				shouldActivate = true;
 			} else {
-				for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
+				for(let v of this.get('Siblings', this).filter(v => v.menu)) {
 					if(v.activated) {
 						shouldActivate = true; break;
 					}
@@ -27,7 +27,7 @@ return class extends LFButton {
 			this.menu.setActivated(true, this);
 		}
 		if(this.superview.autoactivatesItems && this.action || shouldActivate) {
-			for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
+			for(let v of this.get('Siblings', this).filter(v => v.menu)) {
 				v.menu.setActivated(false);
 			}
 		}
@@ -37,7 +37,7 @@ return class extends LFButton {
 		if(event.button === 0) {
 			if(this.action && !this.menu) {
 				this.activated = true;
-				for(let v of this.get('Siblings', this.class).filter(v => v.menu)) {
+				for(let v of this.get('Siblings', this).filter(v => v.menu)) {
 					v.menu.setActivated(false);
 				}
 			} else

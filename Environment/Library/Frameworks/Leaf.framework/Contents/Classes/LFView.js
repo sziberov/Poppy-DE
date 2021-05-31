@@ -139,9 +139,11 @@ return class extends LFResponder {
 				let superview = this.superview;
 
 				while(superview) {
-					if(superview.class !== value) {
+					if(!Object.isKindOf(superview, value)) {
 						if(!superview.superview) {
 							superview = undefined;
+
+							break;
 						} else {
 							superview = superview.superview;
 						}
@@ -153,7 +155,7 @@ return class extends LFResponder {
 				return superview;
 			},
 			Siblings: () => {
-				return this.superview.subviews.filter(v => v !== this && v.class === value);
+				return this.superview.subviews.filter(v => v !== this && Object.isKindOf(v, value));
 			},
 			Subviews: () => {
 				/*
@@ -162,7 +164,7 @@ return class extends LFResponder {
 
 				function check() {
 					for(var v of current.subviews) {
-						if(v.class === value) {
+						if(Object.isKindOf(v, value)) {
 							subview = v;
 							return subview;
 						}
@@ -173,7 +175,7 @@ return class extends LFResponder {
 				return subview;
 				*/
 
-				return this.subviews.filter(v => v.class === value);
+				return this.subviews.filter(v => Object.isKindOf(v, value));
 			},
 			TaggedSubviews: () => {
 				return this.subviews.filter(v => v.tag === value);

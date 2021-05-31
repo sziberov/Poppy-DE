@@ -70,7 +70,7 @@ return class extends LFView {
 			this.activated = true;
 		}
 		LFMenu.deactivateAll(exceptView);
-		this.get('Superview', 'LFWindow')?.focus();
+		this.get('Superview', LFWindow)?.focus();
 	}
 
 	mouseup() {

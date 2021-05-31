@@ -45,7 +45,7 @@ return class {
 
 		LFWorkspace.shared.launchedApplications.add(new LFLaunchedApplication(this));
 		CFArray.addObserver(LFWorkspace.shared.subviews, (a) => {
-			if(a.value.application === LFLaunchedApplication.shared && a.value.class === 'LFWindow') {
+			if(a.value.application === LFLaunchedApplication.shared && Object.isKindOf(a.value, LFWindow)) {
 				this.update('Windows');
 			}
 		});
@@ -57,7 +57,7 @@ return class {
 	}
 
 	get windows() {
-		return LFWorkspace.shared.subviews.filter(v => v.application === LFLaunchedApplication.shared && v.class === 'LFWindow');
+		return LFWorkspace.shared.subviews.filter(v => v.application === LFLaunchedApplication.shared && Object.isKindOf(v, LFWindow));
 	}
 
 	get focusingPolicy() {
@@ -105,7 +105,7 @@ return class {
 	}
 
 	set menuItems(value) {
-		value = value.filter(v => v.class === 'LFMenuItem');
+		value = value.filter(v => Object.isKindOf(v, LFMenuItem));
 
 		this.__menuItems.removeAll().add(...value);
 	}

@@ -20,7 +20,7 @@ return class {
 				] }),
 				new LFView({ xAlign: 'end', subviews: [
 					new LFButton({ minWidth: 64, title: 'OK', action: function() {
-						this.get('Superview', 'LFWindow').close();
+						this.get('Superview', LFWindow).close();
 					} })
 				] })
 			] })

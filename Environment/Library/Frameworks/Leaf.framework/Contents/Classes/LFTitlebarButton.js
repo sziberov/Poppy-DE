@@ -12,14 +12,14 @@ return class extends LFControl {
 
 	mouseover() {
 		this.highlighted = true;
-		for(let v of this.get('Siblings', this.class)) {
+		for(let v of this.get('Siblings', this)) {
 			v.highlighted = true;
 		}
 	}
 
 	mouseout() {
 		this.highlighted = false;
-		for(let v of this.get('Siblings', this.class)) {
+		for(let v of this.get('Siblings', this)) {
 			v.highlighted = false;
 		}
 	}

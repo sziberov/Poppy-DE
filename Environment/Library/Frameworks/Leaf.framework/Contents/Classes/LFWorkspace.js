@@ -57,7 +57,7 @@ return $CFShared[_title] || class extends LFView {
 			}
 		});
 		CFArray.addObserver(this.subviews, (a) => {
-			if(a.value.class !== 'LFWindow') {
+			if(!Object.isKindOf(a.value, LFWindow)) {
 				return;
 			}
 			if(a.event === 'added') {

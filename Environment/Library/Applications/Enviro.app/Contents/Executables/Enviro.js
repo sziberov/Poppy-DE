@@ -22,12 +22,12 @@ return class {
 		]
 
 		CFArray.addObserver(LFWorkspace.shared.subviews, (a) => {
-			if(a.value.application === LFLaunchedApplication.shared && a.value.class === 'LFWindow') {
+			if(a.value.application === LFLaunchedApplication.shared && Object.isKindOf(a.value, LFWindow)) {
 				let list = []
 
 				for(let v of LFApp.windows) {
-					if(v.level === 1) {
-						list.push(new LFMenuItem({ title: v.title || '[Titleless]', action: () => v.focus() }));
+					if(v.level >= LFWindow.level.normal) {
+						list.push(new LFMenuItem({ title: v.title || CFLocalizedString('[Titleless]'), action: () => v.focus() }));
 					}
 				}
 				if(list.length > 0) {

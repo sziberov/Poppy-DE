@@ -84,7 +84,7 @@ return class {
 							] })
 						] }),
 						new LFButton({ title: CFLocalizedString('Quit'), action: function() {
-							this.get('Superview', 'LFWindow').close();
+							this.get('Superview', LFWindow).close();
 							application.quit();
 						} })
 					] })
