@@ -87,23 +87,25 @@ return $CFShared[_title] || class {
 		return this.__workspaces.find(v => v.current).id;
 	}
 
-	setCurrentWorkspace(id) {
-		if(typeof id !== 'number')									throw new TypeError();
-		if(!this.__workspaces.find(v => v.id === id))				throw new RangeError();
-		if(this.__workspaces.find(v => v.id === id && v.current))	return;
+	setCurrentWorkspace(workspaceId) {
+		if(typeof workspaceId !== 'number')									throw new TypeError();
+		if(!this.__workspaces.find(v => v.id === workspaceId))				throw new RangeError();
+		if(this.__workspaces.find(v => v.id === workspaceId && v.current))	return;
 
 		for(let v of this.__workspaces) {
-			v.current = v.id === id;
+			v.current = v.id === workspaceId;
 		}
-		CFEventEmitter.dispatch(CFProcessInfo.shared.identifier, 'workspaceChanged', { event: 'current', value: id });
+		CFEventEmitter.dispatch(CFProcessInfo.shared.identifier, 'workspaceChanged', { event: 'current', value: workspaceId });
 	}
 
-	destroyWorkspace(id) {
-		this.__workspaces.removeByFilter(v => v.id === id);
-		CFEventEmitter.dispatch(CFProcessInfo.shared.identifier, 'workspaceListChanged', { event: 'removed', value: id });
+	destroyWorkspace(workspaceId) {
+		this.__workspaces.removeByFilter(v => v.id === workspaceId);
+		CFEventEmitter.dispatch(CFProcessInfo.shared.identifier, 'workspaceListChanged', { event: 'removed', value: workspaceId });
 	}
 
-	createWindow(workspaceId, x, y, width, height) {
+	createWindow(processId, workspaceId, x, y, width, height) {
+		if(typeof processId !== 'number')							throw new TypeError();
+		if(!_request('info', processId))							throw new RangeError();
 		if(workspaceId) {
 			if(typeof workspaceId !== 'number')						throw new TypeError();
 			if(!this.__workspaces.find(v => v.id === workspaceId))	throw new RangeError();
@@ -111,6 +113,7 @@ return $CFShared[_title] || class {
 
 		let window = {
 			id: this.__windows.length > 0 ? Math.max(...this.__windows.map(v => v.id))+1 : 1,
+			processId: processId,
 			workspaceId: workspaceId ?? this.getCurrentWorkspace(),
 			layer: new CGLayer({ x: x, y: y, width: width, height: height })
 		}

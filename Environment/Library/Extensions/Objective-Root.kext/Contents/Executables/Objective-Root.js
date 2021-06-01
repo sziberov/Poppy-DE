@@ -14,6 +14,7 @@ window.Object.isShallowlyEqual = (object, object_) => {
 
 	return true;
 }
+window.Object.isMemberOf = function(value, value_) {}
 window.Object.isKindOf = function(value, value_) {
 	if(
 		typeof value !== 'object' && typeof value !== 'function' ||

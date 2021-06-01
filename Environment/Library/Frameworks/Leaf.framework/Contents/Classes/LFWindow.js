@@ -13,7 +13,6 @@ return class extends LFView {
 		menubar:	36
 	});
 
-	__application = LFApplication.shared;
 	__hidden = true;
 	__main = false;
 	__x;
@@ -365,10 +364,8 @@ return class extends LFView {
 	destroy() {
 		super.destroy();
 
-		let application = this.__application;
-
-		if(application.quitableBySingleWindow && application.windows.length === 0) {
-			application.quit();
+		if(LFApp.quitableBySingleWindow && LFApp.windows.length === 0) {
+			LFApp.quit();
 		}
 	}
 }

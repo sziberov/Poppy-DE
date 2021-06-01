@@ -62,6 +62,7 @@ return $CFShared[_title] || class extends LFView {
 			}
 			if(a.event === 'added') {
 				a.value.id = this.__windowServer.createWindow(
+					a.value.application.processIdentifier,
 					undefined,
 					a.value.origin.x,
 					a.value.origin.y,
