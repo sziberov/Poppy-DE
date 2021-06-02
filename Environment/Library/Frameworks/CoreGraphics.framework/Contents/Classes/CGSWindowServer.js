@@ -1,15 +1,24 @@
 // noinspection JSAnnotator
 return $CFShared[_title] || class {
-	static __instance;
+	static __shared;
 
-	__layer = new CGLayer({ width: CGScreen.frame.width, height: CGScreen.frame.height });
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
+	__connections = new CFArray();
 	__workspaces = new CFArray();
 	__windows = new CFArray();
 	__cursor;
+	__layer = new CGLayer({ width: CGScreen.frame.width, height: CGScreen.frame.height });
 
 	constructor() {
-		if(!this.constructor.__instance) {
-			this.constructor.__instance = this;
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
 		} else {
 			console.error(0); return;
 		}
@@ -68,6 +77,30 @@ return $CFShared[_title] || class {
 		layer.context.drawRectangle(CGColor(0, 0, 0, 0.25), 0, 0, layer.width, layer.height);
 
 		_request('fbWrite', this.__layer.draw().__layer);
+	}
+
+	createConnection(process) {
+		if(Object.isObject(process) || !Object.isKindOf(process, CFProcessInfo))	throw new TypeError();	// @todo Заменить .isKindOf() на .isMemberOf()
+		if(this.__connections.find(v => v.processId === process.shared.identifier))	throw new RangeError();
+
+		let id = this.__connections.length > 0 ? Math.max(...this.__connections.map(v => v.id))+1 : 1;
+
+		this.__connections.add({
+			id: id,
+			processId: process.shared.identifier,
+			universal: false
+		});
+		CFEventEmitter.dispatch(CFProcessInfo.shared.identifier, 'connectionsListChanged', { event: 'added', value: id });
+
+		return id;
+	}
+
+	setConnectionUniversal(connectionId, value) {
+
+	}
+
+	destroyConnection(connectionId) {
+
 	}
 
 	createWorkspace() {

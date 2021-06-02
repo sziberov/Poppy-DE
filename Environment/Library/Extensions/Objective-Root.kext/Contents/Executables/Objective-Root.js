@@ -17,14 +17,14 @@ window.Object.isShallowlyEqual = (object, object_) => {
 window.Object.isMemberOf = function(value, value_) {}
 window.Object.isKindOf = function(value, value_) {
 	if(
-		typeof value !== 'object' && typeof value !== 'function' ||
-		typeof value_ !== 'object' && typeof value_ !== 'function'
+		typeof !Object.isObject(value) && typeof value !== 'function' ||
+		typeof !Object.isObject(value_) && typeof value_ !== 'function'
 	) {
 	//	throw new TypeError();
 		return false;
 	}
 
-	if(typeof value_ === 'object') {
+	if(Object.isObject(value_)) {
 		if(typeof value_.__proto__?.constructor === 'function') {
 			value_ = value_.__proto__.constructor;
 		} else {
@@ -38,7 +38,7 @@ window.Object.isKindOf = function(value, value_) {
 	while(true) {
 		value = proto;
 
-		if(typeof value === 'object') {
+		if(Object.isObject(value)) {
 			if(typeof value.__proto__?.constructor === 'function') {
 				value = value.__proto__.constructor;
 			} else {
