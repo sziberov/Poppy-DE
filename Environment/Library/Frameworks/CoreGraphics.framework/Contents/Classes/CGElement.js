@@ -1,4 +1,5 @@
-return class {
+// noinspection JSAnnotator
+return class CGElement {
 	constructor(_) {
 		this._ = {
 			tag: _title,

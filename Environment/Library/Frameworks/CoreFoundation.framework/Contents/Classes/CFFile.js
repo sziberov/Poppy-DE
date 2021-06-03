@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CFFile {
 	static create(URL) {
 		_request('write', URL, '');
 	}

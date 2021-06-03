@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CFBundle {
 	static __main = new this(CFProcessInfo.shared.path);
 //	static __current = new this(_path);
 

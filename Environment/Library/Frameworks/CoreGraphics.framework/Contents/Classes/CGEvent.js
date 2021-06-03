@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CGEvent {
 	static type = Object.freeze({
 		mouseMoved:			0,
 		leftMouseDown:		1,

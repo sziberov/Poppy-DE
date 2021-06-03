@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CFDirectory {
 	static create(URL) {
 		_request('createDir', URL);
 	}

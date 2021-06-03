@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CGContext {
 	__externalLayer;
 
 	constructor(layer) {

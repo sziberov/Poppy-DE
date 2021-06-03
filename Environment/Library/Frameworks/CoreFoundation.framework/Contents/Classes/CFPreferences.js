@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CFPreferences {
 	__identifier;
 	__properties;
 

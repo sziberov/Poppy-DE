@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CFProcessInfo {
 	static __shared;
 
 	static get shared() {
@@ -12,8 +12,8 @@ return class {
 
 	__info = _request('info');
 
-	identifier = this.__info.id;
-	parentIdentifier = this.__info.parentId;
+	identifier = this.__info.ID;
+	parentIdentifier = this.__info.parentID;
 	user = this.__info.user;
 	path = this.__info.path;
 	arguments = _arguments;

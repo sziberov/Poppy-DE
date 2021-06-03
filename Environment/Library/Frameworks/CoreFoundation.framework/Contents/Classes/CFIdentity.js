@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CFIdentity {
 	static __shared;
 
 	static get shared() {
@@ -20,7 +20,7 @@ return class {
 		this.__user = new CFPreferences('Global').get().Users.find(v => v.Login === CFProcessInfo.shared.user);
 	}
 
-	get id() {
+	get ID() {
 		return this.__user.ID;
 	}
 

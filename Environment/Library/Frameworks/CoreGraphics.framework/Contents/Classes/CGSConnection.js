@@ -1,20 +1,36 @@
 // noinspection JSAnnotator
-return class {
-	static __shared = this.create();
+return class CGSConnection {
+	static __shared;
 
 	static get shared() {
+		if(!this.__shared) {
+			this.__shared = this.create();
+		}
+
 		return this.__shared;
 	}
 
-	static set universal(value) {
-		return CGSWindowServer.shared.setConnectionUniversal(this.shared, value);
-	}
-
 	static create() {
-		return CGSWindowServer.shared.createConnection(CFProcessInfo);
+		return CGSWindowServer.shared.createConnection(CFProcessInfo.shared);
 	}
 
-	static destroy(connectionId) {
-		return CGSWindowServer.shared.destroyConnection(connectionId ?? this.shared);
+	static getID(processID) {
+		return CGSWindowServer.shared.getConnectionID(this.shared, processID);
+	}
+
+	static getProcessID(connectionID) {
+		return CGSWindowServer.shared.getConnectionProcessID(this.shared, connectionID);
+	}
+
+	static getUniversalOwner(connectionID) {
+		return CGSWindowServer.shared.getConnectionUniversalOwner(this.shared, connectionID);
+	}
+
+	static setUniversalOwner(connectionID, value) {
+		return CGSWindowServer.shared.setConnectionUniversalOwner(this.shared, connectionID, value);
+	}
+
+	static destroy(connectionID) {
+		return CGSWindowServer.shared.destroyConnection(this.shared, connectionID);
 	}
 }

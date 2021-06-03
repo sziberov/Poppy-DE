@@ -17,8 +17,8 @@ window.Object.isShallowlyEqual = (object, object_) => {
 window.Object.isMemberOf = function(value, value_) {}
 window.Object.isKindOf = function(value, value_) {
 	if(
-		typeof !Object.isObject(value) && typeof value !== 'function' ||
-		typeof !Object.isObject(value_) && typeof value_ !== 'function'
+		!Object.isObject(value) && typeof value !== 'function' ||
+		!Object.isObject(value_) && typeof value_ !== 'function'
 	) {
 	//	throw new TypeError();
 		return false;

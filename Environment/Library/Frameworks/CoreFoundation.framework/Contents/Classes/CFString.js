@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CFString {
 	static splitByLast(string = '', value) {
 		let index = string.lastIndexOf(value);
 

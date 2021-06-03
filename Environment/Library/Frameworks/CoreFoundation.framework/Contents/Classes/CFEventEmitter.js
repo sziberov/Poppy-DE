@@ -1,7 +1,7 @@
 // noinspection JSAnnotator
-return class {
-	static dispatch(processId, event, ...arguments_) {
-		_request('throw', processId, event, ...arguments_);
+return class CFEventEmitter {
+	static dispatch(processID, event, ...arguments_) {
+		_request('throw', processID, event, ...arguments_);
 	}
 
 	static addHandler(event, function_) {

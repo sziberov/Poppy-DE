@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CGImage {
 	constructor(URL, type) {
 		if(typeof URL !== 'string') {
 			console.error(0); return;

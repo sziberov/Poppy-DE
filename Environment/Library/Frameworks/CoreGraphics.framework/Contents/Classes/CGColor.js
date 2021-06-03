@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return (red, green, blue, alpha) => {
+return CGColor = (red, green, blue, alpha) => {
 	return _request('drColor', red, green, blue, alpha);
 }
 /*

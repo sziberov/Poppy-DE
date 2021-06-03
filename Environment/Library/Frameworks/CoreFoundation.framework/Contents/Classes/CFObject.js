@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class extends Object {
+return class CFObject extends Object {
 	constructor(...arguments_) {
 		super(...arguments_);
 

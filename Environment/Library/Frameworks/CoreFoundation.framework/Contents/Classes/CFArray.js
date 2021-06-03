@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class extends Array {
+return class CFArray extends Array {
 	constructor(...arguments_) {
 		super(...arguments_);
 

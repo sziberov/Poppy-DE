@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class CFURL {
 	components(value) {
 		if(typeof value !== 'string') {
 			throw new TypeError();

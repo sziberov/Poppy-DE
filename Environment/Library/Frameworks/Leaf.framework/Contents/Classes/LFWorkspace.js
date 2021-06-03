@@ -61,17 +61,17 @@ return $CFShared[_title] || class extends LFView {
 				return;
 			}
 			if(a.event === 'added') {
-				a.value.id = this.__windowServer.createWindow(
-					a.value.application.processIdentifier,
+				a.value.ID = CGSWindowServer.shared.createWindow(
+					CGSConnection.shared,
 					undefined,
-					a.value.origin.x,
-					a.value.origin.y,
+					a.value.origin.x,	// Может вернуть 'center', что не соответствует ожидаемому типу
+					a.value.origin.y,	// ...
 					a.value.frame.width,
 					a.value.frame.height
 				);
 			} else
 			if(a.event === 'removed') {
-				this.__windowServer.destroyWindow(a.value.id);
+				CGSWindowServer.shared.destroyWindow(a.value.ID);
 			}
 		});
 	}
