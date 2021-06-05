@@ -5,12 +5,18 @@
 
 _import('CoreFoundation');
 
-_import(_title, 'CGSWindowServer');
-_import(_title, 'CGSConnection');
+_import(_title, 'CGPoint');
+_import(_title, 'CGSize');
+_import(_title, 'CGRectangle');
 _import(_title, 'CGScreen');
 _import(_title, 'CGColor');
 _import(_title, 'CGImage');
 _import(_title, 'CGContext');
+_import(_title, 'CGSWindowServer');
+_import(_title, 'CGSConnection');
+_import(_title, 'CGSWorkspace');
+_import(_title, 'CGSWindow');
+_import(_title, 'CGSCursor');
 _import(_title, 'CGLayer');
 _import(_title, 'CGAppearance');
 _import(_title, 'CGElement');

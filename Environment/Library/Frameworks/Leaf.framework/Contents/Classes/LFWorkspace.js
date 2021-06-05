@@ -31,7 +31,7 @@ return $CFShared[_title] || class extends LFView {
 		this.desktopImage = desktopImage;
 
 		this.subviews.add(new LFMenubar({ transparent: true }));
-		CFEventEmitter.addHandler('processListChanged', (a) => {
+		CFEvent.addHandler('processListChanged', (a) => {
 			if(a.event === 'removed') {
 				let application = this.launchedApplications.find(v => v.processIdentifier === a.value),
 					menu = LFMenubar.shared.applicationMenu,

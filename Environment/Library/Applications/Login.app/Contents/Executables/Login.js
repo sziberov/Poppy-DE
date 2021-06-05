@@ -65,7 +65,7 @@ return class {
 						this.title = time;
 					}
 					update();
-					CFEventEmitter.addHandler('dateChanged', update);
+					CFEvent.addHandler('dateChanged', update);
 				//	_request('timerCreate', 'multiple', 1000, update);
 				},
 				menu: new LFMenu({ items: [

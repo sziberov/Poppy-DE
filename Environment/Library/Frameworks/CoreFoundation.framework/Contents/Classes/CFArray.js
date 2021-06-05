@@ -8,13 +8,21 @@ return class CFArray extends Array {
 		delete this.includes;
 	}
 
-	set length(value) {}
+	set length(value) {
+		if(value > this.length) {
+			throw new RangeError(0);
+		}
+
+		while(this.length > value) {
+			this.remove(this[this.length-1]);
+		}
+	}
 
 	add(...value) {
 		for(let v of value) {
 			super.push(v);
 
-			CFEventEmitter.dispatch(undefined, _title+'Changed', this, { event: 'added', value: v });
+			CFEvent.dispatch(undefined, _title+'Changed', this, { event: 'added', value: v });
 		}
 
 		return this;
@@ -22,10 +30,10 @@ return class CFArray extends Array {
 
 	remove(...value) {
 		for(let v of value) {
-			if(this.contains?.(v)) {
+			if(this.contains(v)) {
 				super.splice(this.indexOf(v), 1);
 
-				CFEventEmitter.dispatch(undefined, _title+'Changed', this, { event: 'removed', value: v });
+				CFEvent.dispatch(undefined, _title+'Changed', this, { event: 'removed', value: v });
 			}
 		}
 
@@ -33,22 +41,21 @@ return class CFArray extends Array {
 	}
 
 	removeAll() {
-		/*
-		super.length = 0;
+		this.length = 0;
 
-		CFEventEmitter.dispatch(undefined, _title+'Changed', this, { event: 'removedAll' });
-		*/
-		this.remove(...this);
+		CFEvent.dispatch(undefined, _title+'Changed', this, { event: 'removedAll' });
 
 		return this;
 	}
 
 	removeByFilter(function_) {
-		if(typeof function_ === 'function') {
-			for(let v of this) {
-				if(function_(v)) {
-					this.remove(v);
-				}
+		if(typeof function_ !== 'function') {
+			throw new TypeError(0);
+		}
+
+		for(let v of this) {
+			if(function_(v)) {
+				this.remove(v);
 			}
 		}
 
@@ -59,36 +66,53 @@ return class CFArray extends Array {
 		return super.includes(value);
 	}
 
-	static add(array = [], ...value) {
-		(array.add || array.push)?.(...value);
+	static add(array, ...value) {
+		if(!super.isArray(array)) {
+			throw new TypeError(0);
+		}
+
+		(array.add || array.push)(...value);
 	}
 
-	static remove(array = [], ...value) {
+	static remove(array, ...value) {
+		if(!super.isArray(array)) {
+			throw new TypeError(0);
+		}
+
 		for(let v of value) {
 			if(array.contains?.(v)) {
 				array.remove(v);
 			} else
-			if(array.includes?.(v)) {
+			if(array.includes(v)) {
 				array.splice(array.indexOf(v), 1);
 			}
 		}
 	}
 
-	static contains(array = [], value) {
-		return (array.contains || array.includes)?.(value);
+	static contains(array, value) {
+		if(!super.isArray(array)) {
+			throw new TypeError(0);
+		}
+
+		return (array.contains || array.includes)(value);
 	}
 
 	static addObserver(array, function_) {
-		if(super.isArray(array) && typeof function_ === 'function') {
-			return CFEventEmitter.addHandler(_title+'Changed', (array_, ...arguments_) => {
-				if(array_ === array) {
-					function_(...arguments_);
-				}
-			});
-		}
+		if(!super.isArray(array))			throw new TypeError(0);
+		if(typeof function_ !== 'function')	throw new TypeError(1);
+
+		return CFEvent.addHandler(_title+'Changed', (array_, ...arguments_) => {
+			if(array_ === array) {
+				function_(...arguments_);
+			}
+		});
 	}
 
-	static removeObserver(array, observerId) {
-		CFEventEmitter.removeHandler(_title+'Changed', observerId);
+	static removeObserver(observerId) {
+		if(typeof observerId !== 'number') {
+			throw new TypeError();
+		}
+
+		CFEvent.removeHandler(_title+'Changed', observerId);
 	}
 }

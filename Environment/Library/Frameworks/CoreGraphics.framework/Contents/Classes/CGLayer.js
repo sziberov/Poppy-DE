@@ -56,7 +56,7 @@ return $CFShared[_title] || class CGLayer {
 
 	set sublayers(value) {
 		if(value && !Array.isArray(value)) {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__sublayers.removeAll();
@@ -67,7 +67,7 @@ return $CFShared[_title] || class CGLayer {
 
 	set x(value) {
 		if(typeof value !== 'number') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__x = value;
@@ -75,29 +75,29 @@ return $CFShared[_title] || class CGLayer {
 
 	set y(value) {
 		if(typeof value !== 'number') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__y = value;
 	}
 
 	set width(value) {
-		if(typeof value !== 'number')	throw new TypeError();
-		if(value < 0)					throw new RangeError();
+		if(typeof value !== 'number')	throw new TypeError(0);
+		if(value < 0)					throw new RangeError(1);
 
 		this.__layer.width = value;
 	}
 
 	set height(value) {
-		if(typeof value !== 'number')	throw new TypeError();
-		if(value < 0)					throw new RangeError();
+		if(typeof value !== 'number')	throw new TypeError(0);
+		if(value < 0)					throw new RangeError(1);
 
 		this.__layer.height = value;
 	}
 
 	set backgroundFilters(value) {
 		if(value && !Array.isArray(value)) {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__backgroundFilters.removeAll();
@@ -108,7 +108,7 @@ return $CFShared[_title] || class CGLayer {
 
 	set mask(value) {
 		if(!Object.isKindOf(value, this)) {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__mask = value;
@@ -116,7 +116,7 @@ return $CFShared[_title] || class CGLayer {
 
 	set hidden(value) {
 		if(typeof value !== 'boolean') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__hidden = value;

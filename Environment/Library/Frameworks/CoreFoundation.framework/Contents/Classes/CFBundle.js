@@ -38,13 +38,13 @@ return class CFBundle {
 
 	set URL(value) {
 		if(typeof value !== 'string') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		value = value.match(/(.*(?:\.bundle|\.framework|\.app))(?=\/Contents)?/gi)?.[0]
 
 		if(!value) {
-			throw new RangeError();
+			throw new RangeError(1);
 		}
 
 		this.__URL = value;

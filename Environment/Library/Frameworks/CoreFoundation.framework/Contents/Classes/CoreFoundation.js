@@ -8,7 +8,7 @@ _import(_title, 'CFFile');
 _import(_title, 'CFDirectory');
 _import(_title, 'CFPreferences');
 _import(_title, 'CFIdentity');
-_import(_title, 'CFEventEmitter');
+_import(_title, 'CFEvent');
 _import(_title, 'CFArray');
 _import(_title, 'CFObject');
 _import(_title, 'CFString');

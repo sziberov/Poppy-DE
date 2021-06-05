@@ -1,5 +1,7 @@
 // noinspection JSAnnotator
 return class CFObject extends Object {
+	__proxy;
+
 	constructor(...arguments_) {
 		super(...arguments_);
 
@@ -9,7 +11,7 @@ return class CFObject extends Object {
 
 				target[key] = value;
 
-				CFEventEmitter.dispatch(undefined, _title+'Changed', this.__proxy, { event: event, key: key, value: value });
+				CFEvent.dispatch(undefined, _title+'Changed', this.__proxy, { event: event, key: key, value: value });
 
 				return true;
 			},
@@ -17,28 +19,33 @@ return class CFObject extends Object {
 				if(key in target) {
 					delete target[key]
 
-					CFEventEmitter.dispatch(undefined, _title+'Changed', this.__proxy, { event: 'removed', key: key });
+					CFEvent.dispatch(undefined, _title+'Changed', this.__proxy, { event: 'removed', key: key });
 
 					return true;
 				}
 			}
-		})
+		});
 
 		return this.__proxy;
 	}
 
 	static addObserver(object, function_) {
-		if(typeof function_ === 'function') {
-			return CFEventEmitter.addHandler(_title+'Changed', (object_, ...arguments_) => {
-				if(object_ === object) {
-					function_(...arguments_);
-				}
-			});
-		}
+		if(!Object.isObject(object) || !Object.isKindOf(object, this))	throw new TypeError(0);
+		if(typeof function_ !== 'function')								throw new TypeError(1);
+
+		return CFEvent.addHandler(_title+'Changed', (object_, ...arguments_) => {
+			if(object_ === object) {
+				function_(...arguments_);
+			}
+		});
 	}
 
-	static removeObserver(object, observerId) {
-		CFEventEmitter.removeHandler(_title+'Changed', observerId);
+	static removeObserver(observerId) {
+		if(typeof observerId !== 'number') {
+			throw new TypeError(0);
+		}
+
+		CFEvent.removeHandler(_title+'Changed', observerId);
 	}
 
 	static observable(object = {}, function_) {
