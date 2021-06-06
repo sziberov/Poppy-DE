@@ -1,3 +1,5 @@
+// Тип, обозначающий размеры.
+//
 // noinspection JSAnnotator
 return class CGSize {
 	__width;

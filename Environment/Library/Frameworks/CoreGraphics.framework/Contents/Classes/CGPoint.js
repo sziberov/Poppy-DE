@@ -1,3 +1,5 @@
+// Тип, обозначающий точку в двумерной системе координат.
+//
 // noinspection JSAnnotator
 return class CGPoint {
 	__x;
@@ -22,7 +24,7 @@ return class CGPoint {
 
 	set x(value) {
 		if(typeof value !== 'number') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__x = value;
@@ -30,7 +32,7 @@ return class CGPoint {
 
 	set y(value) {
 		if(typeof value !== 'number') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__y = value;

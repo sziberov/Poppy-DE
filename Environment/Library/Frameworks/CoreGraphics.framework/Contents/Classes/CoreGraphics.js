@@ -23,6 +23,10 @@ _import(_title, 'CGElement');
 _import(_title, 'CGCursor');
 _import(_title, 'CGFontManager');
 
+if(!CGSWindowServer.shared) {
+	new CGSWindowServer();
+}
+
 CFProcessInfo.shared.environment.$CGAppearance = new CGAppearance(new CFBundle(_path).resourcesURL+'/Appearance.css').add();
 
 $CFShared.CGSWindowServer = CGSWindowServer;
