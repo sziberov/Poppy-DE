@@ -1,11 +1,9 @@
 // noinspection JSAnnotator
-return class extends LFControl {
+return class LFButton extends LFControl {
 	__minWidth;
 	__title;
 	__image;
 	__menu;
-
-	class = _title;
 
 	constructor({ minWidth, title = 'Button', image, menu } = {}) {
 		super(...arguments);

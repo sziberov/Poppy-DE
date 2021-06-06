@@ -1708,11 +1708,8 @@
 					friends;
 
 				if(class_) {
-					global = environment ? Object.isShallowlyEqual(environment, class_) : false;
-					equals =
-						caller				=== class_												||
-						caller.constructor	=== class_				&& typeof class_ === 'function'	||
-						caller				=== class_.constructor	&& typeof caller === 'function';
+					global = environment ? Object.isShallowlyEqual(environment, class_) : false;	// Object.isMemberOf(class_, environment)
+					equals = Object.isMemberOf(caller, class_);
 					owns = equals && (
 						typeof class_[field] === 'undefined' ||
 						({}).hasOwnProperty.call(caller, field) ||
@@ -1879,7 +1876,6 @@
 			 * @todo [!] Добавить классы-интерфейсы к объектам CGSWindowServer
 			 * @todo [~] Разобраться с созданием окон в CGSWindowServer (узнать, где именно должен храниться слой окна и как передаваться серверу; обеспечить отрисовку слоёв окон в .__draw())
 			 * @todo [~] Добавить аналог .needsDisplay в CGLayer
-			 * @todo [~] Разделить Object.isKindOf() на две функции, одна из которых будет отвечать за прямое сравнение (без учёта наследственности)
 			 * @todo [~] Добавить проверку типов вовсюда
 			 * @todo [?] Обеспечить асинхронность процессов (мультизадачность)
 			 * @todo [?] Добавить проверку необходимости оператора ?. в .codePrepare() (вместо его слепой расстановки вовсюда)

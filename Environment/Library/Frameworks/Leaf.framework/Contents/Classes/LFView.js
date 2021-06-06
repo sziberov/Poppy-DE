@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class extends LFResponder {
+return class LFView extends LFResponder {
 	__superview;
 	__subviews = new CFArray();
 	__subviews_;
@@ -11,8 +11,6 @@ return class extends LFResponder {
 	__yAlign;
 
 //	_constraints = new CFArray();
-
-	class = _title;
 
 	constructor({ tag, type = 'horizontal', tight = false, xAlign = 'start', yAlign = 'start', subviews } = {}) {
 		super();
@@ -46,7 +44,7 @@ return class extends LFResponder {
 
 	set subviews(value) {
 		if(value && !Array.isArray(value)) {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		for(let k = this.subviews.length; k--;) {
@@ -59,14 +57,14 @@ return class extends LFResponder {
 
 	set tag(value) {
 		if(value && typeof value !== 'string' && typeof value !== 'number') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__tag = value;
 	}
 
 	create() {
-		if(this.class === _title) {
+		if(Object.isMemberOf(this, LFView)) {
 			this.attributes = {
 				'vertical': this.__type === 'vertical' ? '' : undefined,
 				'tight': this.__tight === true ? '' : undefined,

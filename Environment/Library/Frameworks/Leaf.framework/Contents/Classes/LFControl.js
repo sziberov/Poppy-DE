@@ -1,8 +1,6 @@
 // noinspection JSAnnotator
-return class extends LFView {
+return class LFControl extends LFView {
 	__action;
-
-	class = _title;
 
 	constructor({ action } = {}) {
 		super(...arguments);

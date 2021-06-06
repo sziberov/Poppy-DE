@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class LFLaunchedApplication {
 	static __shared;
 
 	static get shared() {
@@ -13,6 +13,9 @@ return class {
 			this.constructor.__shared = this;
 		} else {
 			console.error(0); return;
+		}
+		if(!Object.isKindOf(application, LFApplication)) {
+			throw new TypeError(0);
 		}
 
 		this.__application = application;

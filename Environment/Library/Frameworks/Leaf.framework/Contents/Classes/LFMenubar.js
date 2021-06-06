@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared[_title] || class extends LFView {
+return $CFShared[_title] || class LFMenubar extends LFView {
 	static __shared;
 
 	static get shared() {
@@ -15,8 +15,6 @@ return $CFShared[_title] || class extends LFView {
 	}
 
 	__transparent;
-
-	class = _title;
 
 	constructor({ transparent = false } = {}) {
 		super(...arguments);
@@ -66,7 +64,7 @@ return $CFShared[_title] || class extends LFView {
 	draw() {
 		let layer = this.__layer;
 
-		layer.width = CGScreen.frame.width;
+		layer.width = CGScreen.size.width;
 		layer.height = 48;
 
 		let width = layer.width,

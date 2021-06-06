@@ -1,8 +1,6 @@
 // noinspection JSAnnotator
-return class extends LFView {
+return class LFFrame extends LFView {	// Не имеет ничего общего с CGRectangle и .frame, название выбрано по ошибке
 	__type;
-
-	class = _title;
 
 	constructor({ type = 'top', subviews } = {}) {
 		super(...arguments);
@@ -35,8 +33,8 @@ return class extends LFView {
 
 	set type(value) {
 		if(value) {
-			if(typeof value !== 'string')			throw new TypeError();
-			if(!['top', 'bottom'].includes(value))	throw new RangeError();
+			if(typeof value !== 'string')			throw new TypeError(0);
+			if(!['top', 'bottom'].includes(value))	throw new RangeError(1);
 		}
 
 		this.__type = value;

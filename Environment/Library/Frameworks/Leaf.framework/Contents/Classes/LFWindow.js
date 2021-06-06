@@ -1,5 +1,11 @@
 // noinspection JSAnnotator
-return class extends LFView {
+return class LFWindow extends LFView {
+	static center = Object.freeze({
+		xy:	0,
+		x:	1,
+		y:	2
+	});
+
 	static level = Object.freeze({
 		base:		0,
 		background:	4,
@@ -17,25 +23,6 @@ return class extends LFView {
 	__main = false;
 	__x;
 	__y;
-	/*
-	__this = this;
-	__origin = {
-		__x,
-		__y,
-		get x() {
-			return this.__x;
-		},
-		get y() {
-			return this.__y;
-		},
-		set x(value) {
-			this.__x = value;
-		},
-		set y(value) {
-			this.__y = value;
-		}
-	}
-	*/
 	__width;
 	__height;
 	__background;
@@ -44,8 +31,6 @@ return class extends LFView {
 	__title;
 	__toolbar;
 	__view;
-
-	class = _title;
 
 	constructor({
 		x = 24,
@@ -70,7 +55,7 @@ return class extends LFView {
 			x: x,
 			y: y
 		}
-		this.frame = {
+		this.size = {
 			width: width,
 			height: height
 		}
@@ -115,7 +100,7 @@ return class extends LFView {
 		}
 	}
 
-	get frame() {
+	get size() {
 		if(!this.element) {
 			return {
 				width: this.__width,
@@ -176,7 +161,7 @@ return class extends LFView {
 
 	set main(value) {
 		if(typeof value !== 'boolean') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__main = value;
@@ -198,7 +183,7 @@ return class extends LFView {
 		}
 	}
 
-	set frame(value) {
+	set size(value) {
 		if(typeof value.width === 'number') {
 			this.__width = value.width;
 			this.style['width'] = value.width+'px';
@@ -211,7 +196,7 @@ return class extends LFView {
 
 	set background(value) {
 		if(value && typeof value !== 'string') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__background = value;
@@ -219,17 +204,17 @@ return class extends LFView {
 	}
 
 	set level(value) {
-		if(typeof value !== 'string' && typeof value !== 'number')						throw new TypeError();
-		if(typeof value === 'string' && this.constructor.level[value] === undefined)	throw new RangeError()
+		if(typeof value !== 'string' && typeof value !== 'number')						throw new TypeError(0);
+		if(typeof value === 'string' && this.constructor.level[value] === undefined)	throw new RangeError(1);
 
 		this.__level = typeof value === 'string' ? this.constructor.level[value] : value;
 	}
 
 	set type(value) {
-		if(!Array.isArray(value))																											throw new TypeError();
+		if(!Array.isArray(value))																											throw new TypeError(0);
 		for(let v of value) {
-			if(typeof v !== 'string')																										throw new TypeError();
-			if(!['titled', 'closable', 'minimizable', 'resizable', 'fullscreen', 'borderless', 'unifiedTitlebarAndToolbar'].includes(v))	throw new RangeError();
+			if(typeof v !== 'string')																										throw new TypeError(1);
+			if(!['titled', 'closable', 'minimizable', 'resizable', 'fullscreen', 'borderless', 'unifiedTitlebarAndToolbar'].includes(v))	throw new RangeError(2);
 		}
 
 		this.__type = value;
@@ -240,7 +225,7 @@ return class extends LFView {
 
 	set title(value) {
 		if(value && typeof value !== 'string' && typeof value !== 'number') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__title = value;
@@ -248,15 +233,15 @@ return class extends LFView {
 
 	set toolbar(value) {
 		if(value && !Object.isKindOf(value, LFToolbar)) {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__toolbar = value;
 	}
 
 	set view(value) {
-		if(value && value.class !== 'LFView') {
-			throw new TypeError();
+		if(value && !Object.isMemberOf(value, LFView)) {
+			throw new TypeError(0);
 		}
 
 		this.__view = value;
@@ -269,24 +254,28 @@ return class extends LFView {
 
 	didAdd() {
 		this.origin = this.origin;
-		this.frame = this.frame;
+		this.size = this.size;
 
 		this.hidden = false;
 		this.focus();
 	}
 
-	/*
-	center(_direction) {
-		if(this.element) {
-			this.origin = {
-				x: !_direction || _direction === 'Horizontally' ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : this.__x,
-				y: !_direction || _direction === 'Vertically' ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : this.__y
-			}
+	center(value = 0) {
+		if(value) {
+			if(typeof value !== 'string' && typeof value !== 'number')										throw new TypeError(0);
+			if(typeof value === 'string' && this.constructor.center[value] === undefined)					throw new RangeError(1);
+			if(typeof value === 'number' && Object.values(this.constructor.center)[value] === undefined)	throw new RangeError(2);
+		}
+		if(!this.element)																					return this;
+
+		value = typeof value === 'string' ? this.constructor.center[value] : value;
+		this.origin = {
+			x: value === 0 || value === 1 ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : this.__x,
+			y: value === 0 || value === 2 ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : this.__y
 		}
 
 		return this;
 	}
-	*/
 
 	focus() {
 		if(this.element) {

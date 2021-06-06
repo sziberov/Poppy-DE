@@ -1,6 +1,7 @@
 window.Object.isObject = (value) => {
 	return typeof value === 'object' && value !== null;
 }
+
 window.Object.isShallowlyEqual = (object, object_) => {
 	if(Object.keys(object).length !== Object.keys(object_).length) {
 		return false;
@@ -14,13 +15,14 @@ window.Object.isShallowlyEqual = (object, object_) => {
 
 	return true;
 }
-window.Object.isMemberOf = function(value, value_) {}
-window.Object.isKindOf = function(value, value_) {
+
+let isClassOf = function(value, value_, strict) {
 	if(
 		!Object.isObject(value) && typeof value !== 'function' ||
-		!Object.isObject(value_) && typeof value_ !== 'function'
+		!Object.isObject(value_) && typeof value_ !== 'function' ||
+		strict && typeof strict !== 'boolean'
 	) {
-	//	throw new TypeError();
+		//	throw new TypeError();
 		return false;
 	}
 
@@ -50,6 +52,9 @@ window.Object.isKindOf = function(value, value_) {
 			return true;
 		}
 
+		if(strict) {
+			break;
+		}
 		if(proto.__proto__ && proto.__proto__ !== Object.__proto__) {
 			proto = proto.__proto__;
 		} else {
@@ -58,6 +63,14 @@ window.Object.isKindOf = function(value, value_) {
 	}
 
 	return false;
+}
+
+window.Object.isMemberOf = function(value, value_) {
+	return isClassOf(value, value_, true);
+}
+
+window.Object.isKindOf = function(value, value_) {
+	return isClassOf(value, value_);
 }
 
 let arrayMethods = {
@@ -104,27 +117,33 @@ Object.defineProperties(window.Buffer.prototype, arrayMethods);
 window.Number.prototype.toHexString = (n) => {
 	return '0x'+(n+0x10000).toString(16).substr(-4).toUpperCase();
 }
+
 window.Math.isEven = (n) => {
 	return n % 2 == 0;
 }
+
 window.Math.isOdd = (n) => {
 	return Math.abs(n % 2) == 1;
 }
+
 window.Math.randomArbitrary = (min, max) => {
 	return Math.random()*(max-min)+min;
 }
+
 window.Math.randomInt = (min, max) => {
 	min = Math.ceil(min);
 	max = Math.floor(max);
 
 	return Math.floor(Math.random()*(max-min))+min;
 }
+
 window.Math.randomIntInclusive = (min, max) => {
 	min = Math.ceil(min);
 	max = Math.floor(max);
 
 	return Math.floor(Math.random()*(max-min+1))+min;
 }
+
 window.nil = undefined;
 window.YES = true;
 window.NO = false;

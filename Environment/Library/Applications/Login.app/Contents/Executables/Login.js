@@ -130,7 +130,7 @@ return class {
 			window = LFApp.windows.find(v => v.tag === 'about');
 
 		if(!window) {
-			new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 512, height: 184, type: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
+			new LFWindow({ tag: 'about', width: 512, height: 184, type: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
 				new LFView({ yAlign: 'center', subviews: [
 					new LFImage({ width: 128, height: 128, shared: 'Monoblock' }),
 					new LFView({ type: 'vertical', subviews: [
@@ -153,7 +153,7 @@ return class {
 						] })
 					] })
 				] })
-			});
+			}).center();
 		} else {
 			window.focus();
 		}

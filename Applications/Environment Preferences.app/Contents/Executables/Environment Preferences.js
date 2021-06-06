@@ -11,12 +11,12 @@ return class {
 			new LFMenuItem({ title: CFLocalizedString('Help') })
 		]
 
-		new LFWindow({ x: 'center', y: 'center', width: 768, height: 512, type: ['titled', 'closable', 'minimizable', 'unifiedTitlebarAndToolbar'], title: LFApp.title,
+		new LFWindow({ width: 768, height: 512, type: ['titled', 'closable', 'minimizable', 'unifiedTitlebarAndToolbar'], title: LFApp.title,
 			toolbar: new LFToolbar({ subviews: [
 				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateBackward' }) }),
 				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateForward' }) })
 			] }),
 			view: new LFView({ subviews: [] })
-		});
+		}).center();
 	}
 }

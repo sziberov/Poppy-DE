@@ -1,8 +1,7 @@
 // noinspection JSAnnotator
-return class extends LFControl {
+return class LFTableRow extends LFControl {
 	__title;
 
-	class = _title;
 	data;
 
 	constructor({ title = 'TableRow', data } = {}) {

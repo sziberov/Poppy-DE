@@ -1,7 +1,5 @@
 // noinspection JSAnnotator
-return class extends LFButton {
-	class = _title;
-
+return class LFMenuItem extends LFButton {
 	constructor({ title = 'MenuItem' } = {}) {
 		super(...arguments);
 	}

@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class LFApplication {
 	static __shared;
 
 	static get shared() {
@@ -204,14 +204,14 @@ return class {
 			let window = this.windows.find(v => v.tag === 'about');
 
 			if(!window) {
-				new LFWindow({ tag: 'about', x: 'center', y: 'center', width: 256, type: ['titled', 'closable', 'minimizable'], title: '', view:
+				new LFWindow({ tag: 'about', width: 256, type: ['titled', 'closable', 'minimizable'], title: '', view:
 					new LFView({ type: 'vertical', yAlign: 'center', subviews: [
 						...this.icon ? [new LFImage({ width: 64, height: 64, url: this.icon })] : [],
 						new LFText({ string: this.title, weight: 'bold' }),
 						...this.version ? [new LFText({ string: CFLocalizedString('Version', new CFBundle(_path))+' '+this.version, size: 'small' })] : [],
 						...this.license ? [new LFText({ string: this.license, size: 'small' })] : []
 					] })
-				});
+				}).center();
 			} else {
 				window.focus();
 			}

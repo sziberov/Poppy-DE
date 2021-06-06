@@ -1,8 +1,6 @@
 // noinspection JSAnnotator
-return class extends LFControl {
+return class LFTitlebarButton extends LFControl {
 	__type;
-
-	class = _title;
 
 	constructor({ type } = {}) {
 		super(...arguments);
@@ -29,8 +27,8 @@ return class extends LFControl {
 	}
 
 	set type(value) {
-		if(typeof value !== 'string')							throw new TypeError();
-		if(!['close', 'minimize', 'maximize'].includes(value))	throw new RangeError();
+		if(typeof value !== 'string')							throw new TypeError(0);
+		if(!['close', 'minimize', 'maximize'].includes(value))	throw new RangeError(1);
 
 		this.__type = value;
 		for(let v of ['close', 'minimize', 'maximize']) {

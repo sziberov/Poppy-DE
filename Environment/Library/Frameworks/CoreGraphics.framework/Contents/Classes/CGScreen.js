@@ -1,4 +1,4 @@
 // noinspection JSAnnotator
 return class CGScreen {
-	static frame = _request('screen');
+	static size = new CGSize(...Object.values(_request('screen')));
 }

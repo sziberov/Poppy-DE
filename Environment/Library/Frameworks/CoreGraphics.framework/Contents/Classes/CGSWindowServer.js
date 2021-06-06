@@ -14,7 +14,7 @@ return $CFShared[_title] || class CGSWindowServer {
 	__workspaces = new CFArray();
 	__windows = new CFArray();
 	__cursor;
-	__layer = new CGLayer({ width: CGScreen.frame.width, height: CGScreen.frame.height });
+	__layer = new CGLayer({ width: CGScreen.size.width, height: CGScreen.size.height });
 
 	constructor() {
 		if(!this.constructor.__shared) {
@@ -80,7 +80,7 @@ return $CFShared[_title] || class CGSWindowServer {
 	}
 
 	createConnection(processInfo) {
-		if(!Object.isObject(processInfo) || !Object.isKindOf(processInfo, CFProcessInfo))	throw new TypeError(0);	// @todo Заменить .isKindOf() на .isMemberOf()
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
 		if(this.__connections.find(v => v.processID === processInfo.identifier))	throw new RangeError(1);
 
 		let ID = new Number(this.__connections.length > 0 ? Math.max(...this.__connections.map(v => v.ID))+1 : 1);	// Упаковка примитива в объект даёт безопасность сравнений, передать в качестве аргумента чужой ID просто так не получится

@@ -1,7 +1,5 @@
 // noinspection JSAnnotator
-return class extends LFObject {
-	class = _title;
-
+return class LFResponder extends LFObject {
 	constructor() {
 		super();
 	}

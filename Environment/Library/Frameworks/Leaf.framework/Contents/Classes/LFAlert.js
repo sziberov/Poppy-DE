@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class LFAlert {
 	__type;
 	__message;
 	__information;
@@ -9,7 +9,7 @@ return class {
 		this.message = message;
 		this.information = information;
 
-		return new LFWindow({ x: 'center', width: 512, level: 'floating', type: ['closable'], view:
+		return new LFWindow({ width: 512, level: 'floating', type: ['closable'], view:
 			new LFView({ type: 'vertical', yAlign: 'stretch', subviews: [
 				new LFView({ subviews: [
 					new LFImage({ width: 64, height: 64, shared: this.type[0].toUpperCase()+this.type.substring(1) }),
@@ -24,7 +24,7 @@ return class {
 					} })
 				] })
 			] })
-		});
+		}).center(LFWindow.center.x);
 	}
 
 	get type() {

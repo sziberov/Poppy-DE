@@ -1,10 +1,8 @@
 // noinspection JSAnnotator
-return class extends LFView {
+return class LFText extends LFView {
 	__string;
 	__size;
 	__weight;
-
-	class = _title;
 
 	constructor({ string = 'Text', size = 'medium', weight } = {}) {
 		super(...arguments);
@@ -28,7 +26,7 @@ return class extends LFView {
 
 	set string(value) {
 		if(value && typeof value !== 'string' && typeof value !== 'number') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__string = value;
@@ -36,8 +34,8 @@ return class extends LFView {
 	}
 
 	set size(value) {
-		if(typeof value !== 'string')					throw new TypeError();
-		if(!['small', 'medium', 'big'].includes(value))	throw new RangeError();
+		if(typeof value !== 'string')					throw new TypeError(0);
+		if(!['small', 'medium', 'big'].includes(value))	throw new RangeError(1);
 
 		this.__size = value;
 		for(let v of ['small', 'medium', 'big']) {
@@ -47,8 +45,8 @@ return class extends LFView {
 
 	set weight(value) {
 		if(value) {
-			if(typeof value !== 'string')	throw new TypeError();
-			if(value !== 'bold')			throw new RangeError();
+			if(typeof value !== 'string')	throw new TypeError(0);
+			if(value !== 'bold')			throw new RangeError(1);
 		}
 
 		this.__weight = value;

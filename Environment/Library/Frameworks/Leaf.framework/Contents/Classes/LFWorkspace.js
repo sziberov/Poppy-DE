@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared[_title] || class extends LFView {
+return $CFShared[_title] || class LFWorkspace extends LFView {
 	static __shared;
 
 	static get shared() {
@@ -17,8 +17,6 @@ return $CFShared[_title] || class extends LFView {
 	__windowServer = new CGSWindowServer();
 	__launchedApplications = new CFArray();
 	__desktopImage;
-
-	class = _title;
 
 	constructor({ desktopImage } = {}) {
 		super(...arguments);
@@ -66,8 +64,8 @@ return $CFShared[_title] || class extends LFView {
 					undefined,
 					a.value.origin.x,	// Может вернуть 'center', что не соответствует ожидаемому типу
 					a.value.origin.y,	// ...
-					a.value.frame.width,
-					a.value.frame.height
+					a.value.size.width,
+					a.value.size.height
 				);
 			} else
 			if(a.event === 'removed') {
@@ -90,7 +88,7 @@ return $CFShared[_title] || class extends LFView {
 		}
 
 		this.__desktopImage = value;
-		this.style['background-image'] = `url('${ value || '' }')`;
+		this.style['background-image'] = `url('${ value ?? '' }')`;
 	}
 
 	mousedown() {
@@ -125,7 +123,7 @@ return $CFShared[_title] || class extends LFView {
 					this.getApplication(identifier).quit();
 				}
 				new LFAlert({
-					message: `"${title}" unable to launch.`,
+					message: `"${ title }" unable to launch.`,
 					information: error.name+': '+error.message
 				});
 

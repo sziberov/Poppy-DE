@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class {
+return class LFObject {
 	static __friends__ = [CFObject]
 
 	__properties = {
@@ -20,7 +20,6 @@ return class {
 		text: ''
 	}
 
-	class = _title;
 	element;
 
 	get style() {
@@ -61,7 +60,7 @@ return class {
 	}
 
 	create() {
-		return $('<'+this.class+'/>')
+		return $('<'+this.constructor.name+'/>')
 			.css(this.style)
 			.attr(this.attributes)
 			.text(this.text);

@@ -1,10 +1,8 @@
 // noinspection JSAnnotator
-return class extends LFView {
+return class LFImage extends LFView {
 	__width;
 	__height;
 	__url;
-
-	class = _title;
 
 	constructor({ width = 16, height = 16, url, shared } = {}) {
 		super(...arguments);
@@ -45,16 +43,16 @@ return class extends LFView {
 	}
 
 	set width(value) {
-		if(typeof value !== 'number')	throw new TypeError();
-		if(value < 0)					throw new RangeError();
+		if(typeof value !== 'number')	throw new TypeError(0);
+		if(value < 0)					throw new RangeError(1);
 
 		this.__width = value;
 		this.style['width'] = value+'px';
 	}
 
 	set height(value) {
-		if(typeof value !== 'number')	throw new TypeError();
-		if(value < 0)					throw new RangeError();
+		if(typeof value !== 'number')	throw new TypeError(0);
+		if(value < 0)					throw new RangeError(1);
 
 		this.__height = value;
 		this.style['height'] = value+'px';
@@ -62,7 +60,7 @@ return class extends LFView {
 
 	set size(value) {
 		if(!Array.isArray(value) || !value.width || !value.height) {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.width = value.width;
@@ -71,8 +69,8 @@ return class extends LFView {
 
 	set url(value) {
 		if(value) {
-			if(typeof value !== 'string')	throw new TypeError();
-			if(value.length < 1)			throw new RangeError();
+			if(typeof value !== 'string')	throw new TypeError(0);
+			if(value.length < 1)			throw new RangeError(1);
 		}
 
 		this.__url = value ? value.endsWith('.icns') ? value+'/'+this.width+'x'+this.height+'.svg' : value : undefined;

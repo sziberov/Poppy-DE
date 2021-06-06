@@ -1,8 +1,6 @@
 // noinspection JSAnnotator
-return class extends LFView {
+return class LFTitlebar extends LFView {
 	__title;
-
-	class = _title;
 
 	constructor({ title, subviews } = {}) {
 		super(...arguments);
@@ -17,7 +15,7 @@ return class extends LFView {
 
 	set title(value) {
 		if(value && typeof value !== 'string' && typeof value !== 'number') {
-			throw new TypeError();
+			throw new TypeError(0);
 		}
 
 		this.__title = value;

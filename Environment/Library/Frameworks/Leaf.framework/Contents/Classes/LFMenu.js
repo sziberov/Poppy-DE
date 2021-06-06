@@ -1,12 +1,11 @@
 // noinspection JSAnnotator
-return class extends LFView {
+return class LFMenu extends LFView {
 	__x;
 	__y;
 	__corners = []
 	__title;
 	__autoactivatesItems;
 
-	class = _title;
 	target;
 
 	constructor({ x = 24, y = 48, corners, title = 'Menu', items, autoactivatesItems = true } = {}) {

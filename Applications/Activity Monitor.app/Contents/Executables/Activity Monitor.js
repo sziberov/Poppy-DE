@@ -21,7 +21,7 @@ return class {
 			new LFMenuItem({ title: CFLocalizedString('Help') })
 		]
 
-		new LFWindow({ x: 'center', y: 'center', width: 512, height: 256, title: LFApp.title,
+		new LFWindow({ width: 512, height: 256, title: LFApp.title,
 			toolbar: new LFToolbar({ subviews: [
 				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateQuit' }), action: () => this.quit() }),
 				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateInfo' }), action: () => this.information() })
@@ -29,7 +29,7 @@ return class {
 			view: new LFView({ tight: true, yAlign: 'stretch', subviews: [
 				new LFTable()
 			] })
-		});
+		}).center();
 
 		this.table = LFApp.windows[0].view.subviews[0]
 		this.update();
@@ -76,8 +76,8 @@ return class {
 								new LFText({ string: 'Identifier', size: 'small', weight: 'bold' })
 							] }),
 							new LFView({ type: 'vertical', tight: true, subviews: [
-								new LFText({ string: process.path.split('/').pop()+' ('+process.id+')', size: 'small' }),
-								new LFText({ string: process.terminalId, size: 'small' }),
+								new LFText({ string: process.path.split('/').pop()+' ('+process.ID+')', size: 'small' }),
+								new LFText({ string: process.terminalID, size: 'small' }),
 								new LFText({ string: process.user, size: 'small' }),
 								new LFText({ string: application.bundle.URL, size: 'small' }),
 								new LFText({ string: application.identifier, size: 'small' })
