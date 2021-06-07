@@ -3,12 +3,14 @@ return class CFArray extends Array {
 	constructor(...arguments_) {
 		super(...arguments_);
 
-		delete this.push;
-		delete this.splice;
-		delete this.includes;
+		this.push =
+		this.splice =
+		this.includes = undefined;
 	}
 
 	set length(value) {
+		console.log(1);
+
 		if(value > this.length) {
 			throw new RangeError(0);
 		}
@@ -16,6 +18,10 @@ return class CFArray extends Array {
 		while(this.length > value) {
 			this.remove(this[this.length-1]);
 		}
+	}
+
+	get length() {
+		return super.length;
 	}
 
 	add(...value) {
@@ -109,10 +115,6 @@ return class CFArray extends Array {
 	}
 
 	static removeObserver(observerId) {
-		if(typeof observerId !== 'number') {
-			throw new TypeError();
-		}
-
 		CFEvent.removeHandler(_title+'Changed', observerId);
 	}
 }

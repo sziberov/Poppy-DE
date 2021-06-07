@@ -1,17 +1,13 @@
 // noinspection JSAnnotator
-return class CFObject extends Object {
-	__proxy;
-
-	constructor(...arguments_) {
-		super(...arguments_);
-
-		this.__proxy = new Proxy(this, {
+return class CFObject {
+	constructor() {
+		let proxy = new Proxy(Object.create(this.constructor.prototype), {
 			set: (target, key, value) => {
 				let event = target[key] ? 'changed' : 'added';
 
 				target[key] = value;
 
-				CFEvent.dispatch(undefined, _title+'Changed', this.__proxy, { event: event, key: key, value: value });
+				CFEvent.dispatch(undefined, _title+'Changed', proxy, { event: event, key: key, value: value });
 
 				return true;
 			},
@@ -19,14 +15,14 @@ return class CFObject extends Object {
 				if(key in target) {
 					delete target[key]
 
-					CFEvent.dispatch(undefined, _title+'Changed', this.__proxy, { event: 'removed', key: key });
+					CFEvent.dispatch(undefined, _title+'Changed', proxy, { event: 'removed', key: key });
 
 					return true;
 				}
 			}
 		});
 
-		return this.__proxy;
+		Object.setPrototypeOf(this, proxy);
 	}
 
 	static addObserver(object, function_) {
@@ -34,7 +30,7 @@ return class CFObject extends Object {
 		if(typeof function_ !== 'function')								throw new TypeError(1);
 
 		return CFEvent.addHandler(_title+'Changed', (object_, ...arguments_) => {
-			if(object_ === object) {
+			if(object_ === Object.getPrototypeOf(object)) {
 				function_(...arguments_);
 			}
 		});
@@ -59,7 +55,7 @@ return class CFObject extends Object {
 		});
 	}
 
-	static shallowlyEqual(object = {}, object_ = {}) {
-		return super.isShallowlyEqual(object, object_);
+	shallowlyEquals(object) {
+		return Object.isShallowlyEqual(this, object);
 	}
 }

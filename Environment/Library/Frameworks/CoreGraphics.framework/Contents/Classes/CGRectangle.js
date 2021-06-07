@@ -5,14 +5,16 @@ return class CGRectangle {
 	__origin;
 	__size;
 
-	constructor(origin = new CGPoint(), size = new CGSize()) {
-		if(arguments.length === 4) {
-			origin = new CGPoint(arguments[0], arguments[1]);
-			size = new CGSize(arguments[2], arguments[3]);
-		}
-
-		this.origin = origin;
-		this.size = size;
+	constructor({
+		origin = new CGPoint(),
+		size = new CGSize(),
+		x = 0,
+		y = 0,
+		width = 0,
+		height = 0
+	} = {}) {
+		this.origin = origin ?? new CGPoint(...arguments);
+		this.size = size ?? new CGSize(...arguments);
 	}
 
 	get origin() {
@@ -24,7 +26,7 @@ return class CGRectangle {
 	}
 
 	get standardized() {
-		return this.origin.x < 0 || this.origin.y < 0 || this.size.width < 0 || this.size.height < 0 ? new this.constructor(this.origin.standardized, this.size.standardized) : this;
+		return this.origin.x < 0 || this.origin.y < 0 || this.size.width < 0 || this.size.height < 0 ? new this.constructor({ origin: this.origin.standardized, size: this.size.standardized }) : this;
 	}
 
 	set origin(value) {

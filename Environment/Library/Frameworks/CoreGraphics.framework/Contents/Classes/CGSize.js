@@ -5,7 +5,7 @@ return class CGSize {
 	__width;
 	__height;
 
-	constructor(width = 0, height = 0) {
+	constructor({ width = 0, height = 0 } = {}) {
 		this.width = width;
 		this.height = height;
 	}
@@ -19,7 +19,7 @@ return class CGSize {
 	}
 
 	get standardized() {
-		return this.width < 0 || this.height < 0 ? new this.constructor(Math.abs(this.width), Math.abs(this.height)) : this;
+		return this.width < 0 || this.height < 0 ? new this.constructor({ width: Math.abs(this.width), height: Math.abs(this.height) }) : this;
 	}
 
 	set width(value) {

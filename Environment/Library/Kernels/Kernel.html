@@ -1719,7 +1719,7 @@
 					);
 					inherits = Object.isKindOf(caller, class_);
 					friends = (class_.constructor || class_).__friends__ || []
-					friends = friends.includes(caller) || friends.includes(caller.constructor);
+					friends = !!friends.find(v => Object.isMemberOf(caller, v));
 				}
 
 				if(field === '__friends__' && !equals) {

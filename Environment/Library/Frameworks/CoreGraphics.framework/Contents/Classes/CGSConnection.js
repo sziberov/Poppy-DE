@@ -1,3 +1,5 @@
+// _Этот класс является служебным и не предназначен для использования сторонними приложениями._
+// <br>
 // noinspection JSAnnotator
 return class CGSConnection {
 	static __shared;

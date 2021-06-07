@@ -5,7 +5,7 @@ return class CGPoint {
 	__x;
 	__y;
 
-	constructor(x = 0, y = 0) {
+	constructor({ x = 0, y = 0 } = {}) {
 		this.x = x;
 		this.y = y;
 	}
@@ -19,7 +19,7 @@ return class CGPoint {
 	}
 
 	get standardized() {
-		return this.x < 0 || this.y < 0 ? new this.constructor(Math.abs(this.x), Math.abs(this.y)) : this;
+		return this.x < 0 || this.y < 0 ? new this.constructor({ x: Math.abs(this.x), y: Math.abs(this.y) }) : this;
 	}
 
 	set x(value) {
