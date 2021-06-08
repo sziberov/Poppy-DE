@@ -45,7 +45,7 @@
 					processes: []
 				}
 				this.eventsReserved = ['fbChanged', 'terminalChanged', 'processListChanged', 'dateChanged']
-				this.bootTimerId = undefined;
+				this.bootTimerID = undefined;
 				this.environment = {
 					...window,
 					Array: Array,
@@ -282,14 +282,14 @@
 
 				switch(value) {
 					case false:
-						if(this.bootTimerId) {
-							this.timerRemove(undefined, this.bootTimerId);
+						if(this.bootTimerID) {
+							this.timerRemove(undefined, this.bootTimerID);
 
-							this.bootTimerId = undefined;
+							this.bootTimerID = undefined;
 						}
 					break
 					case true:
-						if(!this.bootTimerId) {
+						if(!this.bootTimerID) {
 							let logo = this.drOpen(this.images.logo),
 								spinner = this.drOpen(this.images.spinner),
 								spinnerBackground = this.drCreate(spinner.width, spinner.height),
@@ -299,7 +299,7 @@
 							this.drDraw(layer, 'layer', logo, layer.width/2-logo.width/2, layer.height/2-logo.height/2);
 							this.drDraw(spinnerBackground, 'rectangle', this.colors.lightGray, 0, 0, spinnerBackground.width, spinnerBackground.height);
 
-							this.bootTimerId = this.timerCreate(undefined, 'multiple', 125/2, () => {
+							this.bootTimerID = this.timerCreate(undefined, 'multiple', 125/2, () => {
 								spinnerIteration = spinnerIteration > 10 ? 0 : ++spinnerIteration;
 
 								let x = layer.width/2,
@@ -898,8 +898,8 @@
 				return ID;
 			}
 
-			eventCatchRemove(processID, eventId) {
-				let event = this.events.find(v => v.ID === eventId);
+			eventCatchRemove(processID, eventID) {
+				let event = this.events.find(v => v.ID === eventID);
 
 				if(!event) {
 					this.kdbAdd(`eventCatchRemove${ processID ? '@'+processID : '' }: Unable to find handler`);
@@ -963,8 +963,8 @@
 				return ID;
 			}
 
-			timerRemove(processID, timerId) {
-				let timer = this.timers.find(v => v.ID === timerId);
+			timerRemove(processID, timerID) {
+				let timer = this.timers.find(v => v.ID === timerID);
 
 				if(!timer) {
 					this.kdbAdd(`timerRemove${ processID ? '@'+processID : '' }: Unable to find handler`);
@@ -1674,11 +1674,11 @@
 			 * - classProtected(1, this, Class, 'field', 'assignment') - Возвращает класс с мыслью о том, что в его поле обязательно будет происходить запись, поэтому возможен пустой объект {} (в случае отказа).
 			 *
 			 * Модификаторами доступа полей являются префиксы:
-			 * - __field - Приватное поле, видимое только родителю.
-			 * - _field - Защищённое поле, видимое родителю и его детям.
+			 * - __field - Приватное поле, видимое только родительскому классу.
+			 * - _field - Защищённое поле, видимое родительскому классу и его детям.
 			 * - field - Публичное поле, видимое всем.
 			 *
-			 * Друзья класса определяются в массиве Class.\_\_friends__. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только из контекста класса, коему он принадлежит.
+			 * Друзья класса определяются в массиве Class.\_\_friends__. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только родительским классом.
 			 *
 			 * @param {?number}					processID	Идентификатор процесса.
 			 * @param {!Object}					caller		Обращающийся контекст.
@@ -1703,20 +1703,12 @@
 
 				let global,
 					equals,
-					owns,
 					inherits,
 					friends;
 
 				if(class_) {
 					global = environment ? Object.isShallowlyEqual(environment, class_) : false;	// Object.isMemberOf(class_, environment)
 					equals = Object.isMemberOf(caller, class_);
-					owns = equals && (
-						typeof class_[field] === 'undefined' ||
-						({}).hasOwnProperty.call(caller, field) ||
-						({}).hasOwnProperty.call(caller.constructor, field) ||
-						({}).hasOwnProperty.call(caller.__proto__, field) ||
-						({}).hasOwnProperty.call(caller.prototype || {}, field)
-					);
 					inherits = Object.isKindOf(caller, class_);
 					friends = (class_.constructor || class_).__friends__ || []
 					friends = !!friends.find(v => Object.isMemberOf(caller, v));
@@ -1725,12 +1717,7 @@
 				if(field === '__friends__' && !equals) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved property: ${ field }`); return;
 				}
-				if(!global && private_.test(field) && !owns && !friends) {
-					console.log('Caller:');
-					console.log(caller);
-					console.log('Class:');
-					console.log(class_);
-					console.log(global, equals, owns, inherits, friends);
+				if(!global && private_.test(field) && !equals && !friends) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access private property: ${ field }`); return;
 				}
 				if(!global && protected_.test(field) && !equals && !inherits && !friends) {

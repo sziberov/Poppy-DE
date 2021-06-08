@@ -1,6 +1,6 @@
 // noinspection JSAnnotator
 return $CFShared[_title] || class CGLayer {
-	static __friends__ = [this, CGContext, CGImage, CGSWindowServer]
+	static __friends__ = [CGContext, CGImage, CGSWindowServer]
 
 	__layer = _request('drCreate', 0, 0);
 	__context = new CGContext(this);
