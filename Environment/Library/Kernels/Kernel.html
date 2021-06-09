@@ -1670,21 +1670,24 @@
 			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и приватных полей, а также друзей:
 			 * - classProtected(1, this, Class) - Возвращает класс.
 			 * - classProtected(1, this, Class, 'field') - Возвращает поле.
+			 * - classProtected(1, this, Class, 'field', 'assign') - Возвращает класс с мыслью о том, что в его поле обязательно будет происходить запись, поэтому возможен пустой объект {} (в случае отказа).
 			 * - classProtected(1, this, Class, 'field', 'call') - Возвращает определение метода.
-			 * - classProtected(1, this, Class, 'field', 'assignment') - Возвращает класс с мыслью о том, что в его поле обязательно будет происходить запись, поэтому возможен пустой объект {} (в случае отказа).
+			 * - classProtected(1, this, Class, 'field', 'delete') - Удаляет поле.
 			 *
 			 * Модификаторами доступа полей являются префиксы:
 			 * - __field - Приватное поле, видимое только родительскому классу.
 			 * - _field - Защищённое поле, видимое родительскому классу и его детям.
 			 * - field - Публичное поле, видимое всем.
 			 *
-			 * Друзья класса определяются в массиве Class.\_\_friends__. Несмотря на то, что друзьям доступны любые поля, конкретно это является исключением и модифицируемо только родительским классом.
+			 * Друзья класса определяются в массиве Class.\_\_friends__. Несмотря на то, что друзьям доступны любые поля, некоторые зарезервированы для модификаций только родительским классом:
+			 * - \_\_proto__
+			 * - \_\_friends__
 			 *
-			 * @param {?number}					processID	Идентификатор процесса.
-			 * @param {!Object}					caller		Обращающийся контекст.
-			 * @param {!Object}					class_		Класс обращения.
-			 * @param {?string}					field		Поле обращения.
-			 * @param {?('assignment'|'call')}	type		Тип обращения.
+			 * @param {?number}						processID	Идентификатор процесса.
+			 * @param {!Object}						caller		Обращающийся контекст.
+			 * @param {!Object}						class_		Класс обращения.
+			 * @param {?string}						field		Поле обращения.
+			 * @param {?('assign'|'call'|'delete')}	type		Тип обращения.
 			 */
 			classProtected(processID, caller, class_, field, type) {
 				let environment = this.processes.find(v => v.ID === processID)?.environment,
@@ -1714,7 +1717,7 @@
 					friends = !!friends.find(v => Object.isMemberOf(caller, v));
 				}
 
-				if(field === '__friends__' && !equals) {
+				if(['__proto__', '__friends__'].includes(field) && !equals) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved property: ${ field }`); return;
 				}
 				if(!global && private_.test(field) && !equals && !friends) {
@@ -1724,11 +1727,14 @@
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected property: ${ field }`); return;
 				}
 
-				if(type === 'assignment') {
+				if(type === 'assign') {
 					return class_ || {}
 				}
 				if(type === 'call') {
 					return class_?.[field]?.bind(class_);
+				}
+				if(type === 'delete') {
+					return delete class_?.[field];
 				}
 
 				return class_?.[field]
@@ -1765,17 +1771,21 @@
 						this.traverse(path);
 					},
 					visitMemberExpression(path) {
-					//	object.property ||
-					//	object['property']				==	_protected(this, object, 'property');
-					//	object[property]				==	_protected(this, object, property);
+					//	object.property; ||
+					//	object['property']				===	_protected(this, object, 'property');
+					//	object[property]				===	_protected(this, object, property);
 
-					//	object.property(arguments) ||
-					//	object['property'](arguments)	==	_protected(this, object, 'property', 'call')?.(arguments);
-					//	object[property](arguments)		==	_protected(this, object, property, 'call')?.(arguments);
+					//	object.property = '';			===	_protected(this, object, 'property', 'assign').property = '';
+					//	object['property'] = '';		===	_protected(this, object, 'property', 'assign')['property'] = '';
+					//	object[property] = '';			===	_protected(this, object, property, 'assign')[property] = '';
 
-					//	object.property = ''			==	_protected(this, object, 'property', 'assignment').property = '';
-					//	object['property'] = ''			==	_protected(this, object, 'property', 'assignment')['property'] = '';
-					//	object[property] = ''			==	_protected(this, object, property, 'assignment')[property] = '';
+					//	object.property(arguments); ||
+					//	object['property'](arguments);	===	_protected(this, object, 'property', 'call')?.(arguments);
+					//	object[property](arguments);	===	_protected(this, object, property, 'call')?.(arguments);
+
+					//	delete object.property; ||
+					//	delete object['property']		===	_protected(this, object, 'property', 'delete');
+					//	delete object[property]			===	_protected(this, object, property, 'delete');
 
 						this.traverse(path);
 
@@ -1786,8 +1796,9 @@
 							propertyName = property.name || property.value,
 							propertyComputed = node.computed,
 						//	propertyOptional = node.optional,
-							assignment = parentNode.type === 'AssignmentExpression' && parentNode.left === node,
-							call = ['OptionalCallExpression', 'CallExpression'].includes(parentNode.type) && parentNode.callee === node;
+							assign = parentNode.type === 'AssignmentExpression' && parentNode.left === node,
+							call = ['OptionalCallExpression', 'CallExpression'].includes(parentNode.type) && parentNode.callee === node,
+							delete_ = parentNode.type === 'UnaryExpression' && parentNode.operator === 'delete';
 
 						if(['Super'].includes(object.type) /*|| parentNode.type == 'ExpressionStatement'*/) {
 							return false;
@@ -1797,14 +1808,17 @@
 							builders.thisExpression(),
 							object,
 							!propertyComputed && property.type === 'Identifier' ? builders.stringLiteral(propertyName) : property,
-							...assignment ? [builders.stringLiteral('assignment')] : call ? [builders.stringLiteral('call')] : []
+							...assign ? [builders.stringLiteral('assign')] : call ? [builders.stringLiteral('call')] : delete_ ? [builders.stringLiteral('delete')] : []
 						]);
 
-						if(assignment) {
+						if(assign) {
 							path.replace(builders.memberExpression(callNode, property, propertyComputed));
 						} else
 						if(call) {
 							path.parentPath.replace(builders.optionalCallExpression(callNode, parentNode.arguments, true));
+						} else
+						if(delete_) {
+							path.parentPath.replace(callNode);
 						} else {
 							path.replace(callNode);
 						}
@@ -1860,7 +1874,8 @@
 
 			/**
 			 * @todo [!] Перевести DOM-интерфейс на Canvas
-			 * @todo [!] Добавить классы-интерфейсы к объектам CGSWindowServer
+			 * @todo [!] Избавиться от создания излишних event handler'ов удаления observer'ов после завершения процессов
+			 * @todo [~] Добавить классы-интерфейсы к объектам CGSWindowServer
 			 * @todo [~] Разобраться с созданием окон в CGSWindowServer (узнать, где именно должен храниться слой окна и как передаваться серверу; обеспечить отрисовку слоёв окон в .__draw())
 			 * @todo [~] Добавить аналог .needsDisplay в CGLayer
 			 * @todo [~] Добавить проверку типов вовсюда

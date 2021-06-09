@@ -1,47 +1,94 @@
 // noinspection JSAnnotator
 return class CFObject {
-	constructor() {
-		let proxy = new Proxy(Object.create(this.constructor.prototype), {
-			set: (target, key, value) => {
-				let event = target[key] ? 'changed' : 'added';
+	__observers = []
 
-				target[key] = value;
+	addObserver(processInfo, function_) {
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
+		if(typeof function_ !== 'function')													throw new TypeError(1);
 
-				CFEvent.dispatch(undefined, _title+'Changed', proxy, { event: event, key: key, value: value });
+		if(this.__observers.length === 0) {
+			let clone = Object.create(this.constructor.prototype);
 
-				return true;
-			},
-			deleteProperty: (target, key) => {
-				if(key in target) {
-					delete target[key]
+			for(let k of Object.keys(this)) {
+				if(Object.hasOwnProperty.call(this, k)) {
+					clone[k] = this[k]
 
-					CFEvent.dispatch(undefined, _title+'Changed', proxy, { event: 'removed', key: key });
-
-					return true;
+					delete this[k]
 				}
 			}
-		});
 
-		Object.setPrototypeOf(this, proxy);
-	}
+			let proxy = new Proxy(clone, {
+				set: (target, key, value) => {
+					let event = target[key] ? 'changed' : 'added';
 
-	static addObserver(object, function_) {
-		if(!Object.isObject(object) || !Object.isKindOf(object, this))	throw new TypeError(0);
-		if(typeof function_ !== 'function')								throw new TypeError(1);
+					target[key] = value;
 
-		return CFEvent.addHandler(_title+'Changed', (object_, ...arguments_) => {
-			if(object_ === Object.getPrototypeOf(object)) {
-				function_(...arguments_);
-			}
-		});
-	}
+					if(this.__observers) {
+						for(let v_ of this.__observers) {
+							v_.function({ event: event, key: key, value: value });
+						}
+					}
 
-	static removeObserver(observerId) {
-		if(typeof observerId !== 'number') {
-			throw new TypeError(0);
+					return true;
+				},
+				deleteProperty: (target, key) => {
+					if(key in target) {
+						delete target[key]
+
+						if(this.__observers) {
+							for(let v_ of this.__observers) {
+								v_.function({ event: 'removed', key: key });
+							}
+						}
+
+						return true;
+					}
+				}
+			});
+
+			Object.setPrototypeOf(this, proxy);
 		}
 
-		CFEvent.removeHandler(_title+'Changed', observerId);
+		let ID = this.__observers.length > 0 ? Math.max(...this.__observers.map(v => v.ID))+1 : 1;
+
+		this.__observers.push({
+			ID: ID,
+			processID: processInfo.identifier,
+			function: function_
+		});
+		if(this.__observers.filter(v => v.processID === processInfo.identifier).length === 1) {
+			let handlerID = CFEvent.addHandler('processListChanged', (a) => {	// После удаления observer'а вручную этот handler не убирается
+				if(a.event === 'removed' && a.value === processInfo.identifier) {
+					for(let v of this.__observers.filter(v => v.processID === a.value)) {
+						this.removeObserver(processInfo, v.ID);
+					}
+					CFEvent.removeHandler(handlerID);
+				}
+			});
+		}
+
+		return ID;
+	}
+
+	removeObserver(processInfo, observerID) {
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))						throw new TypeError(0);
+		if(typeof observerID !== 'number')																		throw new TypeError(1);
+		if(!this.__observers.find(v => v.ID === observerID && v.processID === processInfo.identifier))	throw new RangeError(2);
+
+		this.__observers = this.__observers.filter(v => v.ID !== observerID && v.processID !== processInfo.identifier);
+		if(this.__observers.length === 0) {
+			let proto = this.__proto__;
+
+			Object.setPrototypeOf(this, proto.constructor.prototype);
+
+			for(let k of Object.keys(proto)) {
+				if(Object.hasOwnProperty.call(proto, k)) {
+					this[k] = proto[k]
+
+					delete proto[k]
+				}
+			}
+		}
 	}
 
 	static observable(object = {}, function_) {

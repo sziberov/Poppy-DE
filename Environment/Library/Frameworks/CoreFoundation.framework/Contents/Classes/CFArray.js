@@ -1,7 +1,6 @@
 // noinspection JSAnnotator
 return class CFArray extends Array {
 	__observers = []
-	__handlerID;
 
 	constructor(...arguments_) {
 		super(...arguments_);
@@ -99,12 +98,13 @@ return class CFArray extends Array {
 			processID: processInfo.identifier,
 			function: function_
 		});
-		if(!this.__handlerID) {
-			this.__handlerID = CFEvent.addHandler('processListChanged', (a) => {
-				if(a.event === 'removed') {
+		if(this.__observers.filter(v => v.processID === processInfo.identifier).length === 1) {
+			let handlerID = CFEvent.addHandler('processListChanged', (a) => {	// После удаления observer'а вручную этот handler не убирается
+				if(a.event === 'removed' && a.value === processInfo.identifier) {
 					for(let v of this.__observers.filter(v => v.processID === a.value)) {
 						this.removeObserver(processInfo, v.ID);
 					}
+					CFEvent.removeHandler(handlerID);
 				}
 			});
 		}
@@ -113,13 +113,11 @@ return class CFArray extends Array {
 	}
 
 	removeObserver(processInfo, observerID) {
-		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
-		if(typeof observerID !== 'number')													throw new TypeError(1);
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))						throw new TypeError(0);
+		if(typeof observerID !== 'number')																		throw new TypeError(1);
+		if(!this.__observers.find(v => v.ID === observerID && v.processID === processInfo.identifier))	throw new RangeError(2);
 
 		this.__observers = this.__observers.filter(v => v.ID !== observerID && v.processID !== processInfo.identifier);
-		if(this.__observers.length === 0) {
-			this.__handlerID = CFEvent.removeHandler(this.__handlerID);
-		}
 	}
 
 	static add(array, ...value) {
