@@ -91,7 +91,31 @@ return class CFObject {
 		}
 	}
 
-	static observable(object = {}, function_) {
+	static keys(object) {
+		if(!Object.isObject(object)) {
+			throw new TypeError(0);
+		}
+
+		return Object.isKindOf(object, this) && object.__observers?.length > 0 ? Object.keys(object.__proto__) : Object.keys(object);
+	}
+
+	static values(object) {
+		if(!Object.isObject(object)) {
+			throw new TypeError(0);
+		}
+
+		return Object.isKindOf(object, this) && object.__observers?.length > 0 ? Object.values(object.__proto__) : Object.values(object);
+	}
+
+	static entries(object) {
+		if(!Object.isObject(object)) {
+			throw new TypeError(0);
+		}
+
+		return Object.isKindOf(object, this) && object.__observers?.length > 0 ? Object.entries(object.__proto__) : Object.entries(object);
+	}
+
+	static observable(object = {}, function_) {	// Следовало бы убрать этот костыль
 		return new Proxy(object, {
 			set: (target, key, value) => {
 				target[key] = value;
