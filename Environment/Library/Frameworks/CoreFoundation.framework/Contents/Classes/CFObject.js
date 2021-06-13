@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class CFObject {
+return class CFObject extends Object {
 	__observers = []
 	__observersHandlerID;
 
@@ -87,7 +87,7 @@ return class CFObject {
 				if(Object.hasOwnProperty.call(proto, k)) {
 					this[k] = proto[k]
 
-					delete proto[k]
+					delete proto[k]	// Вероятно не нужно
 				}
 			}
 		}

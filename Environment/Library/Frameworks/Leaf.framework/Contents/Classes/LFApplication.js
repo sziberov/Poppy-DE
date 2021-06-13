@@ -22,26 +22,6 @@ return class LFApplication {
 		}
 
 		this.process.environment.LFApp = this.constructor.shared;
-		/*
-		this.application = new Proxy(this.process.executable, {
-			get: (target, key) => {
-				if(typeof target[key] === 'function') {
-					return (..._arguments) => {
-						try {
-							return target[key](..._arguments);
-						} catch(error) {
-							new LFAlert({
-								message: `"${this.title}"'s method returned exception.`,
-								information: error.name+': '+error.message
-							});
-						}
-					}
-				} else {
-					return target[key]
-				}
-			}
-		});
-		*/
 
 		LFWorkspace.shared.launchedApplications.add(new LFLaunchedApplication(this));
 		CFArray.addObserver(LFWorkspace.shared.subviews, (a) => {
@@ -191,7 +171,7 @@ return class LFApplication {
 			this.application[method](..._arguments);
 		} catch(error) {
 			new LFAlert({
-				message: `"${this.title}"'s method returned exception.`,
+				message: `"${ this.title }"'s method returned exception.`,
 				information: error.name+': '+error.message
 			});
 		}

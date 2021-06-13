@@ -7,12 +7,8 @@ return class CFArray extends Array {
 		super(...arguments_);
 
 		Object.defineProperties(this, {
-			__observers: {
-				enumerable: false
-			},
-			__observersHandlerID: {
-				enumerable: false
-			}
+			__observers:			{ enumerable: false },
+			__observersHandlerID:	{ enumerable: false }
 		});
 	}
 
