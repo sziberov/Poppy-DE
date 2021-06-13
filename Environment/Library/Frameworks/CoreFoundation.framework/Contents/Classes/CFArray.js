@@ -1,6 +1,7 @@
 // noinspection JSAnnotator
 return class CFArray extends Array {
 	__observers = []
+	__observersHandlerID;
 
 	constructor(...arguments_) {
 		super(...arguments_);
@@ -9,24 +10,24 @@ return class CFArray extends Array {
 			__observers: {
 				enumerable: false
 			},
-			__handlerID: {
+			__observersHandlerID: {
 				enumerable: false
 			}
 		});
 	}
 
-	set length(value) {	// Не работает
-		if(value > this.length) {
+	set count(value) {
+		if(value > this.count) {
 			throw new RangeError(0);
 		}
 
-		while(this.length > value) {
-			this.remove(this[this.length-1]);
+		while(this.count > value) {
+			this.remove(this[this.count-1]);
 		}
 	}
 
-	get length() {	// Не работает
-		return super.length;
+	get count() {
+		return this.length;
 	}
 
 	push() {}
@@ -95,16 +96,15 @@ return class CFArray extends Array {
 
 		this.__observers.push({
 			ID: ID,
-			processID: processInfo.identifier,
+			processInfo: processInfo,
 			function: function_
 		});
-		if(this.__observers.filter(v => v.processID === processInfo.identifier).length === 1) {
-			let handlerID = CFEvent.addHandler('processListChanged', (a) => {	// После удаления observer'а вручную этот handler не убирается
-				if(a.event === 'removed' && a.value === processInfo.identifier) {
-					for(let v of this.__observers.filter(v => v.processID === a.value)) {
-						this.removeObserver(processInfo, v.ID);
+		if(this.__observersHandlerID === undefined) {
+			this.__observersHandlerID = CFEvent.addHandler('processListChanged', (a) => {
+				if(a.event === 'removed') {
+					for(let v of this.__observers.filter(v => v.processInfo.identifier === a.value)) {
+						this.removeObserver(v.processInfo, v.ID);
 					}
-					CFEvent.removeHandler(handlerID);
 				}
 			});
 		}
@@ -113,11 +113,14 @@ return class CFArray extends Array {
 	}
 
 	removeObserver(processInfo, observerID) {
-		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))						throw new TypeError(0);
-		if(typeof observerID !== 'number')																		throw new TypeError(1);
-		if(!this.__observers.find(v => v.ID === observerID && v.processID === processInfo.identifier))	throw new RangeError(2);
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))				throw new TypeError(0);
+		if(typeof observerID !== 'number')																throw new TypeError(1);
+		if(!this.__observers.find(v => v.ID === observerID && v.processInfo === processInfo))	throw new RangeError(2);
 
-		this.__observers = this.__observers.filter(v => v.ID !== observerID && v.processID !== processInfo.identifier);
+		this.__observers = this.__observers.filter(v => v.ID !== observerID && v.processInfo !== processInfo);
+		if(this.__observers.length === 0) {
+			this.__observersHandlerID = CFEvent.removeHandler(this.__observersHandlerID);
+		}
 	}
 
 	static add(array, ...value) {
