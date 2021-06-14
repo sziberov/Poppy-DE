@@ -51,7 +51,6 @@
 					Array: Array,
 					Date: Date,
 					Error: Error,
-					FinalizationRegistry: FinalizationRegistry,
 					JSON: JSON,
 					Math: Math,
 					Number: Number,
@@ -1877,7 +1876,8 @@
 
 			/**
 			 * @todo [!] Перевести DOM-интерфейс на Canvas
-			 * @todo [!] Добавить в CFObject проверку доступа полей для observer'ов, либо просто ограничить до публичных-only
+			 * @todo [!] Разобраться с observer'ами
+			 * @todo [~] Добавить в CFObject проверку доступа полей для observer'ов, либо просто ограничить до публичных-only
 			 * @todo [~] Добавить классы-интерфейсы к объектам CGSWindowServer
 			 * @todo [~] Разобраться с созданием окон в CGSWindowServer (узнать, где именно должен храниться слой окна и как передаваться серверу; обеспечить отрисовку слоёв окон в .__draw())
 			 * @todo [~] Добавить аналог .needsDisplay в CGLayer

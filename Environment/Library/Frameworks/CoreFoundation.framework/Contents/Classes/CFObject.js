@@ -1,10 +1,17 @@
+// По-хорошему, каждый наблюдатель обязан удаляться после завершения его породившего процесса.
+// Для этого он должен быть так или иначе привязан к последнему, и желательно - на уровне ядра:
+// Храниться в самой памяти процесса, либо в связанном с ним объекте ядра.
+// Также он должен существовать независимо от доступности наблюдаемого объекта, следовательно слабые ссылки (WeakRef) в силе.
+// _Нынешняя же реализация довольно костыльная, и только в теории, через хитро закрученную жёппу, рабочая..._
+//
 // noinspection JSAnnotator
 return class CFObject extends Object {
+	static __friends__ = [this]
 	static __observersHandlerID = CFEvent.addHandler('processListChanged', (a) => {
 		if(a.event === 'removed') {
 			this.__observed = this.__observed.filter(v => v.deref());
 			for(let v of this.__observed.map(v => v.deref())) {
-				for(let v_ of v._observers.filter(v => v.processInfo.identifier === a.value)) {
+				for(let v_ of v.__observers.filter(v => v.processInfo.identifier === a.value)) {
 					v.removeObserver(v_.processInfo, v_.ID);
 				}
 			}
@@ -12,13 +19,15 @@ return class CFObject extends Object {
 	});
 	static __observed = []
 
-	_observers = []
+	__observers = []
+
+//	addObserver(object) {}
 
 	addObserver(processInfo, function_) {
 		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
 		if(typeof function_ !== 'function')													throw new TypeError(1);
 
-		if(this._observers.length === 0) {
+		if(this.__observers.length === 0) {
 			let clone = Object.create(this.constructor.prototype);
 
 			for(let k of Object.keys(this)) {
@@ -35,8 +44,8 @@ return class CFObject extends Object {
 
 					target[key] = value;
 
-					if(this._observers) {
-						for(let v_ of this._observers) {
+					if(this.__observers) {
+						for(let v_ of this.__observers) {
 							v_.function({ event: event, key: key, value: value });
 						}
 					}
@@ -47,8 +56,8 @@ return class CFObject extends Object {
 					if(key in target) {
 						delete target[key]
 
-						if(this._observers) {
-							for(let v_ of this._observers) {
+						if(this.__observers) {
+							for(let v_ of this.__observers) {
 								v_.function({ event: 'removed', key: key });
 							}
 						}
@@ -61,9 +70,9 @@ return class CFObject extends Object {
 			Object.setPrototypeOf(this, proxy);
 		}
 
-		let ID = this._observers.length > 0 ? Math.max(...this._observers.map(v => v.ID))+1 : 1;
+		let ID = this.__observers.length > 0 ? Math.max(...this.__observers.map(v => v.ID))+1 : 1;
 
-		this._observers.push({
+		this.__observers.push({
 			ID: ID,
 			processInfo: processInfo,
 			function: function_
@@ -78,10 +87,10 @@ return class CFObject extends Object {
 	removeObserver(processInfo, observerID) {
 		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))				throw new TypeError(0);
 		if(typeof observerID !== 'number')																throw new TypeError(1);
-		if(!this._observers.find(v => v.ID === observerID && v.processInfo === processInfo))	throw new RangeError(2);
+		if(!this.__observers.find(v => v.ID === observerID && v.processInfo === processInfo))	throw new RangeError(2);
 
-		this._observers = this._observers.filter(v => v.ID !== observerID && v.processInfo !== processInfo);
-		if(this._observers.length === 0) {
+		this.__observers = this.__observers.filter(v => v.ID !== observerID && v.processInfo !== processInfo);
+		if(this.__observers.length === 0) {
 			this.constructor.__observed = this.constructor.__observed.filter(v => v.deref() !== this);
 
 			let proto = this.__proto__;
@@ -103,7 +112,7 @@ return class CFObject extends Object {
 			throw new TypeError(0);
 		}
 
-		return Object.isKindOf(object, this) && object._observers?.length > 0 ? Object.keys(object.__proto__) : Object.keys(object);
+		return Object.isKindOf(object, this) && object.__observers?.length > 0 ? Object.keys(object.__proto__) : Object.keys(object);
 	}
 
 	static values(object) {
@@ -111,7 +120,7 @@ return class CFObject extends Object {
 			throw new TypeError(0);
 		}
 
-		return Object.isKindOf(object, this) && object._observers?.length > 0 ? Object.values(object.__proto__) : Object.values(object);
+		return Object.isKindOf(object, this) && object.__observers?.length > 0 ? Object.values(object.__proto__) : Object.values(object);
 	}
 
 	static entries(object) {
@@ -119,7 +128,7 @@ return class CFObject extends Object {
 			throw new TypeError(0);
 		}
 
-		return Object.isKindOf(object, this) && object._observers?.length > 0 ? Object.entries(object.__proto__) : Object.entries(object);
+		return Object.isKindOf(object, this) && object.__observers?.length > 0 ? Object.entries(object.__proto__) : Object.entries(object);
 	}
 
 	static observable(object = {}, function_) {	// Следовало бы убрать этот костыль
