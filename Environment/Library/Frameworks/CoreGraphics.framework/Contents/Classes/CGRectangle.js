@@ -1,7 +1,7 @@
 // Тип, обозначающий положение и размеры прямоугольника.
 //
 // noinspection JSAnnotator
-return class CGRectangle {
+return class CGRectangle extends CFObject {
 	__origin;
 	__size;
 
@@ -13,6 +13,8 @@ return class CGRectangle {
 		width = 0,
 		height = 0
 	} = {}) {
+		super();
+
 		this.origin = origin ?? new CGPoint(...arguments);
 		this.size = size ?? new CGSize(...arguments);
 	}

@@ -1,11 +1,13 @@
 // Тип, обозначающий точку в двумерной системе координат.
 //
 // noinspection JSAnnotator
-return class CGPoint {
+return class CGPoint extends CFObject {
 	__x;
 	__y;
 
 	constructor({ x = 0, y = 0 } = {}) {
+		super();
+
 		this.x = x;
 		this.y = y;
 	}

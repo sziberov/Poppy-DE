@@ -22,7 +22,7 @@ let isClassOf = function(value, value_, strict) {
 		!Object.isObject(value_) && typeof value_ !== 'function' ||
 		strict && typeof strict !== 'boolean'
 	) {
-		//	throw new TypeError();
+	//	throw new TypeError();
 		return false;
 	}
 

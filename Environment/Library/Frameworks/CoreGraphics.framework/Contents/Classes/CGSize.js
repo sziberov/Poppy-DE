@@ -1,11 +1,13 @@
 // Тип, обозначающий размеры.
 //
 // noinspection JSAnnotator
-return class CGSize {
+return class CGSize extends CFObject {
 	__width;
 	__height;
 
 	constructor({ width = 0, height = 0 } = {}) {
+		super();
+
 		this.width = width;
 		this.height = height;
 	}

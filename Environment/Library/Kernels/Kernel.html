@@ -49,17 +49,19 @@
 				this.environment = {
 					...window,
 					Array: Array,
-					console: console,
 					Date: Date,
 					Error: Error,
+					FinalizationRegistry: FinalizationRegistry,
 					JSON: JSON,
 					Math: Math,
 					Number: Number,
 					Object: Object,
-					parseInt: parseInt,
 					Proxy: Proxy,
 					RangeError: RangeError,
-					TypeError: TypeError
+					TypeError: TypeError,
+					WeakRef: WeakRef,
+					console: console,
+					parseInt: parseInt
 				}
 
 				$(() => {
@@ -1796,6 +1798,7 @@
 							propertyName = property.name || property.value,
 							propertyComputed = node.computed,
 						//	propertyOptional = node.optional,
+						//	assign = (parentNode.type === 'AssignmentExpression' || parentNode.type === 'LogicalExpression' && path.parentPath.parentPath.node.type === 'AssignmentExpression') && parentNode.left === node,
 							assign = parentNode.type === 'AssignmentExpression' && parentNode.left === node,
 							call = ['OptionalCallExpression', 'CallExpression'].includes(parentNode.type) && parentNode.callee === node,
 							delete_ = parentNode.type === 'UnaryExpression' && parentNode.operator === 'delete';

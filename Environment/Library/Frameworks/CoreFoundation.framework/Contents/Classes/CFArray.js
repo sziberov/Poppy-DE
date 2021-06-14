@@ -96,7 +96,7 @@ return class CFArray extends Array {
 			function: function_
 		});
 		if(this.__observersHandlerID === undefined) {
-			this.__observersHandlerID = CFEvent.addHandler('processListChanged', (a) => {
+			this.__observersHandlerID = CFEvent.addHandler('processListChanged', (a) => {	// Не удаляется вместе с объектом, его создавшим
 				if(a.event === 'removed') {
 					for(let v of this.__observers.filter(v => v.processInfo.identifier === a.value)) {
 						this.removeObserver(v.processInfo, v.ID);
