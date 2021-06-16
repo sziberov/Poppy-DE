@@ -19,6 +19,6 @@ return class CFEvent {
 			throw new TypeError(0);
 		}
 
-		_request('catchRemove', handler);
+		return _request('catchRemove', handler);
 	}
 }

@@ -905,12 +905,12 @@
 				if(!event) {
 					this.kdbAdd(`eventCatchRemove${ processID ? '@'+processID : '' }: Unable to find handler`);
 
-					console.error(0); return;
+					console.error(0); return false;
 				}
 				if(processID && event.processID !== processID) {
 					this.kdbAdd(`eventCatchRemove@${ processID }: Processes aren't allowed to remove not owned handlers`);
 
-					console.error(1); return;
+					console.error(1); return false;
 				}
 
 				this.events = this.events.filter(v => v !== event);
@@ -919,6 +919,8 @@
 					    ID: ${ event.ID }
 					    Title: "${ event.title }"
 				`);
+
+				return true;
 			}
 
 			timerCreate(processID, variant, delay, function_, ...arguments_) {
@@ -1877,6 +1879,7 @@
 			/**
 			 * @todo [!] Перевести DOM-интерфейс на Canvas
 			 * @todo [!] Разобраться с observer'ами
+			 * @todo [~] Добавить в .eventCatch() и .eventThrow() возможность ограничения определённым каналом (а не только процессом)
 			 * @todo [~] Добавить в CFObject проверку доступа полей для observer'ов, либо просто ограничить до публичных-only
 			 * @todo [~] Добавить классы-интерфейсы к объектам CGSWindowServer
 			 * @todo [~] Разобраться с созданием окон в CGSWindowServer (узнать, где именно должен храниться слой окна и как передаваться серверу; обеспечить отрисовку слоёв окон в .__draw())
@@ -1885,6 +1888,7 @@
 			 * @todo [~] Добавить проверку типов вовсюда
 			 * @todo [?] Обеспечить асинхронность процессов (мультизадачность)
 			 * @todo [?] Добавить проверку необходимости оператора ?. в .codePrepare() (вместо его слепой расстановки вовсюда)
+			 * @todo [?] Законопатить дырку безопасности, связанную с возможностью перезаписи приватных полей классами-наследниками
 			 * @todo [X] Выделять под каждый .framework свой участок памяти
 			 *
 			 * ! - Важные, текущие задачи

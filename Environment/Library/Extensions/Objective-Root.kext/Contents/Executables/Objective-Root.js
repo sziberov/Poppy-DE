@@ -119,11 +119,11 @@ window.Number.prototype.toHexString = (n) => {
 }
 
 window.Math.isEven = (n) => {
-	return n % 2 == 0;
+	return n%2 === 0;
 }
 
 window.Math.isOdd = (n) => {
-	return Math.abs(n % 2) == 1;
+	return Math.abs(n%2) === 1;
 }
 
 window.Math.randomArbitrary = (min, max) => {
