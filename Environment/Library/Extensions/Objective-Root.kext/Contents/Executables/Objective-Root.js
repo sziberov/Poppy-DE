@@ -72,6 +72,34 @@ window.Object.isMemberOf = function(value, value_) {
 window.Object.isKindOf = function(value, value_) {
 	return isClassOf(value, value_);
 }
+window.Object.sizeOf = function(object) {
+	let objects = [],
+		stack = [object],
+		bytes = 0;
+
+	while(stack.length) {
+		let value = stack.pop();
+
+		if(typeof value === 'boolean') {
+			bytes += 4;
+		} else
+		if(typeof value === 'string') {
+			bytes += value.length*2;
+		} else
+		if(typeof value === 'number') {
+			bytes += 8;
+		} else
+		if(typeof value === 'object' && objects.indexOf(value) === -1) {
+			objects.push(value);
+
+			for(let i in value) {
+				stack.push(value[i]);
+			}
+		}
+	}
+
+	return bytes;
+}
 
 let arrayMethods = {
 	startsWith: {
