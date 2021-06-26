@@ -3,7 +3,9 @@
 	<script>
 		/*
 			Opium Kernel v0.1:
-				Contains base functions|appearance and DE launch procedure.
+				Ядро окружения. Содержит базовые функции для создания и управления различными низкоуровневыми объектами
+				(такими как файлы, события, счётчики, разделённые окружения, динамические библиотеки, терминалы и процессы),
+				а также процедуру запуска окружения.
 		*/
 
 		const Opium = new class Opium {
@@ -35,7 +37,8 @@
 			}
 			objects = {
 				files: [],
-				events: [],
+				channels: [],
+				catchers: [],
 				timers: [],
 				se: [],
 				dl: [],
@@ -74,7 +77,7 @@
 						this.bootState(true);
 					//	this.verbose = true;
 
-						this.eventCatch(undefined, 'terminalChanged', (a) => {
+						this.eventCatcherCreate(undefined, 'terminalChanged', (a) => {
 							let terminal = this.terminals.find(v => v.ID === a.terminalID),
 								string = {
 									ID: a.stringID,
@@ -168,8 +171,12 @@
 				return this.objects.files;
 			}
 
-			get events() {
-				return this.objects.events;
+			get channels() {
+				return this.objects.channels;
+			}
+
+			get catchers() {
+				return this.objects.catchers;
 			}
 
 			get timers() {
@@ -200,8 +207,12 @@
 				this.objects.files = value;
 			}
 
-			set events(value) {
-				this.objects.events = value;
+			set channels(value) {
+				this.objects.channels = value;
+			}
+
+			set catchers(value) {
+				this.objects.catchers = value;
 			}
 
 			set timers(value) {
@@ -903,13 +914,13 @@
 					}
 				}
 
-				for(let event of this.events.filter(v => (processID_ ? v.processID === processID_ : true) && v.title === title)) {
+				for(let event of this.catchers.filter(v => (processID_ ? v.processID === processID_ : true) && v.title === title)) {
 					try {
 						event.function(...arguments_);
 					} catch(error) {
 						error.fileName = this.processes.find(v => v.ID === event.processID)?.path;
 						this.kdbAdd(`
-							eventThrow@${ event.processID }: Handler failed to execute:
+							eventThrow@${ event.processID }: Catcher failed to execute its function:
 							    Process ID: ${ processID_ || 'Not set' }
 							    Title: "${ title }"
 						`, error.stack);
@@ -917,17 +928,21 @@
 				}
 			}
 
-			eventCatch(processID, title, function_) {
-				let ID = Math.max(...this.events.map(v => v.ID).initialize(0))+1;
+			eventChannelCreate(processID) {}
 
-				this.events.push({
+			eventChannelDestroy(processID, channelID) {}
+
+			eventCatcherCreate(processID, title, function_) {
+				let ID = Math.max(...this.catchers.map(v => v.ID).initialize(0))+1;
+
+				this.catchers.push({
 					ID: ID,
 					processID: processID || undefined,
 					title: title,
 					function: function_
 				});
 				this.kdbAdd(`
-					eventCatch${ processID ? '@'+processID : '' }: Successfully created object:
+					eventCatcherCreate${ processID ? '@'+processID : '' }: Successfully created object:
 					    ID: ${ ID }
 					    Title: "${ title }"
 				`);
@@ -935,23 +950,23 @@
 				return ID;
 			}
 
-			eventCatchDestroy(processID, eventID) {
-				let event = this.events.find(v => v.ID === eventID);
+			eventCatcherDestroy(processID, eventID) {
+				let event = this.catchers.find(v => v.ID === eventID);
 
 				if(!event) {
-					this.kdbAdd(`eventCatchDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+					this.kdbAdd(`eventCatcherDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
 
 					console.error(0); return false;
 				}
 				if(processID && event.processID !== processID) {
-					this.kdbAdd(`eventCatchDestroy@${ processID }: Processes aren't allowed to destroy not owned objects`);
+					this.kdbAdd(`eventCatcherDestroy@${ processID }: Processes aren't allowed to destroy not owned objects`);
 
 					console.error(1); return false;
 				}
 
-				this.events = this.events.filter(v => v !== event);
+				this.catchers = this.catchers.filter(v => v !== event);
 				this.kdbAdd(`
-					eventCatchDestroy${ processID ? '@'+processID : '' }: Successfully destroyed object:
+					eventCatcherDestroy${ processID ? '@'+processID : '' }: Successfully destroyed object:
 					    ID: ${ event.ID }
 					    Title: "${ event.title }"
 				`);
@@ -1440,8 +1455,8 @@
 					drIterate: (...a) => this.drIterate(...a),
 					drClose: (a) => this.drClose(a),
 					throw: (...a) => this.eventThrow(process.ID, ...a),
-					catch: (...a) => this.eventCatch(process.ID, ...a),
-					catchDestroy: (a) => this.eventCatchDestroy(process.ID, a),
+					catcherCreate: (...a) => this.eventCatcherCreate(process.ID, ...a),
+					catcherDestroy: (a) => this.eventCatcherDestroy(process.ID, a),
 					timerCreate: (...a) => this.timerCreate(process.ID, ...a),
 					timerDestroy: (a) => this.timerDestroy(process.ID, a),
 					seCreate: (...a) => this.seCreate(process.ID, ...a),
@@ -1638,8 +1653,8 @@
 					console.error(0); return;
 				}
 
-				for(let v of this.events.filter(v => v.processID === processID)) {
-					this.eventCatchDestroy(processID, v.ID);
+				for(let v of this.catchers.filter(v => v.processID === processID)) {
+					this.eventCatcherDestroy(processID, v.ID);
 				}
 				for(let v of this.timers.filter(v => v.processID === processID)) {
 					this.timerDestroy(processID, v.ID);
@@ -1933,7 +1948,7 @@
 			/**
 			 * @todo [!] Перевести DOM-интерфейс на Canvas
 			 * @todo [!] Разобраться с observer'ами
-			 * @todo [~] Добавить в .eventCatch() и .eventThrow() возможность ограничения определённым каналом (а не только процессом)
+			 * @todo [!] Добавить в .eventCatcherCreate() и .eventThrow() возможность ограничения определённым каналом (а не только процессом)
 			 * @todo [~] Добавить .fs* методам таблицу открытых файлов (и внедрить идею файл-дескрипторов - как оказалось, по сути своей тех же ID, что и везде)
 			 * @todo [~] Добавить в CFObject проверку доступа полей для observer'ов, либо просто ограничить до публичных-only
 			 * @todo [~] Добавить классы-интерфейсы к объектам CGSWindowServer
@@ -1944,6 +1959,7 @@
 			 * @todo [?] Обеспечить асинхронность процессов (мультизадачность)
 			 * @todo [?] Добавить проверку необходимости оператора ?. в .codePrepare() (вместо его слепой расстановки вовсюда)
 			 * @todo [?] Законопатить дырку безопасности, связанную с возможностью перезаписи приватных полей классами-наследниками
+			 * @todo [?] Раскомментить и переписать .processFork() так, чтобы он соответствовал реализации в Linux (содаётся дочерний процесс с окружением скопированным из родительского)
 			 * @todo [X] Выделять под каждый .framework свой участок памяти
 			 *
 			 * ! - Важные, текущие задачи

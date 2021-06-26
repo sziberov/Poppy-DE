@@ -11,7 +11,7 @@ return class CFEvent {
 		if(typeof event !== 'string')		throw new TypeError(0);
 		if(typeof function_ !== 'function')	throw new TypeError(1);
 
-		return _request('catch', event, function_);
+		return _request('catcherCreate', event, function_);
 	}
 
 	static removeHandler(handler) {
@@ -19,6 +19,6 @@ return class CFEvent {
 			throw new TypeError(0);
 		}
 
-		return _request('catchDestroy', handler);
+		return _request('catcherDestroy', handler);
 	}
 }
