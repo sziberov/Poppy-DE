@@ -1,3 +1,8 @@
+/*
+	Objective-Root v0.1:
+		Расширения для JS. Здесь находится часть, не нуждающаяся в методах ядра - та же в свою очередь содержится непосредственно в ядре.
+*/
+
 window.Object.isObject = (value) => {
 	return typeof value === 'object' && value !== null;
 }
@@ -72,6 +77,7 @@ window.Object.isMemberOf = function(value, value_) {
 window.Object.isKindOf = function(value, value_) {
 	return isClassOf(value, value_);
 }
+
 window.Object.sizeOf = function(object) {
 	let objects = [],
 		stack = [object],
