@@ -1753,7 +1753,7 @@
 			}
 
 			/**
-			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и (частично) приватных полей, друзей, а также оповещений о произведённых действиях:
+			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и (частично) приватных полей, друзей, а также оповещений о производимых действиях:
 			 * - classProtected(1, this, Class) - Возвращает класс.
 			 * - classProtected(1, this, Class, 'field') - Возвращает поле.
 			 * - classProtected(1, this, Class, 'field', 'assign', 'value') - Записывает в поле.
@@ -1783,30 +1783,23 @@
 					private_ = /^__./i,
 					protected_ = /^_[^_]/i;
 
-				if(!caller || this.verbose ? !class_ : false) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: No ${ !caller ? `caller's context` : 'class' } set${ field ? ' for: "'+field+'"' : '' }`); return;
+				if(this.verbose && (!caller || !class_)) {
+					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: No ${ !caller ? `caller's context` : 'class' } set${ field ? ' for: "'+field+'"' : '' }`);
 				}
-				if(!class_) {
+				if(!caller || !class_) {
 					return;
 				}
 				if(field === undefined || field == null) {
 					return class_;
 				}
 
-				let global,
-					equals,
-					inherits,
-					friends;
-
-				if(class_) {
-					global = environment ? Object.isShallowlyEqual(environment, class_) : false;	// Object.isMemberOf(class_, environment)
-					equals = Object.isMemberOf(caller, class_);
-					inherits = Object.isKindOf(caller, class_);
+				let global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
+					equals = Object.isMemberOf(caller, class_),
+					inherits = Object.isKindOf(caller, class_),
 					friends = (class_.constructor || class_).__friends__ || []
 					friends = !!friends.find(v => Object.isMemberOf(caller, v));
-				}
 
-				if(['__proto__', '__friends__'].includes(field) && !equals) {
+				if(['__proto__', '__get__', '__friends__'].includes(field) && !equals) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved property: ${ field }`); return;
 				}
 				if(!global && private_.test(field) && !equals && !friends) {
@@ -1817,26 +1810,26 @@
 				}
 
 				if(type === 'assign') {
-					if(class_) {
-						try {
-							class_[field] = arguments_[0]
-						} catch(TypeError) {
-							console.error('ЧЗХ');
-						}
-
-						return arguments_[0]
-					} else {
-						return;
+					try {
+						class_[field] = arguments_[0]
+					} catch(TypeError) {
+						console.error('43X');	// Какая-то рандомная проблема с Proxy и SE
 					}
+
+					return arguments_[0]
 				}
 				if(type === 'call') {
-					return class_?.[field]?.call(class_, ...arguments_);
+					return class_[field]?.call(class_, ...arguments_);
 				}
 				if(type === 'delete') {
-					return delete class_?.[field]
+					return delete class_[field]
 				}
 
-				return class_?.[field]
+				if(typeof class_.__get__ === 'function') {
+					return class_.__get__(field, class_[field]);
+				}
+
+				return class_[field]
 			}
 
 			/**

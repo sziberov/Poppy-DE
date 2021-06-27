@@ -102,7 +102,7 @@ return class LFView extends LFResponder {
 						did = true;
 
 						this.remove();
-						this.element = this.create().appendTo(view.element);
+						this.__element = this.create().appendTo(view.element);
 					}
 					this.superview = view;
 

@@ -2,6 +2,7 @@
 return class LFObject {
 	static __friends__ = [CFObject]
 
+	__element;
 	__properties = {
 		style: CFObject.observable({}, (k, v) => {
 			if(this.element) {
@@ -20,7 +21,9 @@ return class LFObject {
 		text: ''
 	}
 
-	element;
+	get element() {
+		return this.__element;
+	}
 
 	get style() {
 		return this.__properties.style;
@@ -68,7 +71,7 @@ return class LFObject {
 
 	add() {
 		if(!this.element) {
-			this.element = this.create().appendTo('body');
+			this.__element = this.create().appendTo('body');
 		}
 
 		return this;
@@ -77,7 +80,7 @@ return class LFObject {
 	remove() {
 		if(this.element) {
 			this.element.remove();
-			this.element = undefined;
+			this.__element = undefined;
 		}
 
 		return this;

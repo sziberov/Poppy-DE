@@ -73,6 +73,14 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 		});
 	}
 
+	/*
+	__get__(key, value) {
+		console.log('WORKS for: '+key);
+
+		return value;
+	}
+	*/
+
 	get launchedApplications() {
 		return this.__launchedApplications;
 	}
