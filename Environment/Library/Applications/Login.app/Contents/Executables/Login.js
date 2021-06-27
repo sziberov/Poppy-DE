@@ -66,7 +66,7 @@ return class {
 					}
 					update();
 					CFEvent.addHandler('dateChanged', update);
-				//	_request('timerCreate', 'multiple', 1000, update);
+				//	_request('timerCreate', true, 1000, update);
 				},
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: CFLocalizedString('View as Analog') }),

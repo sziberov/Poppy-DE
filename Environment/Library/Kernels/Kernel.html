@@ -111,7 +111,7 @@
 							}
 						});
 
-						this.timerCreate(undefined, 'multiple', 1000, () => {
+						this.timerCreate(undefined, true, 1000, () => {
 							this.eventThrow(undefined, undefined, 'dateChanged');
 						});
 						$(document).on('click dblclick contextmenu mouseover mouseenter mouseout mouseleave mousedown mouseup mousemove', '*', (e) => {
@@ -130,7 +130,7 @@
 						sh.postMessage({ Opium: this });
 						*/
 
-					//	this.timerCreate(undefined, 'single', 125/2, () => {
+					//	this.timerCreate(undefined, false, 125/2, () => {
 							this.bootState(false);
 					//	});
 
@@ -322,7 +322,7 @@
 							this.drDraw(layer, 'layer', logo, layer.width/2-logo.width/2, layer.height/2-logo.height/2);
 							this.drDraw(spinnerBackground, 'rectangle', this.colors.lightGray, 0, 0, spinnerBackground.width, spinnerBackground.height);
 
-							this.bootTimerID = this.timerCreate(undefined, 'multiple', 125/2, () => {
+							this.bootTimerID = this.timerCreate(undefined, true, 125/2, () => {
 								spinnerIteration = spinnerIteration > 10 ? 0 : ++spinnerIteration;
 
 								let x = layer.width/2,
@@ -507,7 +507,7 @@
 				}
 
 				for(let v of types) {
-					if(v.extension && new RegExp('/\.' + v.extension + '$/gi').test(title)) {
+					if(v.extension && new RegExp('/\.'+v.extension+'$/gi').test(title)) {
 						return v.mime;
 					}
 				}
@@ -914,13 +914,13 @@
 					}
 				}
 
-				for(let event of this.catchers.filter(v => (processID_ ? v.processID === processID_ : true) && v.title === title)) {
+				for(let catcher of this.catchers.filter(v => (processID_ ? v.processID === processID_ : true) && v.title === title)) {
 					try {
-						event.function(...arguments_);
+						catcher.function(...arguments_);
 					} catch(error) {
-						error.fileName = this.processes.find(v => v.ID === event.processID)?.path;
+						error.fileName = this.processes.find(v => v.ID === catcher.processID)?.path;
 						this.kdbAdd(`
-							eventThrow@${ event.processID }: Catcher failed to execute its function:
+							eventThrow@${ catcher.processID }: Catcher failed to execute its function:
 							    Process ID: ${ processID_ || 'Not set' }
 							    Title: "${ title }"
 						`, error.stack);
@@ -928,16 +928,40 @@
 				}
 			}
 
-			eventChannelCreate(processID) {}
+			eventChannelCreate(processID) {
+				let ID = Math.max(...this.channels.map(v => v.ID).initialize(0))+1;
+
+				this.catchers.push({
+					ID: ID,
+					processID: processID
+				});
+				this.kdbAdd(`
+					eventChannelCreate${ processID ? '@'+processID : '' }: Successfully created object:
+					    ID: ${ ID }
+				`);
+
+				return ID;
+			}
 
 			eventChannelDestroy(processID, channelID) {}
 
 			eventCatcherCreate(processID, title, function_) {
 				let ID = Math.max(...this.catchers.map(v => v.ID).initialize(0))+1;
 
+				if(typeof title !== 'string') {
+					this.kdbAdd(`eventCatcherCreate${ processID ? '@'+processID : '' }: Incorrect title`);
+
+					console.error(0); return;
+				}
+				if(typeof function_ !== 'function') {
+					this.kdbAdd(`eventCatcherCreate${ processID ? '@'+processID : '' }: Incorrect function`);
+
+					console.error(1); return;
+				}
+
 				this.catchers.push({
 					ID: ID,
-					processID: processID || undefined,
+					processID: processID,
 					title: title,
 					function: function_
 				});
@@ -950,33 +974,33 @@
 				return ID;
 			}
 
-			eventCatcherDestroy(processID, eventID) {
-				let event = this.catchers.find(v => v.ID === eventID);
+			eventCatcherDestroy(processID, catcherID) {
+				let catcher = this.catchers.find(v => v.ID === catcherID);
 
-				if(!event) {
+				if(!catcher) {
 					this.kdbAdd(`eventCatcherDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
 
 					console.error(0); return false;
 				}
-				if(processID && event.processID !== processID) {
+				if(processID && catcher.processID !== processID) {
 					this.kdbAdd(`eventCatcherDestroy@${ processID }: Processes aren't allowed to destroy not owned objects`);
 
 					console.error(1); return false;
 				}
 
-				this.catchers = this.catchers.filter(v => v !== event);
+				this.catchers = this.catchers.filter(v => v !== catcher);
 				this.kdbAdd(`
 					eventCatcherDestroy${ processID ? '@'+processID : '' }: Successfully destroyed object:
-					    ID: ${ event.ID }
-					    Title: "${ event.title }"
+					    ID: ${ catcher.ID }
+					    Title: "${ catcher.title }"
 				`);
 
 				return true;
 			}
 
-			timerCreate(processID, variant, delay, function_, ...arguments_) {
-				if(!['single', 'multiple'].includes(variant)) {
-					this.kdbAdd(`timerCreate${ processID ? '@'+processID : '' }: Incorrect variant`);
+			timerCreate(processID, repeat, delay, function_, ...arguments_) {
+				if(typeof repeat !== 'boolean') {
+					this.kdbAdd(`timerCreate${ processID ? '@'+processID : '' }: Incorrect repeat`);
 
 					console.error(0); return;
 				}
@@ -994,7 +1018,7 @@
 				let ID = Math.max(...this.timers.map(v => v.ID).initialize(0))+1,
 					timer;
 
-				if(variant === 'single') {
+				if(!repeat) {
 					timer = setTimeout(() => {
 						function_(...arguments_);
 						this.timerDestroy(processID, ID);
@@ -1004,14 +1028,14 @@
 				}
 				this.timers.push({
 					ID: ID,
-					processID: processID || undefined,
-					variant: variant,
+					processID: processID,
+					repeat: repeat,
 					timer: timer
 				});
 				this.kdbAdd(`
 					timerCreate${ processID ? '@'+processID : '' }: Successfully created object:
 					    ID: ${ ID }
-					    Variant: ${ variant }
+					    Repeat: ${ repeat ? 'Yes' : 'No' }
 				`);
 
 				return ID;
@@ -1031,7 +1055,7 @@
 					console.error(1); return;
 				}
 
-				if(timer.variant === 'single') {
+				if(!timer.repeat) {
 					clearTimeout(timer.timer);
 				} else {
 					clearInterval(timer.timer);
@@ -1040,7 +1064,7 @@
 				this.kdbAdd(`
 					timerDestroy${ processID ? '@'+processID : '' }: Successfully destroyed object:
 					    ID: ${ timer.ID }
-					    Variant: ${ timer.variant }
+					    Repeat: ${ timer.repeat ? 'Yes' : 'No' }
 				`);
 			}
 
@@ -1219,7 +1243,7 @@
 						}));
 						*/
 					} catch(error) {
-						this.kdbAdd(`dlLoad@${ processID }: Unable to parse requested library: ${ path }`);
+						this.kdbAdd(`dlLoad@${ processID }: Unable to parse requested library: ${ path }`, error.stack);
 
 						console.error(2); return;
 					}
@@ -1424,7 +1448,10 @@
 			}
 
 			sbExecute(a, b, c) {
-				return require('vm').runInContext(a, b, c?.split('/').pop());
+				return require('vm').runInContext(a, b, {
+					filename: c?.split('/').pop(),
+					timeout: 60000
+				});
 			}
 
 			processRequest(process, method, ...arguments_) {
@@ -1687,14 +1714,14 @@
 			classImport(process, framework, class_) {
 				class_ ??= framework;
 
-				let searchList = [
+				let pathSearch = [
 					//	'/Frameworks/'+framework+'.framework/Contents',
 						'/Library/Frameworks/'+framework+'.framework/Contents',
 						'/Environment/Library/Frameworks/'+framework+'.framework/Contents'
 					],
 					path;
 
-				for(let v of searchList) {
+				for(let v of pathSearch) {
 					let a = v+'/Classes/'+class_+'.js',
 						b = this.fsExists(a);
 
@@ -1803,6 +1830,7 @@
 			 * Подготавливает код для исполнения в процессах.
 			 * - Заменяет обычный синтаксис приватных полей на нужный для classProtected().
 			 * - Заменяет обычные обращения к полям/свойствам на проходящие через classProtected().
+			 * - Заменяет обычные присваивания на проходящие через .__set() и Object.__referenced().
 			 *
 			 * _Этот метод является частью Objective-Root._
 			 *
@@ -1900,6 +1928,79 @@
 							path.parentPath.replace(callNode);
 						} else {
 							path.replace(callNode);
+						}
+					},
+					visitVariableDeclarator(path) {
+					//	let variable = '';	===	let variable = Object.__referenced('');
+
+						this.traverse(path);
+
+						if(path.node.init) {
+							path.node.init = builders.callExpression(
+								builders.memberExpression(
+									builders.identifier('Object'),
+									builders.identifier('__referenced')
+								),
+								[path.node.init]
+							);
+						}
+					},
+					visitClassProperty(path) {
+					//	field = '';	===	field = Object.__referenced('');
+
+						this.traverse(path);
+
+						if(path.node.value) {
+							path.node.value = builders.callExpression(
+								builders.memberExpression(
+									builders.identifier('Object'),
+									builders.identifier('__referenced')
+								),
+								[path.node.value]
+							);
+						}
+					},
+					visitAssignmentExpression(path) {
+					//	object.property = '';	===	Object.__set(object, 'property', '');
+					//	property = '';			===	Object.__set(this, 'property', '');
+
+						this.traverse(path);
+
+						let node = path.node;
+
+						if(node.operator !== '=') {
+							return;
+						}
+
+						if(node.left.type === 'MemberExpression') {
+							let property = node.left.property,
+								propertyName = property.name || property.value,
+								propertyComputed = node.left.computed;
+
+							path.replace(builders.callExpression(
+								builders.memberExpression(
+									builders.identifier('Object'),
+									builders.identifier('__set')
+								),
+								[
+									node.left.object.name !== 'super' ? node.left.object : builders.identifier('this'),
+									!propertyComputed && property.type === 'Identifier' ? builders.stringLiteral(propertyName) : property,
+									node.right,
+									node.left.object.name !== 'super' ? builders.booleanLiteral(false) : builders.booleanLiteral(true)
+								]
+							));
+						} else {
+							path.replace(builders.callExpression(
+								builders.memberExpression(
+									builders.identifier('Object'),
+									builders.identifier('__set')
+								),
+								[
+									builders.identifier('this'),
+									builders.stringLiteral(node.left.name),
+									node.right
+								]
+							));
 						}
 					}
 				});

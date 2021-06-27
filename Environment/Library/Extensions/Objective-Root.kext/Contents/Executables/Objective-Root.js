@@ -107,7 +107,47 @@ window.Object.sizeOf = function(object) {
 	return bytes;
 }
 
-let arrayMethods = {
+window.Object.__set = function(object, key, value, super_) {
+	if(!Object.isObject(object) && typeof object !== 'function') {
+		return;
+	}
+	if(super_) {
+		object = Object.getPrototypeOf(object);
+	}
+
+	if(typeof object.__set === 'function') {
+		return object.__set(key, value);
+	} else {
+		let oldValue = object[key]
+
+		object[key] = value;
+
+		if(oldValue !== value) {
+			Object.__unreferenced(oldValue);
+			Object.__referenced(value);
+		}
+
+		return value;
+	}
+}
+
+window.Object.__referenced = function(value) {
+	if(Object.isObject(value) && typeof value.__referenceCount === 'number') {
+		Object.__set(value, '__referenceCount', value.__referenceCount+1);
+	}
+
+	return value;
+}
+
+window.Object.__unreferenced = function(value) {
+	if(Object.isObject(value) && typeof value.__referenceCount === 'number') {
+		Object.__set(value, '__referenceCount', value.__referenceCount-1);
+	}
+
+	return undefined;
+}
+
+let arrayFields = {
 	startsWith: {
 		value: function(value) {
 			for(let k in value) {
@@ -145,8 +185,8 @@ let arrayMethods = {
 	}
 }
 
-Object.defineProperties(window.Array.prototype, arrayMethods);
-Object.defineProperties(window.Buffer.prototype, arrayMethods);
+Object.defineProperties(window.Array.prototype, arrayFields);
+Object.defineProperties(window.Buffer.prototype, arrayFields);
 
 window.Number.prototype.toHexString = (n) => {
 	return '0x'+(n+0x10000).toString(16).substr(-4).toUpperCase();

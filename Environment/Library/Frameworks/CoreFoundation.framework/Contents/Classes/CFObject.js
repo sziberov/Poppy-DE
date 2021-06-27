@@ -10,7 +10,17 @@
 return class CFObject extends Object {
 	static __friends__ = [this]
 
+	__referenceCount = 0;
 	__observers = []
+
+	constructor() {
+		super();
+
+		Object.defineProperty(this, '__referenceCount', {
+			configurable: false,
+			enumerable: false
+		});
+	}
 
 	static addObserver(object, function_) {
 		if(!this.isObject(object) || !this.isKindOf(object, this))	throw new TypeError(0);
