@@ -1148,6 +1148,8 @@
 							}
 
 							target[key] = value;
+
+							return true;
 						}
 					}
 				}
@@ -1815,13 +1817,23 @@
 				}
 
 				if(type === 'assign') {
-					return class_ || {}
+					if(class_) {
+						try {
+							class_[field] = arguments_[0]
+						} catch(TypeError) {
+							console.error('ЧЗХ');
+						}
+
+						return arguments_[0]
+					} else {
+						return;
+					}
 				}
 				if(type === 'call') {
-					return class_?.[field]?.bind(class_);
+					return class_?.[field]?.call(class_, ...arguments_);
 				}
 				if(type === 'delete') {
-					return delete class_?.[field];
+					return delete class_?.[field]
 				}
 
 				return class_?.[field]
@@ -1881,18 +1893,10 @@
 					//	object['property']				===	_protected(this, object, 'property');
 					//	object[property]				===	_protected(this, object, property);
 
-					//	object.property = '';			===	_protected(this, object, 'property', 'assign').property = '';
-					//	object['property'] = '';		===	_protected(this, object, 'property', 'assign')['property'] = '';
-					//	object[property] = '';			===	_protected(this, object, property, 'assign')[property] = '';
-					//	++++++
 					//	object.property = ''; ||
 					//	object['property'] = '';		===	_protected(this, object, 'property', 'assign', '');
 					//	object[property] = '';			===	_protected(this, object, property, 'assign', '');
 
-					//	object.property(arguments); ||
-					//	object['property'](arguments);	===	_protected(this, object, 'property', 'call')?.(arguments);
-					//	object[property](arguments);	===	_protected(this, object, property, 'call')?.(arguments);
-					//	++++++
 					//	object.property(arguments); ||
 					//	object['property'](arguments);	===	_protected(this, object, 'property', 'call', arguments);
 					//	object[property](arguments);	===	_protected(this, object, property, 'call', arguments);
@@ -1923,33 +1927,17 @@
 							builders.thisExpression(),
 							object,
 							!propertyComputed && property.type === 'Identifier' ? builders.stringLiteral(propertyName) : property,
-							...assign ? [builders.stringLiteral('assign')] : call ? [builders.stringLiteral('call')] : delete_ ? [builders.stringLiteral('delete')] : []
+							...assign ? [builders.stringLiteral('assign'), parentNode.right] : call ? [builders.stringLiteral('call'), ...parentNode.arguments] : delete_ ? [builders.stringLiteral('delete')] : []
 						]);
 
-						if(assign) {
-							path.replace(builders.memberExpression(callNode, property, propertyComputed));
-						} else
-						if(call) {
-							path.parentPath.replace(builders.optionalCallExpression(callNode, parentNode.arguments, true));
-						} else
-						if(delete_) {
+						if(assign || call || delete_) {
 							path.parentPath.replace(callNode);
+
+							this.traverse(path.parentPath);
 						} else {
 							path.replace(callNode);
 						}
-					},
-					/*
-					visitVariableDeclarator(path) {
-					//	let variable = '';	===	let variable = Object.__referenced('');
-					},
-					visitClassProperty(path) {
-					//	field = '';	===	field = Object.__referenced('');
-					},
-					visitAssignmentExpression(path) {
-					//	object.property = '';	===	Object.__set(object, 'property', '');
-					//	property = '';			===	Object.__set(this, 'property', '');
 					}
-					*/
 				});
 
 				a = require('recast').print(a).code;
