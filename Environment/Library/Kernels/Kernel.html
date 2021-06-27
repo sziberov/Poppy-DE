@@ -1751,11 +1751,11 @@
 			}
 
 			/**
-			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и приватных полей, а также друзей:
+			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и (частично) приватных полей, друзей, а также оповещений о произведённых действиях:
 			 * - classProtected(1, this, Class) - Возвращает класс.
 			 * - classProtected(1, this, Class, 'field') - Возвращает поле.
-			 * - classProtected(1, this, Class, 'field', 'assign') - Возвращает класс с мыслью о том, что в его поле обязательно будет происходить запись, поэтому возможен пустой объект {} (в случае отказа).
-			 * - classProtected(1, this, Class, 'field', 'call') - Возвращает определение метода.
+			 * - classProtected(1, this, Class, 'field', 'assign', 'value') - Записывает в поле.
+			 * - classProtected(1, this, Class, 'field', 'call') - Вызывает метод.
 			 * - classProtected(1, this, Class, 'field', 'delete') - Удаляет поле.
 			 *
 			 * Модификаторами доступа полей являются префиксы:
@@ -1774,14 +1774,15 @@
 			 * @param {!Object}						class_		Класс обращения.
 			 * @param {?string}						field		Поле обращения.
 			 * @param {?('assign'|'call'|'delete')}	type		Тип обращения.
+			 * @param {?Object}						arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
 			 */
-			classProtected(processID, caller, class_, field, type) {
+			classProtected(processID, caller, class_, field, type, ...arguments_) {
 				let environment = this.processes.find(v => v.ID === processID)?.environment,
 					private_ = /^__./i,
 					protected_ = /^_[^_]/i;
 
 				if(!caller || this.verbose ? !class_ : false) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: No ${ !caller ? 'caller\'s context' : 'class' } set${ field ? ' for: "'+field+'"' : '' }`); return;
+					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: No ${ !caller ? `caller's context` : 'class' } set${ field ? ' for: "'+field+'"' : '' }`); return;
 				}
 				if(!class_) {
 					return;
@@ -1830,7 +1831,6 @@
 			 * Подготавливает код для исполнения в процессах.
 			 * - Заменяет обычный синтаксис приватных полей на нужный для classProtected().
 			 * - Заменяет обычные обращения к полям/свойствам на проходящие через classProtected().
-			 * - Заменяет обычные присваивания на проходящие через .__set() и Object.__referenced().
 			 *
 			 * _Этот метод является частью Objective-Root._
 			 *
@@ -1884,10 +1884,18 @@
 					//	object.property = '';			===	_protected(this, object, 'property', 'assign').property = '';
 					//	object['property'] = '';		===	_protected(this, object, 'property', 'assign')['property'] = '';
 					//	object[property] = '';			===	_protected(this, object, property, 'assign')[property] = '';
+					//	++++++
+					//	object.property = ''; ||
+					//	object['property'] = '';		===	_protected(this, object, 'property', 'assign', '');
+					//	object[property] = '';			===	_protected(this, object, property, 'assign', '');
 
 					//	object.property(arguments); ||
 					//	object['property'](arguments);	===	_protected(this, object, 'property', 'call')?.(arguments);
 					//	object[property](arguments);	===	_protected(this, object, property, 'call')?.(arguments);
+					//	++++++
+					//	object.property(arguments); ||
+					//	object['property'](arguments);	===	_protected(this, object, 'property', 'call', arguments);
+					//	object[property](arguments);	===	_protected(this, object, property, 'call', arguments);
 
 					//	delete object.property; ||
 					//	delete object['property']		===	_protected(this, object, 'property', 'delete');
@@ -1930,79 +1938,18 @@
 							path.replace(callNode);
 						}
 					},
+					/*
 					visitVariableDeclarator(path) {
 					//	let variable = '';	===	let variable = Object.__referenced('');
-
-						this.traverse(path);
-
-						if(path.node.init) {
-							path.node.init = builders.callExpression(
-								builders.memberExpression(
-									builders.identifier('Object'),
-									builders.identifier('__referenced')
-								),
-								[path.node.init]
-							);
-						}
 					},
 					visitClassProperty(path) {
 					//	field = '';	===	field = Object.__referenced('');
-
-						this.traverse(path);
-
-						if(path.node.value) {
-							path.node.value = builders.callExpression(
-								builders.memberExpression(
-									builders.identifier('Object'),
-									builders.identifier('__referenced')
-								),
-								[path.node.value]
-							);
-						}
 					},
 					visitAssignmentExpression(path) {
 					//	object.property = '';	===	Object.__set(object, 'property', '');
 					//	property = '';			===	Object.__set(this, 'property', '');
-
-						this.traverse(path);
-
-						let node = path.node;
-
-						if(node.operator !== '=') {
-							return;
-						}
-
-						if(node.left.type === 'MemberExpression') {
-							let property = node.left.property,
-								propertyName = property.name || property.value,
-								propertyComputed = node.left.computed;
-
-							path.replace(builders.callExpression(
-								builders.memberExpression(
-									builders.identifier('Object'),
-									builders.identifier('__set')
-								),
-								[
-									node.left.object.name !== 'super' ? node.left.object : builders.identifier('this'),
-									!propertyComputed && property.type === 'Identifier' ? builders.stringLiteral(propertyName) : property,
-									node.right,
-									node.left.object.name !== 'super' ? builders.booleanLiteral(false) : builders.booleanLiteral(true)
-								]
-							));
-						} else {
-							path.replace(builders.callExpression(
-								builders.memberExpression(
-									builders.identifier('Object'),
-									builders.identifier('__set')
-								),
-								[
-									builders.identifier('this'),
-									builders.stringLiteral(node.left.name),
-									node.right
-								]
-							));
-						}
 					}
+					*/
 				});
 
 				a = require('recast').print(a).code;

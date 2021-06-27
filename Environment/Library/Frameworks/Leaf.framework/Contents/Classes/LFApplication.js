@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class LFApplication extends CFObject {
+return class LFApplication {
 	static __shared;
 
 	static get shared() {
@@ -15,7 +15,6 @@ return class LFApplication extends CFObject {
 	__quitableBySingleWindow = false;
 
 	constructor() {
-		super();
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;
 		} else {

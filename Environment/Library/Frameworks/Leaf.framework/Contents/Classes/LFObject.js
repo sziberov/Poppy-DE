@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class LFObject extends CFObject {
+return class LFObject {
 	static __friends__ = [CFObject]
 
 	__properties = {
