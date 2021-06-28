@@ -14,44 +14,19 @@ return class CFObject extends Object {
 
 	constructor() {
 		super();
+
+		for(let v of Object.keys(this)) {
+			if(v.startsWith('_')) {
+				Object.defineProperty(this, v, {
+					enumerable: false
+				});
+			}
+		}
 	}
 
 	static addObserver(object, function_) {
 		if(!this.isObject(object) || !this.isKindOf(object, this))	throw new TypeError(0);
 		if(typeof function_ !== 'function')							throw new TypeError(1);
-
-		if(object.__observers.length === 0) {
-			let clone = this.create(object.constructor.prototype);
-
-			for(let k of this.keys(object)) {
-				if(new this().hasOwnProperty.call(object, k)) {
-					clone[k] = object[k]
-
-					delete object[k]
-				}
-			}
-
-			object.__proto__ = new Proxy(clone, {
-				set: (target, key, value) => {
-					let event = target[key] ? 'changed' : 'added';
-
-					target[key] = value;
-
-					CFEvent.dispatch(undefined, _title+'Changed', object, { event: event, key: key, value: value });
-
-					return true;
-				},
-				deleteProperty: (target, key) => {
-					if(key in target) {
-						delete target[key]
-
-						CFEvent.dispatch(undefined, _title+'Changed', object, { event: 'removed', key: key });
-
-						return true;
-					}
-				}
-			});
-		}
 
 		let ID = CFEvent.addHandler(_title+'Changed', (object_, ...arguments_) => {
 			if(object_ === object) {
@@ -74,43 +49,6 @@ return class CFObject extends Object {
 		}
 
 		object.__observers = object.__observers.filter(v => v !== observerID);
-		if(object.__observers.length === 0) {
-			let proto = object.__proto__;
-
-			this.setPrototypeOf(object, proto.constructor.prototype);
-
-			for(let k of this.keys(proto)) {
-				if(new this().hasOwnProperty.call(proto, k)) {
-					object[k] = proto[k]
-
-					delete proto[k]	// Вероятно не нужно
-				}
-			}
-		}
-	}
-
-	static keys(object) {
-		if(!this.isObject(object)) {
-			throw new TypeError(0);
-		}
-
-		return this.isKindOf(object, this) && object.__observers?.length > 0 ? super.keys(object.__proto__) : super.keys(object);
-	}
-
-	static values(object) {
-		if(!this.isObject(object)) {
-			throw new TypeError(0);
-		}
-
-		return this.isKindOf(object, this) && object.__observers?.length > 0 ? super.values(object.__proto__) : super.values(object);
-	}
-
-	static entries(object) {
-		if(!this.isObject(object)) {
-			throw new TypeError(0);
-		}
-
-		return this.isKindOf(object, this) && object.__observers?.length > 0 ? super.entries(object.__proto__) : super.entries(object);
 	}
 
 	static observable(object = {}, function_) {	// Следовало бы убрать этот костыль
@@ -122,6 +60,22 @@ return class CFObject extends Object {
 				return true;
 			}
 		});
+	}
+
+	__set__(self, key, value) {
+		this[key] = value;
+
+		if(this.__observers.length > 0) {
+			CFEvent.dispatch(undefined, _title+'Changed', self, { event: this[key] ? 'changed' : 'added', key: key, value: value });
+		}
+	}
+
+	__delete__(self, key) {
+		delete this[key]
+
+		if(this.__observers.length > 0) {
+			CFEvent.dispatch(undefined, _title+'Changed', self, { event: 'removed', key: key });
+		}
 	}
 
 	shallowlyEquals(object) {

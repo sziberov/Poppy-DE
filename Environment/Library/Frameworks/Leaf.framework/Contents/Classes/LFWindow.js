@@ -32,6 +32,8 @@ return class LFWindow extends LFView {
 	__toolbar;
 	__view;
 
+	ID;
+
 	constructor({
 		x = 24,
 		y = 48,

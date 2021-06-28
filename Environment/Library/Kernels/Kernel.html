@@ -1754,7 +1754,7 @@
 
 			/**
 			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и (частично) приватных полей,
-			 * друзей, а также прокси-методов для производимых действий:
+			 * друзей, защитой от несанкционированных мутаций, а также прокси-методов для производимых действий:
 			 * - `classProtected(1, this, Class)` - Возвращает класс.
 			 * - `classProtected(1, this, Class, 'field')` - Возвращает поле.
 			 * - `classProtected(1, this, Class, 'field', 'set', 'value')` - Записывает в поле.
@@ -1767,23 +1767,23 @@
 			 * - `field` - Публичное поле, видимое всем.
 			 *
 			 * Друзья класса определяются в массиве `Class.__friends__`. Несмотря на то, что друзьям доступны любые поля,
-			 * некоторые зарезервированы для модификаций только родительским классом:
+			 * некоторые зарезервированы для доступа только из контекста родительского класса:
 			 * - `__proto__`
+			 * - `__friends__`
 			 * - `__get__`
 			 * - `__set__`
 			 * - `__call__`
 			 * - `__delete__`
-			 * - `__friends__`
 			 *
 			 * Прокси-методы не имеют особых требований к своей реализации, но при их написании стоит знать,
-			 * что ни один прокси-метод не запускается внутри себя самого (по обращению к `this.*`),
-			 * если его использование не указано принудительно (`this.__прокси-метод__()`).
+			 * что (во избежание ошибочной рекурсии) ни один прокси-метод не запускается внутри себя самого по обращению к `this`.
+			 * Такое использование нужно явно указывать посредством ссылки на оригинальный объект - `self`.
 			 *
 			 * В качестве примера, их отсутствие аналогично следующим конструкциям:
-			 * - `__get__(key) { return this[key] }`
-			 * - `__set__(key, value) { this[key] = value; }`
-			 * - `__call__(key, ...arguments) { return this[key](...arguments); }`
-			 * - `__delete__(key) { delete this[key] }`
+			 * - `__get__(self, key) { return this[key] }`
+			 * - `__set__(self, key, value) { this[key] = value; }`
+			 * - `__call__(self, key, ...arguments) { return this[key](...arguments); }`
+			 * - `__delete__(self, key) { delete this[key] }`
 			 *
 			 * _Этот метод является частью Objective-Root._
 			 *
@@ -1795,10 +1795,6 @@
 			 * @param {?Object}							arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
 			 */
 			classProtected(processID, caller, class_, field, type = 'get', ...arguments_) {
-				let environment = this.processes.find(v => v.ID === processID)?.environment,
-					private_ = /^__./i,
-					protected_ = /^_[^_]/i;
-
 				if(this.verbose && (!caller || !class_)) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: No ${ !caller ? `caller's context` : 'class' } set${ field ? ' for: "'+field+'"' : '' }`);
 				}
@@ -1809,13 +1805,19 @@
 					return class_;
 				}
 
-				let global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
+				let private_ = /^__./i,
+					protected_ = /^_[^_]/i,
+					reserved = ['__proto__', '__friends__', '__get__', '__set__', '__call__', '__delete__'].includes(field),
+					environment = this.processes.find(v => v.ID === processID)?.environment,
+					global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
 					equals = Object.isMemberOf(caller, class_),
 					inherits = Object.isKindOf(caller, class_),
-					friends = (class_.constructor || class_).__friends__ || []
-					friends = !!friends.find(v => Object.isMemberOf(caller, v));
+					friends = (class_.constructor || class_).__friends__ || [],
+					mutating = type === 'set' && !(field in class_) || type === 'delete' && field in class_;
 
-				if(['__proto__', '__get__', '__set__', '__call__', '__delete__', '__friends__'].includes(field) && !equals) {
+				friends = !!friends.find(v => Object.isMemberOf(caller, v));
+
+				if(reserved && !equals) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved property: ${ field }`); return;
 				}
 				if(!global && private_.test(field) && !equals && !friends) {
@@ -1823,6 +1825,9 @@
 				}
 				if(!global && protected_.test(field) && !equals && !inherits && !friends) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected property: ${ field }`); return;
+				}
+				if(!global && mutating && !equals && !inherits && !friends &&!Object.isKindOf(class_, Array)) {
+					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't mutate property: ${ field }`); return;
 				}
 
 				let proxied = '__'+type+'__',
@@ -1842,7 +1847,7 @@
 				return {
 					'get': () => {
 						if(typeof class_[proxied] === 'function') {
-							return class_[proxied].call(proxy, field);
+							return class_[proxied].call(proxy, class_, field);
 						} else {
 							return class_[field]
 						}
@@ -1850,26 +1855,26 @@
 					'set': () => {
 						try {
 							if(typeof class_[proxied] === 'function') {
-								class_[proxied].call(proxy, field, arguments_[0]);
+								class_[proxied].call(proxy, class_, field, arguments_[0]);
 							} else {
 								class_[field] = arguments_[0]
 							}
 						} catch(error) {			// TypeError
-							console.error('43X');	// Какая-то рандомная проблема с Proxy и SE
+							console.warn('43X');	// Какая-то рандомная проблема с Proxy и SE
 						}
 
 						return class_[field]
 					},
 					'call': () => {
 						if(typeof class_[proxied] === 'function') {
-							return class_[proxied].call(proxy, field, ...arguments_);
+							return class_[proxied].call(proxy, class_, field, ...arguments_);
 						} else {
 							return class_[field]?.(...arguments_);
 						}
 					},
 					'delete': () => {
 						if(typeof class_[proxied] === 'function') {
-							return class_[proxied].call(proxy, field);
+							return class_[proxied].call(proxy, class_, field);
 						} else {
 							return delete class_[field]
 						}

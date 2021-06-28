@@ -7,6 +7,7 @@ return class LFMenu extends LFView {
 	__autoactivatesItems;
 
 	target;
+	application;
 
 	constructor({ x = 24, y = 48, corners, title = 'Menu', items, autoactivatesItems = true } = {}) {
 		super(...arguments);
