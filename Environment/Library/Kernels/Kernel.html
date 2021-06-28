@@ -1753,32 +1753,42 @@
 			}
 
 			/**
-			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и (частично) приватных полей, друзей, а также оповещений о производимых действиях:
-			 * - classProtected(1, this, Class) - Возвращает класс.
-			 * - classProtected(1, this, Class, 'field') - Возвращает поле.
-			 * - classProtected(1, this, Class, 'field', 'assign', 'value') - Записывает в поле.
-			 * - classProtected(1, this, Class, 'field', 'call') - Вызывает метод.
-			 * - classProtected(1, this, Class, 'field', 'delete') - Удаляет поле.
+			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и (частично) приватных полей, друзей, а также прокси-методов для производимых действий:
+			 * - `classProtected(1, this, Class)` - Возвращает класс.
+			 * - `classProtected(1, this, Class, 'field')` - Возвращает поле.
+			 * - `classProtected(1, this, Class, 'field', 'assign', 'value')` - Записывает в поле.
+			 * - `classProtected(1, this, Class, 'field', 'call')` - Вызывает метод.
+			 * - `classProtected(1, this, Class, 'field', 'delete')` - Удаляет поле.
 			 *
 			 * Модификаторами доступа полей являются префиксы:
-			 * - __field - Приватное поле, видимое только родительскому классу.
-			 * - _field - Защищённое поле, видимое родительскому классу и его детям.
-			 * - field - Публичное поле, видимое всем.
+			 * - `__field` - Приватное поле, видимое только родительскому классу.
+			 * - `_field` - Защищённое поле, видимое родительскому классу и его детям.
+			 * - `field` - Публичное поле, видимое всем.
 			 *
-			 * Друзья класса определяются в массиве Class.\_\_friends__. Несмотря на то, что друзьям доступны любые поля, некоторые зарезервированы для модификаций только родительским классом:
-			 * - \_\_proto__
-			 * - \_\_friends__
+			 * Друзья класса определяются в массиве `Class.__friends__`. Несмотря на то, что друзьям доступны любые поля, некоторые зарезервированы для модификаций только родительским классом:
+			 * - `__proto__`
+			 * - `__get__`
+			 * - `__set__`
+			 * - `__call__`
+			 * - `__delete__`
+			 * - `__friends__`
+			 *
+			 * Прокси-методы не имеют особых требований к своей реализации, но в качестве примера, их отсутствие аналогично следующим конструкциям:
+			 * - `__get__(key) { return this[key] }`
+			 * - `__set__(key, value) { this[key] = value; }`
+			 * - `__call__(key, ...arguments) { return this[key](...arguments); }`
+			 * - `__delete__(key) { delete this[key] }`
 			 *
 			 * _Этот метод является частью Objective-Root._
 			 *
-			 * @param {?number}						processID	Идентификатор процесса.
-			 * @param {!Object}						caller		Обращающийся контекст.
-			 * @param {!Object}						class_		Класс обращения.
-			 * @param {?string}						field		Поле обращения.
-			 * @param {?('assign'|'call'|'delete')}	type		Тип обращения.
-			 * @param {?Object}						arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
+			 * @param {?number}									processID	Идентификатор процесса.
+			 * @param {!Object}									caller		Обращающийся контекст.
+			 * @param {!Object}									class_		Класс обращения.
+			 * @param {?string}									field		Поле обращения.
+			 * @param {?('receive', 'assign'|'call'|'delete')}	type		Тип обращения. Получение (по умолчанию), присваивание, вызов и удаление.
+			 * @param {?Object}									arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
 			 */
-			classProtected(processID, caller, class_, field, type, ...arguments_) {
+			classProtected(processID, caller, class_, field, type = 'receive', ...arguments_) {
 				let environment = this.processes.find(v => v.ID === processID)?.environment,
 					private_ = /^__./i,
 					protected_ = /^_[^_]/i;
@@ -1795,11 +1805,12 @@
 
 				let global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
 					equals = Object.isMemberOf(caller, class_),
+					strictlyEquals = caller === class_,
 					inherits = Object.isKindOf(caller, class_),
 					friends = (class_.constructor || class_).__friends__ || []
 					friends = !!friends.find(v => Object.isMemberOf(caller, v));
 
-				if(['__proto__', '__get__', '__friends__'].includes(field) && !equals) {
+				if(['__proto__', '__get__', '__set__', '__call__', '__delete__', '__friends__'].includes(field) && !equals) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved property: ${ field }`); return;
 				}
 				if(!global && private_.test(field) && !equals && !friends) {
@@ -1809,27 +1820,42 @@
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected property: ${ field }`); return;
 				}
 
-				if(type === 'assign') {
-					try {
-						class_[field] = arguments_[0]
-					} catch(TypeError) {
-						console.error('43X');	// Какая-то рандомная проблема с Proxy и SE
+				return {
+					'receive': () => {
+						if(!strictlyEquals && typeof class_.__get__ === 'function') {
+							return class_.__get__(field);
+						} else {
+							return class_[field]
+						}
+					},
+					'assign': () => {
+						try {
+							if(!strictlyEquals && typeof class_.__set__ === 'function') {
+								class_.__set__(field, arguments_[0]);
+							} else {
+								class_[field] = arguments_[0]
+							}
+						} catch(error) {			// TypeError
+							console.error('43X');	// Какая-то рандомная проблема с Proxy и SE
+						}
+
+						return class_[field]
+					},
+					'call': () => {
+						if(!strictlyEquals && typeof class_.__call__ === 'function') {
+							return class_.__call__(field, ...arguments_);
+						} else {
+							return class_[field]?.(...arguments_);
+						}
+					},
+					'delete': () => {
+						if(!strictlyEquals && typeof class_.__delete__ === 'function') {
+							return class_.__delete__(field);
+						} else {
+							return delete class_[field]
+						}
 					}
-
-					return arguments_[0]
-				}
-				if(type === 'call') {
-					return class_[field]?.call(class_, ...arguments_);
-				}
-				if(type === 'delete') {
-					return delete class_[field]
-				}
-
-				if(typeof class_.__get__ === 'function') {
-					return class_.__get__(field, class_[field]);
-				}
-
-				return class_[field]
+				}[type]();
 			}
 
 			/**

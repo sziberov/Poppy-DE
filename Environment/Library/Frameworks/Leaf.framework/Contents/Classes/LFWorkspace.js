@@ -74,10 +74,16 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 	}
 
 	/*
-	__get__(key, value) {
-		console.log('WORKS for: '+key);
+	__get__(key) {
+		console.log('GETTING: '+key);
 
-		return value;
+		return this[key]
+	}
+
+	__set__(key, value) {
+		console.log('SETTING: '+key+'; TO: '+value);
+
+		this[key] = value;
 	}
 	*/
 
