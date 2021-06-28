@@ -73,7 +73,6 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 		});
 	}
 
-	/*
 	__get__(key) {
 		console.log('GETTING: '+key);
 
@@ -85,7 +84,6 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 
 		this[key] = value;
 	}
-	*/
 
 	get launchedApplications() {
 		return this.__launchedApplications;

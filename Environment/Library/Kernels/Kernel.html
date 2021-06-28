@@ -1753,10 +1753,11 @@
 			}
 
 			/**
-			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и (частично) приватных полей, друзей, а также прокси-методов для производимых действий:
+			 * Интерфейс для обращения к классам и их полям с поддержкой защищённых и (частично) приватных полей,
+			 * друзей, а также прокси-методов для производимых действий:
 			 * - `classProtected(1, this, Class)` - Возвращает класс.
 			 * - `classProtected(1, this, Class, 'field')` - Возвращает поле.
-			 * - `classProtected(1, this, Class, 'field', 'assign', 'value')` - Записывает в поле.
+			 * - `classProtected(1, this, Class, 'field', 'set', 'value')` - Записывает в поле.
 			 * - `classProtected(1, this, Class, 'field', 'call')` - Вызывает метод.
 			 * - `classProtected(1, this, Class, 'field', 'delete')` - Удаляет поле.
 			 *
@@ -1765,7 +1766,8 @@
 			 * - `_field` - Защищённое поле, видимое родительскому классу и его детям.
 			 * - `field` - Публичное поле, видимое всем.
 			 *
-			 * Друзья класса определяются в массиве `Class.__friends__`. Несмотря на то, что друзьям доступны любые поля, некоторые зарезервированы для модификаций только родительским классом:
+			 * Друзья класса определяются в массиве `Class.__friends__`. Несмотря на то, что друзьям доступны любые поля,
+			 * некоторые зарезервированы для модификаций только родительским классом:
 			 * - `__proto__`
 			 * - `__get__`
 			 * - `__set__`
@@ -1773,7 +1775,11 @@
 			 * - `__delete__`
 			 * - `__friends__`
 			 *
-			 * Прокси-методы не имеют особых требований к своей реализации, но в качестве примера, их отсутствие аналогично следующим конструкциям:
+			 * Прокси-методы не имеют особых требований к своей реализации, но при их написании стоит знать,
+			 * что ни один прокси-метод не запускается внутри себя самого (по обращению к `this.*`),
+			 * если его использование не указано принудительно (`this.__прокси-метод__()`).
+			 *
+			 * В качестве примера, их отсутствие аналогично следующим конструкциям:
 			 * - `__get__(key) { return this[key] }`
 			 * - `__set__(key, value) { this[key] = value; }`
 			 * - `__call__(key, ...arguments) { return this[key](...arguments); }`
@@ -1781,14 +1787,14 @@
 			 *
 			 * _Этот метод является частью Objective-Root._
 			 *
-			 * @param {?number}									processID	Идентификатор процесса.
-			 * @param {!Object}									caller		Обращающийся контекст.
-			 * @param {!Object}									class_		Класс обращения.
-			 * @param {?string}									field		Поле обращения.
-			 * @param {?('receive', 'assign'|'call'|'delete')}	type		Тип обращения. Получение (по умолчанию), присваивание, вызов и удаление.
-			 * @param {?Object}									arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
+			 * @param {?number}							processID	Идентификатор процесса.
+			 * @param {!Object}							caller		Обращающийся контекст.
+			 * @param {!Object}							class_		Класс обращения.
+			 * @param {?string}							field		Поле обращения.
+			 * @param {?('get'|'set'|'call'|'delete')}	type		Тип обращения. Получение (по умолчанию), присваивание, вызов и удаление.
+			 * @param {?Object}							arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
 			 */
-			classProtected(processID, caller, class_, field, type = 'receive', ...arguments_) {
+			classProtected(processID, caller, class_, field, type = 'get', ...arguments_) {
 				let environment = this.processes.find(v => v.ID === processID)?.environment,
 					private_ = /^__./i,
 					protected_ = /^_[^_]/i;
@@ -1805,7 +1811,6 @@
 
 				let global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
 					equals = Object.isMemberOf(caller, class_),
-					strictlyEquals = caller === class_,
 					inherits = Object.isKindOf(caller, class_),
 					friends = (class_.constructor || class_).__friends__ || []
 					friends = !!friends.find(v => Object.isMemberOf(caller, v));
@@ -1820,18 +1825,32 @@
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected property: ${ field }`); return;
 				}
 
+				let proxied = '__'+type+'__',
+					proxy = new Proxy({}, {	// Во избежание появления рекурсии в прокси-методе (при обращении к this), его необходимо скрыть от себя самого
+						get: (target, key) => {
+							if(key !== proxied) {
+								return class_[key]
+							}
+						},
+						set: (target, key, value) => {
+							class_[key] = value;
+
+							return true;
+						}
+					});
+
 				return {
-					'receive': () => {
-						if(!strictlyEquals && typeof class_.__get__ === 'function') {
-							return class_.__get__(field);
+					'get': () => {
+						if(typeof class_[proxied] === 'function') {
+							return class_[proxied].call(proxy, field);
 						} else {
 							return class_[field]
 						}
 					},
-					'assign': () => {
+					'set': () => {
 						try {
-							if(!strictlyEquals && typeof class_.__set__ === 'function') {
-								class_.__set__(field, arguments_[0]);
+							if(typeof class_[proxied] === 'function') {
+								class_[proxied].call(proxy, field, arguments_[0]);
 							} else {
 								class_[field] = arguments_[0]
 							}
@@ -1842,15 +1861,15 @@
 						return class_[field]
 					},
 					'call': () => {
-						if(!strictlyEquals && typeof class_.__call__ === 'function') {
-							return class_.__call__(field, ...arguments_);
+						if(typeof class_[proxied] === 'function') {
+							return class_[proxied].call(proxy, field, ...arguments_);
 						} else {
 							return class_[field]?.(...arguments_);
 						}
 					},
 					'delete': () => {
-						if(!strictlyEquals && typeof class_.__delete__ === 'function') {
-							return class_.__delete__(field);
+						if(typeof class_[proxied] === 'function') {
+							return class_[proxied].call(proxy, field);
 						} else {
 							return delete class_[field]
 						}
@@ -1913,8 +1932,8 @@
 					//	object[property]				===	_protected(this, object, property);
 
 					//	object.property = ''; ||
-					//	object['property'] = '';		===	_protected(this, object, 'property', 'assign', '');
-					//	object[property] = '';			===	_protected(this, object, property, 'assign', '');
+					//	object['property'] = '';		===	_protected(this, object, 'property', 'set', '');
+					//	object[property] = '';			===	_protected(this, object, property, 'set', '');
 
 					//	object.property(arguments); ||
 					//	object['property'](arguments);	===	_protected(this, object, 'property', 'call', arguments);
@@ -1933,8 +1952,8 @@
 							propertyName = property.name || property.value,
 							propertyComputed = node.computed,
 						//	propertyOptional = node.optional,
-						//	assign = (parentNode.type === 'AssignmentExpression' || parentNode.type === 'LogicalExpression' && path.parentPath.parentPath.node.type === 'AssignmentExpression') && parentNode.left === node,
-							assign = parentNode.type === 'AssignmentExpression' && parentNode.left === node,
+						//	set = (parentNode.type === 'AssignmentExpression' || parentNode.type === 'LogicalExpression' && path.parentPath.parentPath.node.type === 'AssignmentExpression') && parentNode.left === node,
+							set = parentNode.type === 'AssignmentExpression' && parentNode.left === node,
 							call = ['OptionalCallExpression', 'CallExpression'].includes(parentNode.type) && parentNode.callee === node,
 							delete_ = parentNode.type === 'UnaryExpression' && parentNode.operator === 'delete';
 
@@ -1946,10 +1965,10 @@
 							builders.thisExpression(),
 							object,
 							!propertyComputed && property.type === 'Identifier' ? builders.stringLiteral(propertyName) : property,
-							...assign ? [builders.stringLiteral('assign'), parentNode.right] : call ? [builders.stringLiteral('call'), ...parentNode.arguments] : delete_ ? [builders.stringLiteral('delete')] : []
+							...set ? [builders.stringLiteral('set'), parentNode.right] : call ? [builders.stringLiteral('call'), ...parentNode.arguments] : delete_ ? [builders.stringLiteral('delete')] : []
 						]);
 
-						if(assign || call || delete_) {
+						if(set || call || delete_) {
 							path.parentPath.replace(callNode);
 
 							this.traverse(path.parentPath);
