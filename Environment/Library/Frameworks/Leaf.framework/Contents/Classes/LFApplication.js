@@ -202,7 +202,7 @@ return class LFApplication {
 		if(LFWorkspace.shared.getApplication(this.identifier)) {
 			try {
 				this.process.executable?.willQuit?.();
-			} catch(error) {}
+			} catch {}
 
 			_request('kill');
 		}

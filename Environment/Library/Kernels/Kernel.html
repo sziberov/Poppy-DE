@@ -445,7 +445,7 @@
 					require('fs').unlinkSync('.'+path);
 
 					return true;
-				} catch(error) {
+				} catch {
 					console.error(0); return;
 				}
 			}
@@ -480,7 +480,7 @@
 										return true;
 									}
 								}
-							} catch(error) {}
+							} catch {}
 						},
 						extension: 'svg'
 					},
@@ -1805,8 +1805,8 @@
 					return class_;
 				}
 
-				let private_ = /^__./i,
-					protected_ = /^_[^_]/i,
+				let private_ = /^__./i.test(field),
+					protected_ = /^_[^_]/i.test(field),
 					reserved = ['__proto__', '__friends__', '__get__', '__set__', '__call__', '__delete__'].includes(field),
 					environment = this.processes.find(v => v.ID === processID)?.environment,
 					global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
@@ -1820,10 +1820,10 @@
 				if(reserved && !equals) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved property: ${ field }`); return;
 				}
-				if(!global && private_.test(field) && !equals && !friends) {
+				if(!global && private_ && !equals && !friends) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access private property: ${ field }`); return;
 				}
-				if(!global && protected_.test(field) && !equals && !inherits && !friends) {
+				if(!global && protected_ && !equals && !inherits && !friends) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected property: ${ field }`); return;
 				}
 				if(!global && mutating && !equals && !inherits && !friends &&!Object.isKindOf(class_, Array)) {
@@ -1831,7 +1831,7 @@
 				}
 
 				let proxied = '__'+type+'__',
-					proxy = new Proxy({}, {	// Во избежание появления рекурсии в прокси-методе (при обращении к this), его необходимо скрыть от себя самого
+					proxy = new Proxy({}, {
 						get: (target, key) => {
 							if(key !== proxied) {
 								return class_[key]
@@ -1859,7 +1859,7 @@
 							} else {
 								class_[field] = arguments_[0]
 							}
-						} catch(error) {			// TypeError
+						} catch {					// TypeError
 							console.warn('43X');	// Какая-то рандомная проблема с Proxy и SE
 						}
 
@@ -2034,6 +2034,7 @@
 			 * @todo [!] Перевести DOM-интерфейс на Canvas
 			 * @todo [!] Разобраться с observer'ами
 			 * @todo [!] Добавить в .eventCatcherCreate() и .eventThrow() возможность ограничения определённым каналом (а не только процессом)
+			 * @todo [!] Закрыть возможность присваивания объектам значения полей без проверок безопасности напрямую через .assign(), .defineProperty() и .defineProperties()
 			 * @todo [~] Добавить .fs* методам таблицу открытых файлов (и внедрить идею файл-дескрипторов - как оказалось, по сути своей тех же ID, что и везде)
 			 * @todo [~] Добавить в CFObject проверку доступа полей для observer'ов, либо просто ограничить до публичных-only
 			 * @todo [~] Добавить классы-интерфейсы к объектам CGSWindowServer

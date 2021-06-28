@@ -10,8 +10,6 @@
 return class CFObject extends Object {
 	static __friends__ = [this]
 
-	__observers = []
-
 	constructor() {
 		super();
 
@@ -28,27 +26,20 @@ return class CFObject extends Object {
 		if(!this.isObject(object) || !this.isKindOf(object, this))	throw new TypeError(0);
 		if(typeof function_ !== 'function')							throw new TypeError(1);
 
-		let ID = CFEvent.addHandler(_title+'Changed', (object_, ...arguments_) => {
+		return CFEvent.addHandler(_title+'Changed', (object_, ...arguments_) => {
 			if(object_ === object) {
 				function_(...arguments_);
 			}
 		});
-
-		object.__observers.push(ID);
-
-		return ID;
 	}
 
 	static removeObserver(object, observerID) {
 		if(!this.isObject(object) || !this.isKindOf(object, this))	throw new TypeError(0);
 		if(typeof observerID !== 'number')							throw new TypeError(1);
-		if(!object.__observers.find(v => v === observerID))			throw new RangeError(2);
 
 		if(!CFEvent.removeHandler(observerID)) {
 			return;
 		}
-
-		object.__observers = object.__observers.filter(v => v !== observerID);
 	}
 
 	static observable(object = {}, function_) {	// Следовало бы убрать этот костыль
@@ -62,20 +53,26 @@ return class CFObject extends Object {
 		});
 	}
 
+	static assign(object, ...arguments_) {
+		for(let object_ of arguments) {
+			for(let key in object_) {
+				if(Object.hasOwnProperty.call(object_, key)) {
+					object[key] = object_[key]
+				}
+			}
+		}
+	}
+
 	__set__(self, key, value) {
 		this[key] = value;
 
-		if(this.__observers.length > 0) {
-			CFEvent.dispatch(undefined, _title+'Changed', self, { event: this[key] ? 'changed' : 'added', key: key, value: value });
-		}
+		CFEvent.dispatch(undefined, _title+'Changed', self, { event: this[key] ? 'changed' : 'added', key: key });
 	}
 
 	__delete__(self, key) {
 		delete this[key]
 
-		if(this.__observers.length > 0) {
-			CFEvent.dispatch(undefined, _title+'Changed', self, { event: 'removed', key: key });
-		}
+		CFEvent.dispatch(undefined, _title+'Changed', self, { event: 'removed', key: key });
 	}
 
 	shallowlyEquals(object) {

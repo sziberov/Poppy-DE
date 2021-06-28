@@ -27,7 +27,7 @@ let isClassOf = function(value, value_, strict) {
 		!Object.isObject(value_) && typeof value_ !== 'function' ||
 		strict && typeof strict !== 'boolean'
 	) {
-	//	throw new TypeError();
+	//	throw new TypeError(0);
 		return false;
 	}
 
@@ -106,6 +106,8 @@ window.Object.sizeOf = function(object) {
 
 	return bytes;
 }
+
+//window.Object.assign = function(object, ...arguments) {}
 
 let arrayFields = {
 	startsWith: {
