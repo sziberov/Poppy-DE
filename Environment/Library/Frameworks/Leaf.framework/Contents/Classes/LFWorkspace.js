@@ -73,20 +73,6 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 		});
 	}
 
-	/*
-	__get__(self, key) {
-		console.log('GETTING: '+key);
-
-		return this[key]
-	}
-
-	__set__(self, key, value) {
-		console.log('SETTING: '+key+'; TO: '+value);
-
-		this[key] = value;
-	}
-	*/
-
 	get launchedApplications() {
 		return this.__launchedApplications;
 	}

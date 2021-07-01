@@ -1,12 +1,15 @@
 <html>
 <head>
 	<script>
-		/*
-			Opium Kernel v0.1:
-				Ядро окружения. Содержит базовые функции для создания и управления различными низкоуровневыми объектами
-				(такими как файлы, события, счётчики, разделённые окружения, динамические библиотеки, терминалы и процессы),
-				а также процедуру запуска окружения.
-		*/
+		/**
+		 * Opium Kernel
+		 *
+		 * Ядро окружения. Содержит базовые функции для создания и управления различными низкоуровневыми объектами
+		 * (такими как файлы, события, счётчики, разделённые окружения, динамические библиотеки, терминалы и процессы),
+		 * а также процедуру запуска окружения.
+		 *
+		 * @version 0.1
+		 */
 
 		const Opium = new class Opium {
 			uptimeStart = Date.now();
@@ -50,7 +53,7 @@
 			environment;
 
 			constructor() {
-				this.extensionExec();
+				this.extensionExecute();
 
 				this.environment = {
 					...window,
@@ -513,7 +516,7 @@
 				}
 			}
 
-			extensionExec(...a) {
+			extensionExecute(...a) {
 				a = Array.isArray(a) ? a : []
 
 				if(a.length === 0) {
@@ -1445,13 +1448,13 @@
 				this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'removed', value: terminal.ID });
 			}
 
-			sbCreate(a) {
-				return require('vm').createContext(a);
+			sbCreate(environment) {
+				return require('vm').createContext(environment);
 			}
 
-			sbExecute(a, b, c) {
-				return require('vm').runInContext(a, b, {
-					filename: c?.split('/').pop(),
+			sbExecute(code, environment, title) {
+				return require('vm').runInContext(code, environment, {
+					filename: title?.split('/').pop(),
 					timeout: 60000
 				});
 			}
@@ -1461,6 +1464,7 @@
 					version: (a) => this.version[a],
 					uptime: () => this.uptime,
 					screen: () => Object.assign({}, this.screen),
+					log: (...a) => this.kdbAdd(process.path.split('/').pop()+': ', ...a),
 					exists: (a) => this.fsExists(a),
 					existsDir: (a) => this.fsExistsDirectory(a),
 					read: (a) => this.fsRead(a),
@@ -1498,7 +1502,6 @@
 				//	fork: (a) => this.processFork(process.ID, a),
 					kill: (a) => this.processKill(a ?? process.ID),
 					import: (...a) => this.classImport(process, ...a),
-					single: (a) => this.classSingle(a),
 					protected: (...a) => this.classProtected(process.ID, ...a),
 					system: () => this.system(),
 					relaunch: () => this.environmentRelaunch(process),
@@ -1536,7 +1539,7 @@
 
 				var process = {
 						ID: Math.max(...this.processes.map(v => v.ID).initialize(0))+1,
-						parentID: processID || 0,
+						parentID: processID ?? 0,
 						terminalID: terminalID,
 						user: user.Login,
 						path: path,
@@ -1776,14 +1779,13 @@
 			 * - `__delete__`
 			 *
 			 * Прокси-методы не имеют особых требований к своей реализации, но при их написании стоит знать,
-			 * что (во избежание ошибочной рекурсии) ни один прокси-метод не запускается внутри себя самого по обращению к `this`.
-			 * Такое использование нужно явно указывать посредством ссылки на оригинальный объект - `self`.
+			 * что использование оригинального контекста в целях, обозначаемых текущим методом, однозначно приведёт к рекурсии.
 			 *
 			 * В качестве примера, их отсутствие аналогично следующим конструкциям:
-			 * - `__get__(self, key) { return this[key] }`
-			 * - `__set__(self, key, value) { this[key] = value; }`
-			 * - `__call__(self, key, ...arguments) { return this[key](...arguments); }`
-			 * - `__delete__(self, key) { delete this[key] }`
+			 * - `__get__(self, key) { return self[key] }`
+			 * - `__set__(self, key, value) { self[key] = value; }`
+			 * - `__call__(self, key, ...arguments) { return self[key](...arguments); }`
+			 * - `__delete__(self, key) { delete self[key] }`
 			 *
 			 * _Этот метод является частью Objective-Root._
 			 *
@@ -1827,7 +1829,7 @@
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected property: ${ field }`); return;
 				}
 				if(!global && mutating && !equals && !inherits && !friends &&!Object.isKindOf(class_, Array)) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't mutate property: ${ field }`); return;
+				//	this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't mutate property: ${ field }`); return;
 				}
 
 				let proxied = '__'+type+'__',
@@ -1847,7 +1849,7 @@
 				return {
 					'get': () => {
 						if(typeof class_[proxied] === 'function') {
-							return class_[proxied].call(proxy, class_, field);
+							return class_[proxied](proxy, field);
 						} else {
 							return class_[field]
 						}
@@ -1855,7 +1857,7 @@
 					'set': () => {
 						try {
 							if(typeof class_[proxied] === 'function') {
-								class_[proxied].call(proxy, class_, field, arguments_[0]);
+								class_[proxied](proxy, field, arguments_[0]);
 							} else {
 								class_[field] = arguments_[0]
 							}
@@ -1867,14 +1869,14 @@
 					},
 					'call': () => {
 						if(typeof class_[proxied] === 'function') {
-							return class_[proxied].call(proxy, class_, field, ...arguments_);
+							return class_[proxied](proxy, field, ...arguments_);
 						} else {
 							return class_[field]?.(...arguments_);
 						}
 					},
 					'delete': () => {
 						if(typeof class_[proxied] === 'function') {
-							return class_[proxied].call(proxy, class_, field);
+							return class_[proxied](proxy, field);
 						} else {
 							return delete class_[field]
 						}
@@ -2033,8 +2035,9 @@
 			/**
 			 * @todo [!] Перевести DOM-интерфейс на Canvas
 			 * @todo [!] Разобраться с observer'ами
-			 * @todo [!] Добавить в .eventCatcherCreate() и .eventThrow() возможность ограничения определённым каналом (а не только процессом)
-			 * @todo [!] Закрыть возможность присваивания объектам значения полей без проверок безопасности напрямую через .assign(), .defineProperty() и .defineProperties()
+			 * @todo [~] Закрыть возможность вызова функций в чужом контексте
+			 * @todo [~] Закрыть возможность присваивания объектам значения полей без проверок безопасности напрямую через .assign(), .defineProperty() и .defineProperties()
+			 * @todo [~] Добавить в .eventCatcherCreate() и .eventThrow() возможность ограничения определённым каналом (а не только процессом)
 			 * @todo [~] Добавить .fs* методам таблицу открытых файлов (и внедрить идею файл-дескрипторов - как оказалось, по сути своей тех же ID, что и везде)
 			 * @todo [~] Добавить в CFObject проверку доступа полей для observer'ов, либо просто ограничить до публичных-only
 			 * @todo [~] Добавить классы-интерфейсы к объектам CGSWindowServer
@@ -2049,7 +2052,7 @@
 			 * @todo [X] Выделять под каждый .framework свой участок памяти
 			 *
 			 * ! - Важные, текущие задачи
-			 * ~ - Менее важные задачи, к которым стоит перейти при первом удобном случае
+			 * ~ - Подзадачи, либо менее важные задачи, к которым стоит перейти при первом удобном случае
 			 * ? - Задачи с низким приоритетом по причине неясности пути и/или неуверенности в нужде реализации
 			 * X - Скорее всего отменённые задачи
 			 */

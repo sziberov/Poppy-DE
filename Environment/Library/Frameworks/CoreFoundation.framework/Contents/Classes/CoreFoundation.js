@@ -15,6 +15,7 @@ _import(_title, 'CFString');
 _import(_title, 'CFURL');
 _import(_title, 'CFBundle');
 _import(_title, 'CFLocalizedString');
+_import(_title, 'CFLog');
 
 if(!_request('seInfo', _title)) {
 	_request('seCreate', 'read', _title);

@@ -4,17 +4,25 @@ return class LFObject {
 
 	__element;
 	__properties = {
-		style: CFObject.observable({}, (k, v) => {
-			if(this.element) {
-				this.element.css(k, v);
+		style: new CFObject({
+			set: (s, k, v) => {
+				s[k] = v;
+
+				if(this.element) {
+					this.element.css(k, v);
+				}
 			}
 		}),
-		attributes: CFObject.observable({}, (k, v) => {
-			if(this.element) {
-				if(v !== undefined) {
-					this.element.attr(k, v);
-				} else {
-					this.element.removeAttr(k);
+		attributes: new CFObject({
+			set: (s, k, v) => {
+				s[k] = v;
+
+				if(this.element) {
+					if(v !== undefined) {
+						this.element.attr(k, v);
+					} else {
+						this.element.removeAttr(k);
+					}
 				}
 			}
 		}),

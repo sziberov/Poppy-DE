@@ -1,7 +1,10 @@
-/*
-	Leaf Framework v0.1:
-		Contains graphical applications building tools.
-*/
+/**
+ * Leaf Framework
+ *
+ * Содержит инструменты для создания графических приложений.
+ *
+ * @version 0.1
+ */
 
 _import('CoreFoundation');
 _import('CoreGraphics');
