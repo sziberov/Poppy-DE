@@ -1778,6 +1778,10 @@
 			 * - `__call__`
 			 * - `__delete__`
 			 *
+			 * Под мутациями подразумевается добавление или удаление полей класса, т.е. поведение, свойственное для коллекций,
+			 * таких как Object и Array. Любой класс считается коллекцией и имеет публично мутабельные экземпляры,
+			 * если в его названии есть слово "Mutable".
+			 *
 			 * Прокси-методы не имеют особых требований к своей реализации, но при их написании стоит знать,
 			 * что использование оригинального контекста в целях, обозначаемых текущим методом, однозначно приведёт к рекурсии.
 			 *
@@ -1817,7 +1821,7 @@
 					inherits = Object.isKindOf(caller, class_),
 					friends = (class_.constructor || class_).__friends__ || [],
 					befriends = !!friends.find(v => Object.isMemberOf(caller, v)),
-					mutable = Object.isMemberOf(class_, Object) || Object.isMemberOf(class_, Array) || /Mutable/i.test((class_.constructor || class_).name);
+					mutable = Object.isObject(class_) && (Object.isMemberOf(class_, Object) || Object.isMemberOf(class_, Array) || /Mutable/i.test(class_.constructor.name));
 
 				if(reserved && !equals) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved field: ${ field }`); return;
@@ -1828,7 +1832,7 @@
 				if(protected_ && !global && !equals && !inherits && !befriends) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected field: ${ field }`); return;
 				}
-				if(mutating && !global && !equals && !inherits && !befriends && !mutable) {
+				if(mutating && !global && !equals && !befriends && !mutable) {
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't mutate field: ${ field }`); return;
 				}
 
