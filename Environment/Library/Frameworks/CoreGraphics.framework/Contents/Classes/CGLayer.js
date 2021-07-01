@@ -4,10 +4,10 @@ return $CFShared[_title] || class CGLayer {
 
 	__layer = _request('drCreate', 0, 0);
 	__context = new CGContext(this);
-	__sublayers = new CFArray();
+	__sublayers = new CFMutableArray();
 	__x;
 	__y;
-	__backgroundFilters = new CFArray();
+	__backgroundFilters = new CFMutableArray();
 	__mask;
 	__hidden;
 

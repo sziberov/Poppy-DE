@@ -21,7 +21,7 @@ return class {
 			new LFMenuItem({ title: CFLocalizedString('Help') })
 		]
 
-		CFArray.addObserver(LFWorkspace.shared.subviews, (a) => {
+		CFMutableArray.addObserver(LFWorkspace.shared.subviews, (a) => {
 			if(a.value.application === LFLaunchedApplication.shared && Object.isKindOf(a.value, LFWindow)) {
 				let list = []
 

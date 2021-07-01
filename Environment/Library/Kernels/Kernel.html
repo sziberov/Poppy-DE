@@ -1807,29 +1807,29 @@
 					return class_;
 				}
 
-				let private_ = /^__./i.test(field),
-					protected_ = /^_[^_]/i.test(field),
-					reserved = ['__proto__', '__friends__', '__get__', '__set__', '__call__', '__delete__'].includes(field),
+				let reserved = ['__proto__', '__friends__', '__get__', '__set__', '__call__', '__delete__'].includes(field),
+					private_ = /^__./.test(field),
+					protected_ = /^_[^_]/.test(field),
+					mutating = type === 'set' && !(field in class_) || type === 'delete' && field in class_,
 					environment = this.processes.find(v => v.ID === processID)?.environment,
 					global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
 					equals = Object.isMemberOf(caller, class_),
 					inherits = Object.isKindOf(caller, class_),
 					friends = (class_.constructor || class_).__friends__ || [],
-					mutating = type === 'set' && !(field in class_) || type === 'delete' && field in class_;
-
-				friends = !!friends.find(v => Object.isMemberOf(caller, v));
+					befriends = !!friends.find(v => Object.isMemberOf(caller, v)),
+					mutable = Object.isMemberOf(class_, Object) || Object.isMemberOf(class_, Array) || /Mutable/i.test((class_.constructor || class_).name);
 
 				if(reserved && !equals) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved property: ${ field }`); return;
+					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved field: ${ field }`); return;
 				}
-				if(!global && private_ && !equals && !friends) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access private property: ${ field }`); return;
+				if(private_ && !global && !equals && !befriends) {
+					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access private field: ${ field }`); return;
 				}
-				if(!global && protected_ && !equals && !inherits && !friends) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected property: ${ field }`); return;
+				if(protected_ && !global && !equals && !inherits && !befriends) {
+					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected field: ${ field }`); return;
 				}
-				if(!global && mutating && !equals && !inherits && !friends &&!Object.isKindOf(class_, Array)) {
-				//	this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't mutate property: ${ field }`); return;
+				if(mutating && !global && !equals && !inherits && !befriends && !mutable) {
+					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't mutate field: ${ field }`); return;
 				}
 
 				let proxied = '__'+type+'__',

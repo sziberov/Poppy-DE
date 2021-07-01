@@ -14,18 +14,19 @@ return class CFObject extends Object {
 		super();
 
 		for(let k in object) {
+			if(['__proto__', '__friends__', '__get__', '__set__', '__call__', '__delete__'].includes(k)) {
+				continue;
+			}
 			if(['get', 'set', 'call', 'delete'].includes(k)) {
-				this['__'+k+'__'] = object[k]
+				Object.defineProperty(this, '__'+k+'__', {
+					value: object[k],
+					writable: true,
+					enumerable: false,
+					configurable: true
+				});
 			} else {
 				this[k] = object[k]
 			}
-		}
-		for(let v of ['__get__', '__set__', '__call__', '__delete__']) {
-			Object.defineProperty(this, v, {
-				writable: true,
-				enumerable: false,
-				configurable: true
-			});
 		}
 	}
 

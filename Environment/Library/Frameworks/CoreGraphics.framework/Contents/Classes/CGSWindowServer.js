@@ -19,9 +19,9 @@ return $CFShared[_title] || class CGSWindowServer {
 		return this.__shared;
 	}
 
-	__connections = new CFArray();
-	__workspaces = new CFArray();
-	__windows = new CFArray();
+	__connections = new CFMutableArray();
+	__workspaces = new CFMutableArray();
+	__windows = new CFMutableArray();
 	__cursor;
 	__layer = new CGLayer({ width: CGScreen.size.width, height: CGScreen.size.height });
 

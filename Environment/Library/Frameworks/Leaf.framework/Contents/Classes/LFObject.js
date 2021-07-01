@@ -4,7 +4,7 @@ return class LFObject {
 
 	__element;
 	__properties = {
-		style: new CFObject({
+		style: new CFMutableObject({
 			set: (s, k, v) => {
 				s[k] = v;
 
@@ -13,7 +13,7 @@ return class LFObject {
 				}
 			}
 		}),
-		attributes: new CFObject({
+		attributes: new CFMutableObject({
 			set: (s, k, v) => {
 				s[k] = v;
 

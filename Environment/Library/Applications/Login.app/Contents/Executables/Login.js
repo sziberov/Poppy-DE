@@ -86,7 +86,7 @@ return class {
 		]
 
 		this.launchServices();
-		CFArray.addObserver(LFWorkspace.shared.launchedApplications, () => this.launchServices());
+		CFMutableArray.addObserver(LFWorkspace.shared.launchedApplications, () => this.launchServices());
 	}
 
 	launchServices() {

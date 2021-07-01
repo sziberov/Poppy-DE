@@ -35,7 +35,7 @@ return $CFShared[_title] || class CGAppearance {
 
 	remove() {
 		if(this.element) {
-			CFArray.remove(this.constructor.__URLSs, this.URL);
+			CFMutableArray.remove(this.constructor.__URLSs, this.URL);
 			this.element.remove();
 			this.element = undefined;
 		}
