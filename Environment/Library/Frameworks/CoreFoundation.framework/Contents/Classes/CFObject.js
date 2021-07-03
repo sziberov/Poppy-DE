@@ -56,7 +56,7 @@ return class CFObject extends Object {
 				if(['__proto__', '__friends__'].includes(k) || typeof object[k] === 'symbol') {
 					continue;
 				}
-				if(['@@get', '@@set', '@@call', '@@delete', '@@collection'].includes(k)) {
+				if(['@@collection', '@@get', '@@set', '@@call', '@@delete'].includes(k)) {
 					this[Symbol[k.substring(2)]] = object[k]
 				} else {
 					this[k] = object[k]
