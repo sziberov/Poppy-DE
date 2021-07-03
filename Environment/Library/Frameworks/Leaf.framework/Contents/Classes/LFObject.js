@@ -94,11 +94,10 @@ return class LFObject {
 		return this;
 	}
 
-	destroy() {
+	release() {
 		let environment = CFProcessInfo.shared.environment;
 
 		this.remove();
-		this.constructor.destroyShared?.();
 		for(let v in environment) {
 			if(environment.hasOwnProperty(v) && environment[v] === this) {
 				delete environment[v]

@@ -307,7 +307,7 @@ return class LFWindow extends LFView {
 
 	close() {
 		if(this.type.includes('closable')) {
-			this.destroy();
+			this.release();
 		}
 	}
 
@@ -352,8 +352,8 @@ return class LFWindow extends LFView {
 		return this;
 	}
 
-	destroy() {
-		super.destroy();
+	release() {
+		super.release();
 
 		if(LFApp.quitableBySingleWindow && LFApp.windows.length === 0) {
 			LFApp.quit();

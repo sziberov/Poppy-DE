@@ -48,7 +48,7 @@ return class LFView extends LFResponder {
 		}
 
 		for(let k = this.subviews.length; k--;) {
-			this.subviews[k].destroy();
+			this.subviews[k].release();
 		}
 		if(value) {
 			this.addSubviews(value.filter(v => v));
@@ -189,18 +189,17 @@ return class LFView extends LFResponder {
 		}
 	}
 
-	destroy() {
+	release() {
 		for(let v of this.subviews) {
 			v.superview = undefined;
-		//	v.destroy();
+		//	v.release();
 		}
 		if(!this.superview) {
-			super.destroy();
+			super.release();
 		} else {
 			this.remove();
 			this.superview.subviews.remove(this);
 		//	this.superview.subviews = this.superview.subviews.filter(v => v !== this);
-			this.constructor.destroyShared?.();
 		}
 	}
 }

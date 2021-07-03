@@ -158,13 +158,13 @@ return class LFMenu extends LFView {
 		}
 	}
 
-	destroy() {
+	release() {
 		this.setActivated(false);
 		for(let v of this.subviews) {
-			v.menu?.destroy();
+			v.menu?.release();
 		}
 
-		super.destroy();
+		super.release();
 	}
 
 	static deactivateAll(view) {

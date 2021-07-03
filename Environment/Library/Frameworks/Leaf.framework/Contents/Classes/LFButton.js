@@ -58,7 +58,7 @@ return class LFButton extends LFControl {
 
 		this.__image = value;
 		this.attributes['image'] = value ? '' : undefined;
-		this.image?.destroy();
+		this.image?.release();
 		if(value) {
 			this.addSubviews([value]);
 		}
@@ -71,7 +71,7 @@ return class LFButton extends LFControl {
 
 		this.__menu = value;
 		this.attributes['menu'] = value ? '' : undefined;
-		this.menu?.destroy();
+		this.menu?.release();
 		if(value) {
 			this.attributes['enabled'] = '';
 			this.addSubviews([value]);
@@ -109,9 +109,9 @@ return class LFButton extends LFControl {
 		this.menu.add(this);
 	}
 
-	destroy() {
-		this.menu?.destroy();
+	release() {
+		this.menu?.release();
 
-		super.destroy();
+		super.release();
 	}
 }

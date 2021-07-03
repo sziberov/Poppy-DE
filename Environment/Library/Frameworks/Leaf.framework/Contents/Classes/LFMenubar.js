@@ -10,10 +10,6 @@ return $CFShared[_title] || class LFMenubar extends LFView {
 		return this.__shared;
 	}
 
-	static destroyShared() {
-		this.__shared = undefined;
-	}
-
 	__transparent;
 
 	constructor({ transparent = false } = {}) {
@@ -97,5 +93,11 @@ return $CFShared[_title] || class LFMenubar extends LFView {
 			[0, CGColor(0, 0, 0, 0.25)],
 			[1, CGColor(0, 0, 0, 0)]
 		], 0, height, width, height, 0, 0, 0, height);
+	}
+
+	release() {
+		super.release();
+
+		this.constructor.__shared = undefined;
 	}
 }

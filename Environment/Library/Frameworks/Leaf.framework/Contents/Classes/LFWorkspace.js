@@ -10,10 +10,6 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 		return this.__shared;
 	}
 
-	static destroyShared() {
-		this.__shared = undefined;
-	}
-
 	__launchedApplications = new CFArray();
 	__desktopImage;
 
@@ -40,7 +36,7 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 					menu.application = undefined;
 				}
 				for(let v of this.subviews.filter(v => v.application === application)) {
-					v.destroy();
+					v.release();
 				}
 
 				let default_ = this.getApplication('ru.poppy.enviro');
@@ -135,5 +131,11 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 
 	getApplication(identifier) {
 		return this.launchedApplications.find(v => v.identifier === identifier);
+	}
+
+	release() {
+		super.release();
+
+		this.constructor.__shared = undefined;
 	}
 }
