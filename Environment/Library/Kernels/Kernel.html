@@ -68,7 +68,7 @@
 					RangeError: RangeError,
 					Symbol: Symbol,
 					TypeError: TypeError,
-				//	WeakRef: WeakRef,
+					WeakRef: WeakRef,
 					console: console,
 					parseInt: parseInt
 				}
@@ -2014,7 +2014,8 @@
 			 *
 			 * Трекер задач:
 			 * - [!] Перевести DOM-интерфейс на Canvas.
-			 * - [!] Разобраться с observer'ами.
+			 * - [!] Разобраться с observer'ами, чтобы небыло никаких утечек памяти, или были во вред тому, кто их создаёт.
+			 * - [!] Добавить .release() для CFObject и практику его использования.
 			 * - [~] Закрыть возможность вызова функций в чужом контексте.
 			 * - [~] Закрыть возможность присваивания объектам значения полей без проверок безопасности напрямую через
 			 *       .assign(), .defineProperty() и .defineProperties().

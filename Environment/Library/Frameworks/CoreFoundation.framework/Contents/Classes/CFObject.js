@@ -76,7 +76,7 @@ return class CFObject extends Object {
 	[Symbol.set](self, key, value) {
 		self[key] = value;
 
-		CFEvent.dispatch(undefined, _title+'Changed', this, { event: self[key] ? 'changed' : 'added', key: key });
+		CFEvent.dispatch(undefined, _title+'Changed', this, { event: key in self ? 'changed' : 'added', key: key });
 	}
 
 	[Symbol.call](self, key, ...arguments_) {
@@ -98,7 +98,15 @@ return class CFObject extends Object {
 	}
 
 	release() {
-	//	for(let v of this.__observers) {}
+		for(let v of this.__observers) {
+			this.removeObserver(v.ID);
+		}
+
+		if(this[Symbol.collection] === true) {
+			for(let v of this) {
+				v.release?.();
+			}
+		}
 
 		this.destructor();
 	}

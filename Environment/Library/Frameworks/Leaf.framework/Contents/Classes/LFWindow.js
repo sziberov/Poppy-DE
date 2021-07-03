@@ -53,14 +53,14 @@ return class LFWindow extends LFView {
 	}) {
 		super(...arguments);
 
-		this.origin = {
+		this.origin = new CFObject({
 			x: x,
 			y: y
-		}
-		this.size = {
+		});
+		this.size = new CFObject({
 			width: width,
 			height: height
-		}
+		});
 		this.background = background;
 		this.level = level;
 		this.type = type;
@@ -271,10 +271,10 @@ return class LFWindow extends LFView {
 		if(!this.element)																					return this;
 
 		value = typeof value === 'string' ? this.constructor.center[value] : value;
-		this.origin = {
+		this.origin = new CFObject({
 			x: value === 0 || value === 1 ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : this.__x,
 			y: value === 0 || value === 2 ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : this.__y
-		}
+		});
 
 		return this;
 	}
