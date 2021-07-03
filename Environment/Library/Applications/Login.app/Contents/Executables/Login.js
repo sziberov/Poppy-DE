@@ -43,8 +43,8 @@ return class {
 					new LFMenuItem({ title: CFLocalizedString('Force Quit'), action: () => this.forceQuit() }),
 					new LFMenuItem({ title: CFLocalizedString('Activity Monitor'), action: () => LFWorkspace.shared.launchApplication('/Applications/Activity Monitor') }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: CFLocalizedString('Relaunch'), action: () => _request('relaunch') }),
-					new LFMenuItem({ title: CFLocalizedString('Quit'), action: () => _request('quit') })
+					new LFMenuItem({ title: CFLocalizedString('Relaunch'), action: () => _call('relaunch') }),
+					new LFMenuItem({ title: CFLocalizedString('Quit'), action: () => _call('quit') })
 				] })
 			})
 		]
@@ -66,7 +66,7 @@ return class {
 					}
 					update();
 					CFEvent.addHandler('dateChanged', update);
-				//	_request('timerCreate', true, 1000, update);
+				//	_call('timerCreate', true, 1000, update);
 				},
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: CFLocalizedString('View as Analog') }),
@@ -86,7 +86,7 @@ return class {
 		]
 
 		this.launchServices();
-		CFMutableArray.addObserver(LFWorkspace.shared.launchedApplications, () => this.launchServices());
+		CFArray.addObserver(LFWorkspace.shared.launchedApplications, () => this.launchServices());
 	}
 
 	launchServices() {
@@ -109,7 +109,7 @@ return class {
 
 				return d;
 			},
-			system = _request('system'),
+			system = _call('system'),
 			pc = 'Poppy Monoblock Pro 2019', //system.hostname(),
 			cpu = system.cpus()[0].model,
 			memory = bytesConvert(system.totalmem()),
@@ -126,7 +126,7 @@ return class {
 
 				return variable;
 			})(),
-			software = _request('version', 'DE').join(' '),
+			software = _call('version', 'DE').join(' '),
 			window = LFApp.windows.find(v => v.tag === 'about');
 
 		if(!window) {
@@ -177,6 +177,6 @@ return class {
 		CGCursor.shared.remove();
 		LFWorkspace.shared.remove();
 
-	//	_request('quit');
+	//	_call('quit');
 	}
 }

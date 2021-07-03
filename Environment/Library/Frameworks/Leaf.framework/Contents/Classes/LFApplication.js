@@ -10,7 +10,7 @@ return class LFApplication {
 		return this.__shared;
 	}
 
-	__menuItems = new CFMutableArray();
+	__menuItems = new CFArray();
 	__focusingPolicy = 0;
 	__quitableBySingleWindow = false;
 
@@ -24,12 +24,12 @@ return class LFApplication {
 		this.process.environment.LFApp = this.constructor.shared;
 
 		LFWorkspace.shared.launchedApplications.add(new LFLaunchedApplication(this));
-		CFMutableArray.addObserver(LFWorkspace.shared.subviews, (a) => {
+		CFArray.addObserver(LFWorkspace.shared.subviews, (a) => {
 			if(a.value.application === LFLaunchedApplication.shared && Object.isKindOf(a.value, LFWindow)) {
 				this.update('Windows');
 			}
 		});
-		CFMutableArray.addObserver(this.menuItems, () => this.update('MenuItems'));
+		CFArray.addObserver(this.menuItems, () => this.update('MenuItems'));
 	}
 
 	get menuItems() {
@@ -204,7 +204,7 @@ return class LFApplication {
 				this.process.executable?.willQuit?.();
 			} catch {}
 
-			_request('kill');
+			_call('kill');
 		}
 	}
 }

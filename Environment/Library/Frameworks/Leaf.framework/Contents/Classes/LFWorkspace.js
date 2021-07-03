@@ -14,7 +14,7 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 		this.__shared = undefined;
 	}
 
-	__launchedApplications = new CFMutableArray();
+	__launchedApplications = new CFArray();
 	__desktopImage;
 
 	constructor({ desktopImage } = {}) {
@@ -53,7 +53,7 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 				}
 			}
 		});
-		CFMutableArray.addObserver(this.subviews, (a) => {
+		CFArray.addObserver(this.subviews, (a) => {
 			if(!Object.isKindOf(a.value, LFWindow)) {
 				return;
 			}
@@ -114,7 +114,7 @@ return $CFShared[_title] || class LFWorkspace extends LFView {
 			try {
 				let user = new CFPreferences('Global').get().Users.find(v => v.Group === 1);
 
-				_request('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
+				_call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
 
 				return this.getApplication(identifier);
 			} catch(error) {

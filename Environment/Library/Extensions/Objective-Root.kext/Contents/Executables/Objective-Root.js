@@ -150,8 +150,14 @@ let arrayFields = {
 Object.defineProperties(window.Array.prototype, arrayFields);
 Object.defineProperties(window.Buffer.prototype, arrayFields);
 
-window.Number.prototype.toHexString = (n) => {
-	return '0x'+(n+0x10000).toString(16).substr(-4).toUpperCase();
+window.Symbol.collection = Symbol('collection');
+window.Symbol.get = Symbol('get');
+window.Symbol.set = Symbol('set');
+window.Symbol.call = Symbol('call');
+window.Symbol.delete = Symbol('delete');
+
+window.Number.prototype.toHexString = function() {
+	return '0x'+(this.valueOf()+0x10000).toString(16).substr(-4).toUpperCase();
 }
 
 window.Math.isEven = (n) => {
@@ -181,5 +187,3 @@ window.Math.randomIntInclusive = (min, max) => {
 }
 
 window.nil = undefined;
-window.YES = true;
-window.NO = false;

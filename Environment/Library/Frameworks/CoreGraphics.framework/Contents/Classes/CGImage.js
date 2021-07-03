@@ -7,7 +7,7 @@ return class CGImage {
 
 		let layer = new CGLayer();
 
-		layer.__layer = _request('drOpen', CFFile.content(URL), type);
+		layer.__layer = _call('drOpen', CFFile.content(URL), type);
 
 		return layer;
 	}

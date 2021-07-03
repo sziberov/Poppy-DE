@@ -1,6 +1,6 @@
 // noinspection JSAnnotator
 return CGColor = (red, green, blue, alpha) => {
-	return _request('drColor', red, green, blue, alpha);
+	return _call('drColor', red, green, blue, alpha);
 }
 /*
 return class {
@@ -31,7 +31,7 @@ return class {
 	}
 
 	get color() {
-		return _request('drColor', red, green, blue, alpha);
+		return _call('drColor', red, green, blue, alpha);
 	}
 }
 */

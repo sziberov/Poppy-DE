@@ -21,7 +21,7 @@ return class {
 			new LFMenuItem({ title: CFLocalizedString('Help') })
 		]
 
-		CFMutableArray.addObserver(LFWorkspace.shared.subviews, (a) => {
+		CFArray.addObserver(LFWorkspace.shared.subviews, (a) => {
 			if(a.value.application === LFLaunchedApplication.shared && Object.isKindOf(a.value, LFWindow)) {
 				let list = []
 
@@ -74,7 +74,7 @@ return class {
 		table.push(new LFTableRow({ title: 'None', action: () => {
 			LFWorkspace.shared.desktopImage = '';
 		} }));
-		for(let v of _request('readDir', '/Library/Desktop Images')) {
+		for(let v of _call('readDir', '/Library/Desktop Images')) {
 			table.push(new LFTableRow({ title: v.name, action: function(v) {
 				return () => LFWorkspace.shared.desktopImage = '/Library/Desktop Images/'+v.name;
 			}.bind(this)(v) }));

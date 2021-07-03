@@ -1,7 +1,7 @@
 // noinspection JSAnnotator
 return class LFView extends LFResponder {
 	__superview;
-	__subviews = new CFMutableArray();
+	__subviews = new CFArray();
 	__subviews_;
 	__layer = new CGLayer();
 	__tag;
@@ -10,7 +10,7 @@ return class LFView extends LFResponder {
 	__xAlign;
 	__yAlign;
 
-//	_constraints = new CFMutableArray();
+//	_constraints = new CFArray();
 
 	constructor({ tag, type = 'horizontal', tight = false, xAlign = 'start', yAlign = 'start', subviews } = {}) {
 		super();
@@ -23,7 +23,7 @@ return class LFView extends LFResponder {
 
 		this.tag = tag;
 
-	//	CFMutableArray.addObserver(this.__subviews, () => {});
+	//	CFArray.addObserver(this.__subviews, () => {});
 	}
 
 	get superview() {

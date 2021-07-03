@@ -4,14 +4,14 @@ return class CFEvent {
 		if(processID && typeof processID !== 'number')	throw new TypeError(0);
 		if(typeof event !== 'string')					throw new TypeError(1);
 
-		_request('throw', processID, event, ...arguments_);
+		_call('throw', processID, event, ...arguments_);
 	}
 
 	static addHandler(event, function_) {
 		if(typeof event !== 'string')		throw new TypeError(0);
 		if(typeof function_ !== 'function')	throw new TypeError(1);
 
-		return _request('catcherCreate', event, function_);
+		return _call('catcherCreate', event, function_);
 	}
 
 	static removeHandler(handler) {
@@ -19,6 +19,6 @@ return class CFEvent {
 			throw new TypeError(0);
 		}
 
-		return _request('catcherDestroy', handler);
+		return _call('catcherDestroy', handler);
 	}
 }

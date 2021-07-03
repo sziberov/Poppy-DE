@@ -10,7 +10,7 @@ return class CFProcessInfo {
 		return this.__shared;
 	}
 
-	__info = _request('info');
+	__info = _call('info');
 
 	constructor() {
 		if(!this.constructor.__shared) {

@@ -19,9 +19,9 @@ return $CFShared[_title] || class CGSWindowServer {
 		return this.__shared;
 	}
 
-	__connections = new CFMutableArray();
-	__workspaces = new CFMutableArray();
-	__windows = new CFMutableArray();
+	__connections = new CFArray();
+	__workspaces = new CFArray();
+	__windows = new CFArray();
 	__cursor;
 	__layer = new CGLayer({ width: CGScreen.size.width, height: CGScreen.size.height });
 
@@ -85,7 +85,7 @@ return $CFShared[_title] || class CGSWindowServer {
 		layer.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, layer.width, layer.height);
 		layer.context.drawRectangle(CGColor(0, 0, 0, 0.25), 0, 0, layer.width, layer.height);
 
-		_request('fbWrite', this.__layer.draw().__layer);
+		_call('fbWrite', this.__layer.draw().__layer);
 	}
 
 	createConnection(processInfo) {

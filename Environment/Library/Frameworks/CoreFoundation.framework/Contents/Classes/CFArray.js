@@ -1,5 +1,7 @@
 // noinspection JSAnnotator
-return class CFMutableArray extends Array {
+return class CFArray extends Array {
+	[Symbol.collection] = true;
+
 	__observers = []
 	__observersHandlerID;
 

@@ -1,4 +1,4 @@
 // noinspection JSAnnotator
 return CFLog = (...arguments_) => {
-	_request('log', ...arguments_);
+	_call('log', ...arguments_);
 }

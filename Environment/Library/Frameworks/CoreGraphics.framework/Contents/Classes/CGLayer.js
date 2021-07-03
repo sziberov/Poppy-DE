@@ -2,12 +2,12 @@
 return $CFShared[_title] || class CGLayer {
 	static __friends__ = [CGContext, CGImage, CGSWindowServer]
 
-	__layer = _request('drCreate', 0, 0);
+	__layer = _call('drCreate', 0, 0);
 	__context = new CGContext(this);
-	__sublayers = new CFMutableArray();
+	__sublayers = new CFArray();
 	__x;
 	__y;
-	__backgroundFilters = new CFMutableArray();
+	__backgroundFilters = new CFArray();
 	__mask;
 	__hidden;
 

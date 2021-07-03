@@ -319,7 +319,7 @@ return class LFWindow extends LFView {
 			} else {
 				this.attributes['minimized'] = undefined;
 			}
-			_request('timerCreate', false, 250, () => {
+			_call('timerCreate', false, 250, () => {
 				this.attributes['animatedResize'] = undefined;
 			});
 		}
@@ -343,7 +343,7 @@ return class LFWindow extends LFView {
 				this.style['height'] = this.__height+'px';
 				this.style['transform'] = 'translate3d('+this.__x+'px, '+this.__y+'px, 0)';
 			}
-			_request('timerCreate', false, 250, () => {
+			_call('timerCreate', false, 250, () => {
 				this.attributes['animatedResizeIn'] = undefined;
 				this.attributes['animatedResizeOut'] = undefined;
 			});

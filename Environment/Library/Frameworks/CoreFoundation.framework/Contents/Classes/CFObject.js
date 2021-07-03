@@ -10,26 +10,6 @@
 return class CFObject extends Object {
 	static __friends__ = [this]
 
-	constructor(object) {
-		super();
-
-		for(let k in object) {
-			if(['__proto__', '__friends__', '__get__', '__set__', '__call__', '__delete__'].includes(k)) {
-				continue;
-			}
-			if(['get', 'set', 'call', 'delete'].includes(k)) {
-				Object.defineProperty(this, '__'+k+'__', {
-					value: object[k],
-					writable: true,
-					enumerable: false,
-					configurable: true
-				});
-			} else {
-				this[k] = object[k]
-			}
-		}
-	}
-
 	static addObserver(object, function_) {
 		if(!this.isObject(object) || !this.isKindOf(object, this))	throw new TypeError(0);
 		if(typeof function_ !== 'function')							throw new TypeError(1);
@@ -60,7 +40,32 @@ return class CFObject extends Object {
 		}
 	}
 
-	__get__(self, key) {
+	[Symbol.collection] = false;
+
+	constructor(object) {
+		super();
+
+		if(object) {
+			if(!Object.isObject(object) || !Object.isMemberOf(object, Object)) {
+				throw new TypeError(0);
+			}
+
+			this[Symbol.collection] = true;
+
+			for(let k in object) {
+				if(['__proto__', '__friends__'].includes(k) || typeof object[k] === 'symbol') {
+					continue;
+				}
+				if(['@@get', '@@set', '@@call', '@@delete', '@@collection'].includes(k)) {
+					this[Symbol[k.substring(2)]] = object[k]
+				} else {
+					this[k] = object[k]
+				}
+			}
+		}
+	}
+
+	[Symbol.get](self, key) {
 		let value = self[key]
 
 		CFEvent.dispatch(undefined, _title+'Changed', this, { event: 'get', key: key });
@@ -68,13 +73,13 @@ return class CFObject extends Object {
 		return value;
 	}
 
-	__set__(self, key, value) {
+	[Symbol.set](self, key, value) {
 		self[key] = value;
 
 		CFEvent.dispatch(undefined, _title+'Changed', this, { event: self[key] ? 'changed' : 'added', key: key });
 	}
 
-	__call__(self, key, ...arguments_) {
+	[Symbol.call](self, key, ...arguments_) {
 		let value = self[key](...arguments_);
 
 		CFEvent.dispatch(undefined, _title+'Changed', this, { event: 'called', key: key });
@@ -82,7 +87,7 @@ return class CFObject extends Object {
 		return value;
 	}
 
-	__delete__(self, key) {
+	[Symbol.delete](self, key) {
 		delete self[key]
 
 		CFEvent.dispatch(undefined, _title+'Changed', this, { event: 'removed', key: key });

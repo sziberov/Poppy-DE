@@ -13,7 +13,7 @@ return class CFPreferences {
 		}
 
 		this.__identifier = value;
-		this.__properties = _request('readPref', value);
+		this.__properties = _call('readPref', value);
 	}
 
 	get() {
@@ -23,6 +23,6 @@ return class CFPreferences {
 	set(value) {
 		this.__properties[value] = value;
 
-		_request('writePref', this.__identifier, this.__properties);
+		_call('writePref', this.__identifier, this.__properties);
 	}
 }
