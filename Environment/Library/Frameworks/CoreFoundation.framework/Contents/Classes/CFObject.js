@@ -1,33 +1,13 @@
-// Каждый наблюдатель обязан удаляться после завершения его породившего процесса.
-// Для этого он должен быть так или иначе привязан к последнему: храниться в самой памяти процесса,
-// либо в связанном с ним объекте ядра. Также, по-хорошему, он должен удаляться при недоступности
-// наблюдаемого объекта, чтобы не занимать место в памяти.
-//
-// _Нынешняя реализация отвечает первому требованию, но не умеет автоматически следить за последним,
-// так как объекты никогда не удаляются явно._
+// Каждый наблюдатель обязан автоматически удаляться:
+// - После завершения его породившего процесса.
+// - При недоступности наблюдаемого объекта.
 //
 // noinspection JSAnnotator
 return class CFObject extends Object {
 	static __friends__ = [this]
-
-	static addObserver(object, function_) {
-		if(!this.isObject(object) || !this.isKindOf(object, this))	throw new TypeError(0);
-		if(typeof function_ !== 'function')							throw new TypeError(1);
-
-		return CFEvent.addHandler(_title+'Changed', (object_, ...arguments_) => {
-			if(object_ === object) {
-				function_(...arguments_);
-			}
-		});
-	}
-
-	static removeObserver(object, observerID) {
-		if(!this.isObject(object) || !this.isKindOf(object, this))	throw new TypeError(0);
-		if(typeof observerID !== 'number')							throw new TypeError(1);
-
-		if(!CFEvent.removeHandler(observerID)) {
-			return;
-		}
+	static __observation = {
+		handlerID: undefined,
+		observers: []
 	}
 
 	static assign(object, ...arguments_) {
@@ -38,6 +18,22 @@ return class CFObject extends Object {
 				}
 			}
 		}
+	}
+
+	static addObserver(object, function_) {
+		if(!this.isObject(object) || !this.isKindOf(object, this)) {
+			throw new TypeError(0);
+		}
+
+		object.addObserver(CFProcessInfo.shared, function_);
+	}
+
+	static removeObserver(object, observerID) {
+		if(!this.isObject(object) || !this.isKindOf(object, this)) {
+			throw new TypeError(0);
+		}
+
+		object.removeObserver(CFProcessInfo.shared, observerID);
 	}
 
 	[Symbol.collection] = false;
@@ -97,13 +93,37 @@ return class CFObject extends Object {
 		return this.constructor.isShallowlyEqual(this, object);
 	}
 
+	addObserver(processInfo, function_) {
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
+		if(typeof function_ !== 'function')													throw new TypeError(1);
+
+		/*
+		return CFEvent.addHandler(_title+'Changed', (object_, ...arguments_) => {
+			if(object_ === object) {
+				function_(...arguments_);
+			}
+		});
+		*/
+	}
+
+	removeObserver(processInfo, observerID) {
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
+		if(typeof observerID !== 'number')													throw new TypeError(1);
+
+		/*
+		if(!CFEvent.removeHandler(observerID)) {
+			return;
+		}
+		*/
+	}
+
 	release() {
-		for(let v of this.__observers) {
-			this.removeObserver(v.ID);
+		for(let v of this.constructor.__observation.observers) {
+			this.removeObserver(v.processInfo, v.ID);
 		}
 
 		if(this[Symbol.collection] === true) {
-			for(let v of this) {
+			for(let v of Object.values(this).filter(v => Object.isObject(v))) {
 				v.release?.();
 			}
 		}
@@ -112,10 +132,10 @@ return class CFObject extends Object {
 	}
 
 	destructor() {
-		for(let k in this) {
-			if(Object.hasOwnProperty.call(this, k)) {
-				this[k] = undefined;
-			}
+		for(let k of [...Object.getOwnPropertyNames(this), ...Object.getOwnPropertySymbols(this)]) {
+			delete this[k]
 		}
+
+		this.__proto__ = null;
 	}
 }

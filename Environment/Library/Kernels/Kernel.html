@@ -1820,6 +1820,9 @@
 							class_[key] = value;
 
 							return true;
+						},
+						deleteProperty: (target, key) => {
+							return delete class_[key]
 						}
 					});
 
