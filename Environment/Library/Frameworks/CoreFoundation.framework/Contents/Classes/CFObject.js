@@ -70,9 +70,20 @@ return class CFObject extends Object {
 	}
 
 	[Symbol.set](self, key, value) {
+		let observers = this.constructor.__observation.observers.filter(v => v.object === this),
+			in_ = key in this;
+
+		for(let v of observers) {
+			v.function(in_ ? 'willChange' : 'willAdd', key);
+		}
+
 		self[key] = value;
 
-		CFEvent.dispatch(undefined, _title+'Changed', this, { event: key in self ? 'changed' : 'added', key: key });
+		for(let v of observers) {
+			v.function(in_ ? 'didChange' : 'didAdd', key);
+		}
+
+		CFEvent.dispatch(undefined, _title+'Changed', this, { event: in_ ? 'changed' : 'added', key: key });
 	}
 
 	[Symbol.call](self, key, ...arguments_) {
@@ -84,7 +95,17 @@ return class CFObject extends Object {
 	}
 
 	[Symbol.delete](self, key) {
+		let observers = this.constructor.__observation.observers.filter(v => v.object === this);
+
+		for(let v of observers) {
+			v.function('willRemove', key);
+		}
+
 		delete self[key]
+
+		for(let v of observers) {
+			v.function('didRemove', key);
+		}
 
 		CFEvent.dispatch(undefined, _title+'Changed', this, { event: 'removed', key: key });
 	}
@@ -97,28 +118,49 @@ return class CFObject extends Object {
 		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
 		if(typeof function_ !== 'function')													throw new TypeError(1);
 
-		/*
-		return CFEvent.addHandler(_title+'Changed', (object_, ...arguments_) => {
-			if(object_ === object) {
-				function_(...arguments_);
-			}
+		let observation = this.constructor.__observation;
+
+		if(observation.handlerID === undefined) {
+			observation.handlerID = CFEvent.addHandler('processListChanged', (a) => {
+				if(a.event === 'removed') {
+					for(let v of observation.observers.filter(v => v.processInfo.identifier === a.value)) {
+						v.object.removeObserver(v.processInfo, v.ID);
+					}
+				}
+			});
+		}
+
+		if(observation.observers.find(v => v.object === this && v.processInfo === processInfo && v.function === function_)) {
+			return;
+		}
+
+		let ID = observation.observers.length > 0 ? Math.max(...observation.observers.map(v => v.ID))+1 : 1;
+
+		observation.observers.push({
+			ID: ID,
+			object: this,
+			processInfo: processInfo,
+			function: function_
 		});
-		*/
+
+		return ID;
 	}
 
 	removeObserver(processInfo, observerID) {
 		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
 		if(typeof observerID !== 'number')													throw new TypeError(1);
 
-		/*
-		if(!CFEvent.removeHandler(observerID)) {
-			return;
+		let observation = this.constructor.__observation;
+
+		observation.observers = observation.observers.filter(v => v.ID !== observerID && v.object !== this && v.processInfo !== processInfo);
+
+		if(observation.observers.length === 0) {
+			observation.handlerID = CFEvent.removeHandler(observation.handlerID);
 		}
-		*/
 	}
 
 	release() {
-		for(let v of this.constructor.__observation.observers) {
+		for(let v of this.constructor.__observation.observers.filter(v => v.object === this)) {
 			this.removeObserver(v.processInfo, v.ID);
 		}
 

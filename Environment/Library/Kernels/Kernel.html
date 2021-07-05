@@ -986,12 +986,12 @@
 				if(!catcher) {
 					this.kdbAdd(`eventCatcherDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
 
-					console.error(0); return false;
+					console.error(0); return;
 				}
 				if(processID && catcher.processID !== processID) {
 					this.kdbAdd(`eventCatcherDestroy@${ processID }: Processes aren't allowed to destroy not owned objects`);
 
-					console.error(1); return false;
+					console.error(1); return catcher.ID;
 				}
 
 				this.catchers = this.catchers.filter(v => v !== catcher);
@@ -1000,8 +1000,6 @@
 					    ID: ${ catcher.ID }
 					    Title: "${ catcher.title }"
 				`);
-
-				return true;
 			}
 
 			timerCreate(processID, repeat, delay, function_, ...arguments_) {
@@ -1815,7 +1813,11 @@
 					proxy = new Proxy({}, {
 						get: (target, key) => {
 							if(key !== proxied) {
-								return class_[key]
+								if(type === 'call' && typeof class_[key] === 'function') {
+									return class_[key].bind(class_);
+								} else {
+									return class_[key]
+								}
 							}
 						},
 						set: (target, key, value) => {
