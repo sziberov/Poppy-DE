@@ -11,6 +11,7 @@ _import(_title, 'CFIdentity');
 _import(_title, 'CFEvent');
 _import(_title, 'CFObject');
 _import(_title, 'CFArray');
+_import(_title, 'CFArrayNew');
 _import(_title, 'CFString');
 _import(_title, 'CFURL');
 _import(_title, 'CFBundle');

@@ -160,6 +160,10 @@ window.Symbol.set = Symbol('set');
 window.Symbol.call = Symbol('call');
 window.Symbol.delete = Symbol('delete');
 
+window.String.prototype.isInteger = function() {
+	return this.valueOf() === parseInt(this.valueOf(), 10).toString();
+}
+
 window.Number.prototype.toHexString = function() {
 	return '0x'+(this.valueOf()+0x10000).toString(16).substr(-4).toUpperCase();
 }

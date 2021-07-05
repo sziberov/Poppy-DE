@@ -114,6 +114,10 @@ return class CFObject extends Object {
 		return this.constructor.isShallowlyEqual(this, object);
 	}
 
+	key(value) {
+		return this.constructor.keys(this).find(k => this[k] === value);
+	}
+
 	addObserver(processInfo, function_) {
 		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
 		if(typeof function_ !== 'function')													throw new TypeError(1);
