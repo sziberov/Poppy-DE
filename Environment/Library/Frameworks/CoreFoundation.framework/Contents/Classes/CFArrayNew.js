@@ -34,35 +34,80 @@ return class CFArray extends CFObject {
 	[Symbol.collection] = true;
 
 	__count = 0;
+	__type;
 
-	constructor(array) {
+	constructor(array, type) {
 		super();
 
-		Object.defineProperty(this, '__count', {
-			enumerable: false
+		Object.defineProperties(this, {
+			__count: {
+				enumerable: false
+			},
+			__type: {
+				enumerable: false
+			}
 		});
 
+		if(type) {
+			if(typeof type !== 'function') {
+				throw new TypeError(0);
+			}
+
+			this.__type = type;
+		}
 		if(array) {
 			if(!Array.isArray(array)) {
-				throw new TypeError(0);
+				throw new TypeError(1);
 			}
 
 			this.add(...array);
 		}
 	}
 
+	/**
+	 * Количество элементов в массиве.
+	 *
+	 * @returns {number}
+	 */
 	get count() {
 		return this.__count;
 	}
 
+	/**
+	 * Логическое значение, указывающее, пуст ли массив.
+	 *
+	 * @returns {boolean}
+	 */
 	get empty() {
 		return this.count === 0;
 	}
 
+	/**
+	 * Позиция первого элемента в массиве.
+	 *
+	 * @returns {?number}
+	 */
+	get startIndex() {
+		return !this.empty ? 0 : undefined;
+	}
+
+	/**
+	 * Позиция последнего элемента в массиве.
+	 *
+	 * @returns {?number}
+	 */
+	get endIndex() {
+		return !this.empty ? this.count-1 : undefined;
+	}
+
+	/**
+	 * Количество элементов в массиве.
+	 *
+	 * @param {number} value
+	 */
 	set count(value) {
-		if(value > this.count) {
-			throw new RangeError(0);
-		}
+		if(!Number.isInteger(value))		throw new TypeError(0);
+		if(value < 0 || value > this.count)	throw new RangeError(1);
 
 		while(this.count > value) {
 			this.removeLast();
@@ -72,6 +117,9 @@ return class CFArray extends CFObject {
 	[Symbol.set](self, key, value) {
 		if(typeof key !== 'number' && !key.isInteger()) {
 			return super[Symbol.set](self, key, value);
+		}
+		if(this.__type && !Object.isKindOf(value, this.__type)) {
+			throw new TypeError(0);
 		}
 
 		let observers = this.constructor.__observation.observers.filter(v => v.object === this),
@@ -137,12 +185,23 @@ return class CFArray extends CFObject {
 		}
 	}
 
+	/**
+	 * Добавляет новый элемент в конец массива.
+	 *
+	 * @param {*} value
+	 */
 	add(...value) {
 		for(let v of value) {
 			this[this.count] = v;
 		}
 	}
 
+	/**
+	 * Возвращает первый элемент массива, удовлетворяющий заданному предикату.
+	 *
+	 * @param	{Function} function_
+	 * @returns	{*}
+	 */
 	first(function_) {
 		if(typeof function_ !== 'function') {
 			throw new TypeError(0);
@@ -167,6 +226,12 @@ return class CFArray extends CFObject {
 		}
 	}
 
+	/**
+	 * Возвращает последний элемент массива, удовлетворяющий заданному предикату.
+	 *
+	 * @param	{Function} function_
+	 * @returns	{*}
+	 */
 	last(function_) {
 		if(typeof function_ !== 'function') {
 			throw new TypeError(0);
@@ -191,6 +256,32 @@ return class CFArray extends CFObject {
 		}
 	}
 
+	/**
+	 * Возвращает массив, содержащий результаты сопоставления заданной функции с элементами последовательности.
+	 *
+	 * @param	{Function} function_
+	 * @returns	{CFArray}
+	 */
+	map(function_) {
+		if(typeof function_ !== 'function') {
+			throw new TypeError(0);
+		}
+
+		let map = []
+
+		for(let v of this) {
+			map.push(function_(v));
+		}
+
+		return new this.constructor(map);
+	}
+
+	/**
+	 * Возвращает массив, содержащий элементы, удовлетворяющие заданному предикату.
+	 *
+	 * @param	{Function} function_
+	 * @returns	{CFArray}
+	 */
 	filter(function_) {
 		if(typeof function_ !== 'function') {
 			throw new TypeError(0);
@@ -207,6 +298,12 @@ return class CFArray extends CFObject {
 		return new this.constructor(filter);
 	}
 
+	/**
+	 * Возвращает логическое значение, указывающее, удовлетворяет ли каждый элемент массива заданному предикату.
+	 *
+	 * @param	{Function} function_
+	 * @returns	{boolean}
+	 */
 	allSatisfy(function_) {
 		if(typeof function_ !== 'function') {
 			throw new TypeError(0);
@@ -221,10 +318,21 @@ return class CFArray extends CFObject {
 		return true;
 	}
 
+	/**
+	 * Возвращает логическое значение, указывающее, содержит ли массив данный элемент.
+	 *
+	 * @param	{*} value
+	 * @returns	{boolean}
+	 */
 	contains(value) {
 		return this.firstIndex({ of: value }) !== undefined;
 	}
 
+	/**
+	 * Возвращает минимальный элемент в массиве.
+	 *
+	 * @returns {*}
+	 */
 	min() {
 		let min;
 
@@ -235,6 +343,11 @@ return class CFArray extends CFObject {
 		return min;
 	}
 
+	/**
+	 * Возвращает максимальный элемент в массиве.
+	 *
+	 * @returns {*}
+	 */
 	max() {
 		let max;
 
@@ -245,6 +358,11 @@ return class CFArray extends CFObject {
 		return max;
 	}
 
+	/**
+	 * Удаляет первое вхождение заданного элемента из массива.
+	 *
+	 * @param {*} value
+	 */
 	remove(...value) {
 		for(let v of value) {
 			if(this.contains(v)) {
@@ -253,6 +371,12 @@ return class CFArray extends CFObject {
 		}
 	}
 
+	/**
+	 * Удаляет и возвращает первый элемент, либо удаляет указанное количество элементов из начала массива.
+	 *
+	 * @param	{number} times
+	 * @returns	{?*}
+	 */
 	removeFirst(times = 1) {
 		if(!Number.isInteger(times))		throw new TypeError(0);
 		if(times < 0 || times > this.count)	throw new RangeError(1);
@@ -267,6 +391,12 @@ return class CFArray extends CFObject {
 		return value;
 	}
 
+	/**
+	 * Удаляет и возвращает последний элемент, либо удаляет указанное количество элементов из конца массива.
+	 *
+	 * @param	{number} times
+	 * @returns	{?*}
+	 */
 	removeLast(times = 1) {
 		if(!Number.isInteger(times))		throw new TypeError(0);
 		if(times < 0 || times > this.count)	throw new RangeError(1);
@@ -281,6 +411,13 @@ return class CFArray extends CFObject {
 		return value;
 	}
 
+	/**
+	 * Удаляет либо все элементы из массива, либо удовлетворяющие заданному предикату.
+	 *
+	 * @param {Object}		object
+	 * @param {Function}	object.where		Предикат.
+	 * @param {boolean}		object.keepCount	Сохранение количества элементов с очисткой позиций.
+	 */
 	removeAll({ where, keepCount = false } = {}) {
 		if(where && typeof where !== 'function')	throw new TypeError(0);
 		if(typeof keepCount !== 'boolean')			throw new TypeError(1);

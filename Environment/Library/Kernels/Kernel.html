@@ -147,11 +147,14 @@
 				});
 			}
 
+			/**
+			 * Версия ядра и Окружения.
+			 */
 			get version() {
 				return {
 					kernel: [
 						'Opium Kernel',
-						'Version 0.1'
+						0.1
 					],
 					DE: [
 						'Poppy DE',
@@ -160,6 +163,11 @@
 				}
 			}
 
+			/**
+			 * Время с момента запуска Окружения в миллисекундах.
+			 *
+			 * @returns {number}
+			 */
 			get uptime() {
 				return new Date(Date.now()-this.uptimeStart).getTime();
 			}
@@ -173,34 +181,74 @@
 				}
 			}
 
+			/**
+			 * Объекты файлов.
+			 *
+			 * @returns {Object[]}
+			 */
 			get files() {
 				return this.objects.files;
 			}
 
+			/**
+			 * Объекты каналов событий.
+			 *
+			 * @returns {Object[]}
+			 */
 			get channels() {
 				return this.objects.channels;
 			}
 
+			/**
+			 * Объекты отловщиков событий.
+			 *
+			 * @returns {Object[]}
+			 */
 			get catchers() {
 				return this.objects.catchers;
 			}
 
+			/**
+			 * Объекты таймеров.
+			 *
+			 * @returns {Object[]}
+			 */
 			get timers() {
 				return this.objects.timers;
 			}
 
+			/**
+			 * Объекты общих окружений.
+			 *
+			 * @returns {Object[]}
+			 */
 			get se() {
 				return this.objects.se;
 			}
 
+			/**
+			 * Объекты динамических библиотек.
+			 *
+			 * @returns {Object[]}
+			 */
 			get dl() {
 				return this.objects.dl;
 			}
 
+			/**
+			 * Объекты терминалов.
+			 *
+			 * @returns {Object[]}
+			 */
 			get terminals() {
 				return this.objects.terminals;
 			}
 
+			/**
+			 * Объекты процессов.
+			 *
+			 * @returns {Object[]}
+			 */
 			get processes() {
 				return this.objects.processes;
 			}
@@ -289,7 +337,7 @@
 					Process title corresponding to current thread: ${ a.fileName?.split('/').pop() }
 
 					Kernel version:
-					${ this.version.kernel?.join(' ') || 'Not yet set' }
+					${ this.version.kernel?.join(' Version ') || 'Not yet set' }
 
 					DE version:
 					${ this.version.DE?.pop() || 'Not yet set' }
@@ -764,15 +812,15 @@
 			/**
 			 * Переносит часть слоя в другое место.
 			 *
-			 * @param {!HTMLCanvasElement}	layer	Исходный слой.
-			 * @param {!('cut'|'copy')}		type	Тип переноса: вырезка или копирование.
-			 * @param {?number}				x		Исходное положение X.
-			 * @param {?number}				y		Исходное положение Y.
-			 * @param {!number}				width	Ширина области.
-			 * @param {!number}				height	Высота области.
+			 * @param {HTMLCanvasElement}	layer	Исходный слой.
+			 * @param {('cut'|'copy')}		type	Тип переноса: вырезка или копирование.
+			 * @param {number}				x		Исходное положение X.
+			 * @param {number}				y		Исходное положение Y.
+			 * @param {number}				width	Ширина области.
+			 * @param {number}				height	Высота области.
 			 * @param {?HTMLCanvasElement}	layer_	Конечный слой. Если не указан, используется исходный.
-			 * @param {?number}				x_		Конечное положение X.
-			 * @param {?number}				y_		Конечное положение Y.
+			 * @param {number}				x_		Конечное положение X.
+			 * @param {number}				y_		Конечное положение Y.
 			 */
 			drMove(layer, type, x = 0, y = 0, width, height, layer_, x_ = 0, y_ = 0) {
 				if(!['cut', 'copy'].includes(type) || [
@@ -951,6 +999,14 @@
 
 			eventChannelDestroy(processID, channelID) {}
 
+			/**
+			 * Создаёт отловщик событий и возвращает его идентификатор.
+			 *
+			 * @param	{?number}	processID	Идентификатор процесса.
+			 * @param	{string}	title		Название события.
+			 * @param	{Function}	function_	Функция отловщика.
+			 * @returns	{?number}
+			 */
 			eventCatcherCreate(processID, title, function_) {
 				let ID = Math.max(...this.catchers.map(v => v.ID).initialize(0))+1;
 
@@ -980,6 +1036,12 @@
 				return ID;
 			}
 
+			/**
+			 * Уничтожает отловщик событий.
+			 *
+			 * @param {?number}	processID Идентификатор процесса.
+			 * @param {number}	catcherID Идентификатор отловщика.
+			 */
 			eventCatcherDestroy(processID, catcherID) {
 				let catcher = this.catchers.find(v => v.ID === catcherID);
 
@@ -991,7 +1053,7 @@
 				if(processID && catcher.processID !== processID) {
 					this.kdbAdd(`eventCatcherDestroy@${ processID }: Processes aren't allowed to destroy not owned objects`);
 
-					console.error(1); return catcher.ID;
+					console.error(1); return;
 				}
 
 				this.catchers = this.catchers.filter(v => v !== catcher);
@@ -1002,6 +1064,16 @@
 				`);
 			}
 
+			/**
+			 * Создаёт таймер и возвращает его идентификатор.
+			 *
+			 * @param	{?number}	processID	Идентификатор процесса.
+			 * @param	{boolean}	repeat		Бесконечное повторение таймера.
+			 * @param	{number}	delay		Время задержки.
+			 * @param	{Function}	function_	Функция таймера.
+			 * @param	{?*}		arguments_	Параметры, передаваемые в функцию таймера.
+			 * @returns	{?number}
+			 */
 			timerCreate(processID, repeat, delay, function_, ...arguments_) {
 				if(typeof repeat !== 'boolean') {
 					this.kdbAdd(`timerCreate${ processID ? '@'+processID : '' }: Incorrect repeat`);
@@ -1045,6 +1117,12 @@
 				return ID;
 			}
 
+			/**
+			 * Уничтожает таймер.
+			 *
+			 * @param {?number}	processID	Идентификатор процесса.
+			 * @param {number}	timerID		Идентификатор таймера.
+			 */
 			timerDestroy(processID, timerID) {
 				let timer = this.timers.find(v => v.ID === timerID);
 
@@ -1076,7 +1154,7 @@
 			 * Создаёт общее окружение для передачи информации между процессами.
 			 *
 			 * @param {?number}					processID	Идентификатор процесса.
-			 * @param {!('read'|'readWrite')}	access		Уровень доступа: чтение и чтение/запись.
+			 * @param {('read'|'readWrite')}	access		Уровень доступа: чтение и чтение/запись.
 			 * @param {?string}					title		Название общего окружения.
 			 */
 			seCreate(processID, access, title) {
@@ -1111,8 +1189,11 @@
 			}
 
 			/**
-			 * @param {?number} processID Идентификатор процесса.
-			 * @returns Список идентификаторов существующих общих окружений, созданных процессом, чей идентфикатор указан (или всех, если последнего нет).
+			 * Возвращает список идентификаторов существующих общих окружений, созданных процессом,
+			 * чей идентфикатор указан (или всех, если последнего нет).
+			 *
+			 * @param	{?number} processID Идентификатор процесса.
+			 * @returns	{number[]}
 			 */
 			seList(processID) {
 				return this.se.filter(v => (!processID || v.processID === processID)).map(v => v.ID);
@@ -1449,10 +1530,22 @@
 				this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'removed', value: terminal.ID });
 			}
 
+			/**
+			 * Подготавливает окружение, (частично) изолируя его от остальной среды.
+			 *
+			 * @param {Object} environment Сырое окружение.
+			 */
 			sbCreate(environment) {
 				return require('vm').createContext(environment);
 			}
 
+			/**
+			 * Запускает код в окружении.
+			 *
+			 * @param {string}	code Код.
+			 * @param {Object}	environment Окружение.
+			 * @param {?string}	title Название окружения, видимое при отладке.
+			 */
 			sbExecute(code, environment, title) {
 				return require('vm').runInContext(code, environment, {
 					filename: title?.split('/').pop(),
@@ -1510,6 +1603,17 @@
 				}[method](...arguments_);
 			}
 
+			/**
+			 * Запускает процесс.
+			 *
+			 * @param	{number}	terminalID	Идентификатор терминала.
+			 * @param	{number}	processID	Идентификатор родительского процесса.
+			 * @param	{string}	login		Логин пользователя.
+			 * @param	{string}	password	Пароль пользователя.
+			 * @param	{string}	path		Абсолютный путь к исполняемому файлу.
+			 * @param	{string[]}	arguments_	Параметры запуска, передаваемые в точку вхождения.
+			 * @returns	{?Object}				Информация о процессе.
+			 */
 			processExecute(terminalID, processID, login, password, path, ...arguments_) {
 				let user = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === login && v.Password === password),
 					executable = this.fsRead(path);
@@ -1603,7 +1707,9 @@
 			}
 
 			/**
-			 * @returns {number[]} Список идентификаторов запущенных процессов.
+			 * Возвращает список идентификаторов запущенных процессов.
+			 *
+			 * @returns {number[]}
 			 */
 			processList() {
 				return this.processes.map(v => v.ID);
@@ -1646,6 +1752,9 @@
 
 			/**
 			 * Завершает указанный процесс, перед этим удаляя все связанные с ним объекты.
+			 *
+			 * @param {number}	processID	Идентификатор процесса.
+			 * @param {boolean}	quiet		Завершение без отчёта на консоль.
 			 */
 			processKill(processID, quiet) {
 				let process = this.processes.find(v => v.ID === processID);
@@ -1685,9 +1794,9 @@
 			 *
 			 * _Этот метод является частью Objective-Root._
 			 *
-			 * @param {!object} process		Объект процесса.
-			 * @param {!string} framework	Название фреймворка.
-			 * @param {?string} class_		Название класса.
+			 * @param {Object}	process		Объект процесса.
+			 * @param {string}	framework	Название фреймворка.
+			 * @param {?string}	class_		Название класса.
 			 */
 			classImport(process, framework, class_) {
 				class_ ??= framework;
@@ -1766,11 +1875,11 @@
 			 * _Этот метод является частью Objective-Root._
 			 *
 			 * @param {?number}							processID	Идентификатор процесса.
-			 * @param {!Object}							caller		Обращающийся контекст.
-			 * @param {!Object}							class_		Класс обращения.
+			 * @param {Object}							caller		Обращающийся контекст.
+			 * @param {Object}							class_		Класс обращения.
 			 * @param {?string}							field		Поле обращения.
 			 * @param {?('get'|'set'|'call'|'delete')}	type		Тип обращения. Получение (по умолчанию), присваивание, вызов и удаление.
-			 * @param {?Object}							arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
+			 * @param {?*}								arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
 			 */
 			classProtected(processID, caller, class_, field, type = 'get', ...arguments_) {
 				if(this.verbose && (!caller || !class_)) {
@@ -1876,12 +1985,13 @@
 			 *
 			 * _Этот метод является частью Objective-Root._
 			 *
-			 * @param {!string} a Сырой код.
+			 * @param	{string} code Сырой код.
+			 * @returns	{string}
 			 */
-			codePrepare(a) {
+			codePrepare(code) {
 				let { visit, builders } = require('ast-types');
 
-				a = require('flow-parser').parse(a, {
+				let ast = require('flow-parser').parse(code, {
 					esproposal_class_instance_fields: true,
 					esproposal_class_static_fields: true,
 					esproposal_decorators: true,
@@ -1890,7 +2000,7 @@
 					esproposal_optional_chaining: true
 				});
 
-				visit(a, {
+				visit(ast, {
 					visitIdentifier(path) {
 					//	let _protected;		===	let undefined;
 
@@ -1918,7 +2028,7 @@
 						this.traverse(path);
 					}
 				});
-				visit(a, {
+				visit(ast, {
 					visitAnyTypeAnnotation(path) {
 						delete path.node.loc;
 						delete path.node.range;
@@ -1998,15 +2108,18 @@
 					}
 				});
 
-				a = require('recast').print(a).code;
+				code = require('recast').print(ast).code;
 
-				return a;
+				return code;
 			}
 
 			system() {
 				return require('os');
 			}
 
+			/**
+			 * Перезапускает Окружение.
+			 */
 			environmentRelaunch(process) {
 				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
 
@@ -2017,6 +2130,9 @@
 				chrome.runtime.reload();
 			}
 
+			/**
+			 * Завершает Окружение.
+			 */
 			environmentQuit(process) {
 				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
 
