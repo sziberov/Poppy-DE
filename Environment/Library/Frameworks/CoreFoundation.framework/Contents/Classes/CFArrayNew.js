@@ -1,28 +1,23 @@
 // noinspection JSAnnotator
 return class CFArray extends CFObject {
-	static indexes(array) {
-		let indexes = []
-
-		for(let k in this.keys(array)) {
-			if(k.isInteger()) {
-				indexes.push(parseInt(k));
-			}
-		}
-
-		return indexes;
-	}
-
-	/*
 	static add(array, ...value) {
-		if(!super.isArray(array)) {
+		if(!Object.isObject(array) || !Object.isKindOf(array, this) || !Array.isArray(array)) {
 			throw new TypeError(0);
 		}
 
 		(array.add || array.push)(...value);
 	}
 
+	static contains(array, value) {
+		if(!Object.isObject(array) || !Object.isKindOf(array, this) || !Array.isArray(array)) {
+			throw new TypeError(0);
+		}
+
+		return (array.contains || array.includes)(value);
+	}
+
 	static remove(array, ...value) {
-		if(!super.isArray(array)) {
+		if(!Object.isObject(array) || !Object.isKindOf(array, this) || !Array.isArray(array)) {
 			throw new TypeError(0);
 		}
 
@@ -35,15 +30,6 @@ return class CFArray extends CFObject {
 			}
 		}
 	}
-
-	static contains(array, value) {
-		if(!super.isArray(array)) {
-			throw new TypeError(0);
-		}
-
-		return (array.contains || array.includes)(value);
-	}
-	*/
 
 	[Symbol.collection] = true;
 
@@ -69,13 +55,17 @@ return class CFArray extends CFObject {
 		return this.__count;
 	}
 
+	get empty() {
+		return this.count === 0;
+	}
+
 	set count(value) {
 		if(value > this.count) {
 			throw new RangeError(0);
 		}
 
 		while(this.count > value) {
-			this.remove(this[this.count-1]);
+			this.removeLast();
 		}
 	}
 
@@ -124,9 +114,26 @@ return class CFArray extends CFObject {
 		}
 	}
 
-	[Symbol.iterator] = function*() {
-		for(let v of Object.values(this)) {
-			yield v;
+	[Symbol.iterator]() {
+		let done,
+			value,
+			k = 0;
+
+		return {
+			next: () => {
+				if(k < this.count) {
+					done = false;
+					value = this[k]
+					k = k+1;
+				} else {
+					done = true;
+				}
+
+				return {
+					done: done,
+					value: value
+				}
+			}
 		}
 	}
 
@@ -136,11 +143,11 @@ return class CFArray extends CFObject {
 		}
 	}
 
-	firstIndex(value) {
-		return this.constructor.indexes(this).find(k => this[k] === value);
-	}
-
 	first(function_) {
+		if(typeof function_ !== 'function') {
+			throw new TypeError(0);
+		}
+
 		for(let v of this) {
 			if(function_(v)) {
 				return v;
@@ -148,7 +155,47 @@ return class CFArray extends CFObject {
 		}
 	}
 
+	firstIndex({ of, where } = {}) {
+		if(where && typeof where !== 'function') {
+			throw new TypeError(0);
+		}
+
+		for(let k = 0; k < this.count; k++) {
+			if(!where ? this[k] === of : where(this[k])) {
+				return k;
+			}
+		}
+	}
+
+	last(function_) {
+		if(typeof function_ !== 'function') {
+			throw new TypeError(0);
+		}
+
+		for(let k = this.count-1; k > -1; k--) {
+			if(function_(this[k])) {
+				return this[k]
+			}
+		}
+	}
+
+	lastIndex({ of, where } = {}) {
+		if(where && typeof where !== 'function') {
+			throw new TypeError(0);
+		}
+
+		for(let k = this.count-1; k > -1; k--) {
+			if(!where ? this[k] === of : where(this[k])) {
+				return k;
+			}
+		}
+	}
+
 	filter(function_) {
+		if(typeof function_ !== 'function') {
+			throw new TypeError(0);
+		}
+
 		let filter = []
 
 		for(let v of this) {
@@ -161,6 +208,10 @@ return class CFArray extends CFObject {
 	}
 
 	allSatisfy(function_) {
+		if(typeof function_ !== 'function') {
+			throw new TypeError(0);
+		}
+
 		for(let v of this) {
 			if(!function_(v)) {
 				return false;
@@ -171,7 +222,7 @@ return class CFArray extends CFObject {
 	}
 
 	contains(value) {
-		return this.first(v => v === value) !== undefined;
+		return this.firstIndex({ of: value }) !== undefined;
 	}
 
 	min() {
@@ -197,24 +248,59 @@ return class CFArray extends CFObject {
 	remove(...value) {
 		for(let v of value) {
 			if(this.contains(v)) {
-				delete this[this.firstIndex(v)]
+				delete this[this.firstIndex({ of: v })]
 			}
 		}
 	}
 
-	removeByFilter(function_) {
-		if(typeof function_ !== 'function') {
-			throw new TypeError(0);
+	removeFirst(times = 1) {
+		if(!Number.isInteger(times))		throw new TypeError(0);
+		if(times < 0 || times > this.count)	throw new RangeError(1);
+		if(this.count < 1)					return;
+
+		let value = times === 1 ? this[0] : undefined;
+
+		for(let i = 0; i < times; i++) {
+			delete this[0]
 		}
 
-		for(let v of this) {
-			if(function_(v)) {
-				this.remove(v);
-			}
-		}
+		return value;
 	}
 
-	removeAll() {
-		this.count = 0;
+	removeLast(times = 1) {
+		if(!Number.isInteger(times))		throw new TypeError(0);
+		if(times < 0 || times > this.count)	throw new RangeError(1);
+		if(this.count < 1)					return;
+
+		let value = times === 1 ? this[this.count-1] : undefined;
+
+		for(let i = 0; i < times; i++) {
+			delete this[this.count-1]
+		}
+
+		return value;
+	}
+
+	removeAll({ where, keepCount = false } = {}) {
+		if(where && typeof where !== 'function')	throw new TypeError(0);
+		if(typeof keepCount !== 'boolean')			throw new TypeError(1);
+
+		if(!keepCount) {
+			if(!where) {
+				this.count = 0;
+			} else {
+				for(let k = this.count-1; k > -1; k--) {
+					if(where(this[k])) {
+						delete this[k]
+					}
+				}
+			}
+		} else {
+			for(let k = 0; k < this.count; k++) {
+				if(!where || where && where(this[k])) {
+					this[k] = undefined;
+				}
+			}
+		}
 	}
 }

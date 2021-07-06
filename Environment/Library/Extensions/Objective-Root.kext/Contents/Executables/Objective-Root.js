@@ -164,6 +164,10 @@ window.String.prototype.isInteger = function() {
 	return this.valueOf() === parseInt(this.valueOf(), 10).toString();
 }
 
+window.Number.isInteger = (value) => {
+	return typeof(value) === 'number' && value === Math.abs(value);
+}
+
 window.Number.prototype.toHexString = function() {
 	return '0x'+(this.valueOf()+0x10000).toString(16).substr(-4).toUpperCase();
 }
