@@ -33,7 +33,6 @@ return class CFArray extends CFObject {
 
 	__count = 0;
 	__type;
-	__shouldNotifyObservers = true;
 
 	constructor(value) {
 		super({});
@@ -129,16 +128,17 @@ return class CFArray extends CFObject {
 	[Symbol.set](self, key, value) {
 		if(typeof key !== 'number' && !key.isInteger()) {
 			self[key] = value; return;
+		} else {
+			key = parseInt(key);
 		}
 		if(this.__type && !Object.isKindOf(value, this.__type)) {
 			throw new TypeError(0);
 		}
 
-		let observers = this.constructor.__observation.observers.filter(v => v.object === this),
-			in_ = key in this;
+		let in_ = key in this;
 
 		if(this.__shouldNotifyObservers) {
-			for(let v of observers) {
+			for(let v of this.__observers || []) {
 				v.function(in_ ? 'willChangeValueForIndex' : 'willAddIndex', key, value);
 			}
 		}
@@ -149,7 +149,7 @@ return class CFArray extends CFObject {
 			self[key] = value;
 		}
 		if(this.__shouldNotifyObservers) {
-			for(let v of observers) {
+			for(let v of this.__observers || []) {
 				v.function(in_ ? 'didChangeValueForIndex' : 'didAddIndex', key, value);
 			}
 		}
@@ -158,32 +158,51 @@ return class CFArray extends CFObject {
 	}
 
 	[Symbol.delete](self, key) {
+		if(!(key in this)) {
+			return;
+		}
+
+		let value = this[key]
+
 		if(typeof key !== 'number' && !key.isInteger()) {
-			delete self[key]; return;
-		}
-
-		let observers = this.constructor.__observation.observers.filter(v => v.object === this);
-
-		if(this.__shouldNotifyObservers) {
-			for(let v of observers) {
-				v.function('willRemoveIndex', key);
-			}
-		}
-		if(key < this.count) {
 			delete self[key]
 
-			for(let k in this) {
-				if(k >= key) {
-					this[k-1] = this[k]
-				}
+			if(Object.isObject(value) && value !== this) {
+				value.release?.();
 			}
 
-			delete self[this.count-1]
-			this.__count = this.__count-1;
+			return;
+		} else {
+			key = parseInt(key);
 		}
+
 		if(this.__shouldNotifyObservers) {
-			for(let v of observers) {
-				v.function('didRemoveIndex', key);
+			for(let v of this.__observers || []) {
+				v.function('willRemoveIndex', key, value);
+			}
+		}
+
+		delete self[key]
+
+		if(Object.isObject(value) && value !== this) {
+			value.release?.();
+		}
+
+		let snoBackup = this.__shouldNotifyObservers;
+
+		this.__shouldNotifyObservers = false;
+		for(let k in this) {
+			if(k >= key) {
+				this[k-1] = this[k]
+			}
+		}
+		delete self[this.count-1]
+		this.__count = this.__count-1;
+		this.__shouldNotifyObservers = snoBackup;
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers || []) {
+				v.function('didRemoveIndex', key, value);
 			}
 		}
 
@@ -223,18 +242,17 @@ return class CFArray extends CFObject {
 			this[this.count] = values[0]
 		}
 		if(values.length > 1) {
-			let observers = this.constructor.__observation.observers.filter(v => v.object === this),
-				indexes = new Array(values.length).fill().map((v, k) => this.count+k);
+			let indexes = new Array(values.length).fill().map((v, k) => this.count+k);
 
 			this.__shouldNotifyObservers = false;
 
-			for(let v of observers) {
+			for(let v of this.__observers || []) {
 				v.function('willAdd', indexes, values);
 			}
 			for(let v of values) {
 				this[this.count] = v;
 			}
-			for(let v of observers) {
+			for(let v of this.__observers || []) {
 				v.function('didAdd', indexes, values);
 			}
 
@@ -255,8 +273,7 @@ return class CFArray extends CFObject {
 			throw new TypeError(0);
 		}
 
-		let observers = this.constructor.__observation.observers.filter(v => v.object === this),
-			left = new Array(at).fill().map((v, k) => this[k]),
+		let left = new Array(at).fill().map((v, k) => this[k]),
 			middle = contentsOf ?? [element],
 			right = new Array(this.count-at).fill().map((v, k) => this[at+k]),
 			sum = [...left, ...middle, ...right],
@@ -264,7 +281,7 @@ return class CFArray extends CFObject {
 
 		this.__shouldNotifyObservers = false;
 
-		for(let v of observers) {
+		for(let v of this.__observers || []) {
 			if(!contentsOf) {
 				v.function('willInsertIndex', at, element);
 			} else {
@@ -274,7 +291,7 @@ return class CFArray extends CFObject {
 		for(let k in sum) {
 			this[k] = sum[k]
 		}
-		for(let v of observers) {
+		for(let v of this.__observers || []) {
 			if(!contentsOf) {
 				v.function('didInsertIndex', at, element);
 			} else {
@@ -450,13 +467,34 @@ return class CFArray extends CFObject {
 	/**
 	 * Удаляет первое вхождение заданного элемента из массива.
 	 *
-	 * @param {*} value
+	 * @param {*} values
 	 */
-	remove(...value) {
-		for(let v of value) {
+	remove(...values) {
+		let indexes = []
+
+		for(let v of values) {
 			if(this.contains(v)) {
-				delete this[this.firstIndex({ of: v })]
+				indexes.push(this.firstIndex({ of: v }));
 			}
+		}
+
+		if(indexes.length === 1) {
+			delete this[indexes[0]]
+		}
+		if(indexes.length > 1) {
+			this.__shouldNotifyObservers = false;
+
+			for(let v of this.__observers || []) {
+				v.function('willRemove', indexes, values);
+			}
+			for(let k of [...indexes].reverse()) {
+				delete this[k]
+			}
+			for(let v of this.__observers || []) {
+				v.function('didRemove', indexes, values);
+			}
+
+			this.__shouldNotifyObservers = true;
 		}
 	}
 
@@ -524,9 +562,31 @@ return class CFArray extends CFObject {
 		} else {
 			for(let k = 0; k < this.count; k++) {
 				if(!where || where && where(this[k])) {
+					let value = this[k]
+
 					this[k] = undefined;
+
+					if(Object.isObject(value) && value !== this) {
+						value.release?.();
+					}
 				}
 			}
 		}
+	}
+
+	release(forced = false) {
+		if(!forced && this.__retained) {
+			this.__retained = false; return;
+		}
+
+		this.remove(...this);
+
+		super.release();
+	}
+
+	destructor() {
+		this.removeAll({ where: () => true });
+
+		super.destructor();
 	}
 }

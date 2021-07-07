@@ -1899,7 +1899,7 @@
 					mutating = type === 'set' && !(field in class_) || type === 'delete' && field in class_,
 					environment = this.processes.find(v => v.ID === processID)?.environment,
 					global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
-					equals = Object.isMemberOf(caller, class_),
+					equals = Object.isMemberOf(caller, class_) || caller === class_,
 					inherits = Object.isKindOf(caller, class_),
 					friends = (class_.constructor || class_).__friends__ || [],
 					befriends = !!friends.find(v => Object.isMemberOf(caller, v)),

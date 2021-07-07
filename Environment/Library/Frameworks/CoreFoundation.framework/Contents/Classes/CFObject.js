@@ -38,6 +38,9 @@ return class CFObject extends Object {
 
 	[Symbol.collection] = false;
 
+	__retained = false;
+	__shouldNotifyObservers = true;
+
 	constructor(object) {
 		super();
 
@@ -48,6 +51,11 @@ return class CFObject extends Object {
 
 			this[Symbol.collection] = true;
 
+			for(let k in this) {
+				Object.defineProperty(this, k, {
+					enumerable: false
+				});
+			}
 			for(let k in object) {
 				if(['__proto__', '__friends__'].includes(k) || typeof object[k] === 'symbol') {
 					continue;
@@ -61,6 +69,10 @@ return class CFObject extends Object {
 		}
 	}
 
+	get __observers() {
+		return this.constructor.__observation.observers.filter(v => v.object === this);
+	}
+
 	[Symbol.get](self, key) {
 		let value = self[key]
 
@@ -70,17 +82,20 @@ return class CFObject extends Object {
 	}
 
 	[Symbol.set](self, key, value) {
-		let observers = this.constructor.__observation.observers.filter(v => v.object === this),
-			in_ = key in this;
+		let in_ = key in this;
 
-		for(let v of observers) {
-			v.function(in_ ? 'willChangeValueForKey' : 'willAddKey', key);
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers || []) {
+				v.function(in_ ? 'willChangeValueForKey' : 'willAddKey', key, !key.startsWith('_') ? value : undefined);
+			}
 		}
 
 		self[key] = value;
 
-		for(let v of observers) {
-			v.function(in_ ? 'didChangeValueForKey' : 'didAddKey', key);
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers || []) {
+				v.function(in_ ? 'didChangeValueForKey' : 'didAddKey', key, !key.startsWith('_') ? value : undefined);
+			}
 		}
 
 		CFEvent.dispatch(undefined, _title+'Notification', { object: this, event: in_ ? 'changed' : 'added', key: key });
@@ -95,16 +110,28 @@ return class CFObject extends Object {
 	}
 
 	[Symbol.delete](self, key) {
-		let observers = this.constructor.__observation.observers.filter(v => v.object === this);
+		if(!(key in this)) {
+			return;
+		}
 
-		for(let v of observers) {
-			v.function('willRemoveKey', key);
+		let value = this[key]
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers || []) {
+				v.function('willRemoveKey', key, !key.startsWith('_') ? value : undefined);
+			}
 		}
 
 		delete self[key]
 
-		for(let v of observers) {
-			v.function('didRemoveKey', key);
+		if(this[Symbol.collection] === true && Object.isObject(value)) {
+			value.release?.();
+		}
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers || []) {
+				v.function('didRemoveKey', key, !key.startsWith('_') ? value : undefined);
+			}
 		}
 
 		CFEvent.dispatch(undefined, _title+'Notification', { object: this, event: 'removed', key: key });
@@ -163,15 +190,29 @@ return class CFObject extends Object {
 		}
 	}
 
-	release() {
-		for(let v of this.constructor.__observation.observers.filter(v => v.object === this)) {
-			this.removeObserver(v.processInfo, v.ID);
+	retain() {
+		this.__retained = true;
+	}
+
+	release(forced = false) {
+		if(!forced && this.__retained) {
+			this.__retained = false; return;
 		}
 
 		if(this[Symbol.collection] === true) {
-			for(let v of Object.values(this).filter(v => Object.isObject(v))) {
-				v.release?.();
+			for(let k of Object.getOwnPropertyNames(this)) {
+				let value = this[k]
+
+				delete this[k]
+
+				if(Object.isObject(value) && value !== this) {
+					value.release?.();
+				}
 			}
+		}
+
+		for(let v of this.constructor.__observation.observers.filter(v => v.object === this)) {
+			this.removeObserver(v.processInfo, v.ID);
 		}
 
 		this.destructor();
