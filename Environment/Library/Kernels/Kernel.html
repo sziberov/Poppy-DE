@@ -1954,8 +1954,10 @@
 							} else {
 								class_[field] = arguments_[0]
 							}
-						} catch {					// TypeError
-						//	console.warn('43X');	// Какая-то рандомная проблема с Proxy и SE
+						} catch(error) {
+							if(!error.message.startsWith(`'set' on proxy: trap returned falsish`)) {	// TypeError (какая-то рандомная проблема с Proxy и SE)
+								throw error;
+							}
 						}
 
 						return class_[field]
