@@ -35,18 +35,16 @@ return class CFArray extends CFObject {
 
 	__count = 0;
 	__type;
+	__shouldNotifyObservers = true;
 
 	constructor(array, type) {
 		super();
 
-		Object.defineProperties(this, {
-			__count: {
+		for(let k in this) {
+			Object.defineProperty(this, k, {
 				enumerable: false
-			},
-			__type: {
-				enumerable: false
-			}
-		});
+			});
+		}
 
 		if(type) {
 			if(typeof type !== 'function') {
@@ -125,8 +123,10 @@ return class CFArray extends CFObject {
 		let observers = this.constructor.__observation.observers.filter(v => v.object === this),
 			in_ = key in this;
 
-		for(let v of observers) {
-			v.function(in_ ? 'willChange' : 'willAdd', key, value);
+		if(this.__shouldNotifyObservers) {
+			for(let v of observers) {
+				v.function(in_ ? 'willChangeValueForIndex' : 'willAddIndex', key, value);
+			}
 		}
 
 		if(key >= this.count) {
@@ -136,16 +136,26 @@ return class CFArray extends CFObject {
 			self[key] = value;
 		}
 
-		for(let v of observers) {
-			v.function(in_ ? 'didChange' : 'didAdd', key, value);
+		if(this.__shouldNotifyObservers) {
+			for(let v of observers) {
+				v.function(in_ ? 'didChangeValueForIndex' : 'didAddIndex', key, value);
+			}
 		}
 
-		CFEvent.dispatch(undefined, _title+'Changed', this, { event: in_ ? 'changed' : 'added', key: key, value: value });
+		CFEvent.dispatch(undefined, _title+'Notification', { object: this, event: in_ ? 'changed' : 'added', key: key });
 	}
 
 	[Symbol.delete](self, key) {
 		if(typeof key !== 'number' && !key.isInteger()) {
 			return super[Symbol.delete](self, key);
+		}
+
+		let observers = this.constructor.__observation.observers.filter(v => v.object === this);
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of observers) {
+				v.function('willRemoveIndex', key);
+			}
 		}
 
 		if(key < this.count) {
@@ -160,6 +170,14 @@ return class CFArray extends CFObject {
 			delete self[this.count-1]
 			this.__count = this.__count-1;
 		}
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of observers) {
+				v.function('didRemoveIndex', key);
+			}
+		}
+
+		CFEvent.dispatch(undefined, _title+'Notification', { object: this, event: 'removed', key: key });
 	}
 
 	[Symbol.iterator]() {
@@ -194,6 +212,22 @@ return class CFArray extends CFObject {
 		for(let v of value) {
 			this[this.count] = v;
 		}
+	}
+
+	/**
+	 * Вставляет новый элемент или элементы массива в указанную позицию.
+	 *
+	 * @param {Object}	object
+	 * @param {*}		object.element		Элемент
+	 * @param {*[]}		object.contentsOf	Массив элементов
+	 * @param {number}	object.at			Позиция
+	 */
+	insert({ element, contentsOf, at } = {}) {
+		if(contentsOf && !Array.isArray(contentsOf) && !Object.isKindOf(contentsOf, CFArray)) {
+			throw new TypeError(0);
+		}
+
+		// TODO
 	}
 
 	/**

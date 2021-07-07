@@ -64,7 +64,7 @@ return class CFObject extends Object {
 	[Symbol.get](self, key) {
 		let value = self[key]
 
-		CFEvent.dispatch(undefined, _title+'Changed', this, { event: 'get', key: key });
+		CFEvent.dispatch(undefined, _title+'Notification', { object: this, event: 'get', key: key });
 
 		return value;
 	}
@@ -74,22 +74,22 @@ return class CFObject extends Object {
 			in_ = key in this;
 
 		for(let v of observers) {
-			v.function(in_ ? 'willChange' : 'willAdd', key);
+			v.function(in_ ? 'willChangeValueForKey' : 'willAddKey', key);
 		}
 
 		self[key] = value;
 
 		for(let v of observers) {
-			v.function(in_ ? 'didChange' : 'didAdd', key);
+			v.function(in_ ? 'didChangeValueForKey' : 'didAddKey', key);
 		}
 
-		CFEvent.dispatch(undefined, _title+'Changed', this, { event: in_ ? 'changed' : 'added', key: key });
+		CFEvent.dispatch(undefined, _title+'Notification', { object: this, event: in_ ? 'changed' : 'added', key: key });
 	}
 
 	[Symbol.call](self, key, ...arguments_) {
 		let value = self[key](...arguments_);
 
-		CFEvent.dispatch(undefined, _title+'Changed', this, { event: 'called', key: key });
+		CFEvent.dispatch(undefined, _title+'Notification', { object: this, event: 'called', key: key });
 
 		return value;
 	}
@@ -98,16 +98,16 @@ return class CFObject extends Object {
 		let observers = this.constructor.__observation.observers.filter(v => v.object === this);
 
 		for(let v of observers) {
-			v.function('willRemove', key);
+			v.function('willRemoveKey', key);
 		}
 
 		delete self[key]
 
 		for(let v of observers) {
-			v.function('didRemove', key);
+			v.function('didRemoveKey', key);
 		}
 
-		CFEvent.dispatch(undefined, _title+'Changed', this, { event: 'removed', key: key });
+		CFEvent.dispatch(undefined, _title+'Notification', { object: this, event: 'removed', key: key });
 	}
 
 	shallowlyEquals(object) {
