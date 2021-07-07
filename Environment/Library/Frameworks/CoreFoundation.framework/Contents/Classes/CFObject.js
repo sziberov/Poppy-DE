@@ -190,11 +190,23 @@ return class CFObject extends Object {
 		}
 	}
 
+	/**
+	 * Перевод объект в режим удержания, что не позволит следующему запросу [release(forced = false)]{@link release} запуститься.
+	 */
 	retain() {
 		this.__retained = true;
 	}
 
+	/**
+	 * Сообщает объекту об окончании работы с ним, что ведёт к естественному освобождению памяти.
+	 * Если объект является коллекцией, всем полям также посылается данное сообщение.
+	 *
+	 * @param {boolean} forced Игнорирование режима удержания.
+	 */
 	release(forced = false) {
+		if(typeof forced !== 'boolean') {
+			throw new TypeError(0);
+		}
 		if(!forced && this.__retained) {
 			this.__retained = false; return;
 		}
@@ -218,6 +230,11 @@ return class CFObject extends Object {
 		this.destructor();
 	}
 
+	/**
+	 * Освобождает память, занятую объектом, удаляя все его поля и прототип.
+	 * <br>
+	 * _Этот метод является составной частью [release()]{@link release} и не рекомендуется для самостоятельного вызова._
+	 */
 	destructor() {
 		for(let k of [...Object.getOwnPropertyNames(this), ...Object.getOwnPropertySymbols(this)]) {
 			delete this[k]

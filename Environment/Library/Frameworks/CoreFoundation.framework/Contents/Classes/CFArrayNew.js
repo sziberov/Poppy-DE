@@ -263,10 +263,10 @@ return class CFArray extends CFObject {
 	/**
 	 * Вставляет новый элемент или элементы массива в указанную позицию.
 	 *
-	 * @param {Object}	object
-	 * @param {?*}		object.element		Элемент
-	 * @param {?*[]}	object.contentsOf	Массив элементов
-	 * @param {number}	object.at			Позиция
+	 * @param {Object}	o
+	 * @param {?*}		o.element		Элемент
+	 * @param {?*[]}	o.contentsOf	Массив элементов
+	 * @param {number}	o.at			Позиция
 	 */
 	insert({ element, contentsOf, at } = {}) {
 		if(contentsOf && !Array.isArray(contentsOf) && !Object.isKindOf(contentsOf, CFArray)) {
@@ -320,6 +320,15 @@ return class CFArray extends CFObject {
 		}
 	}
 
+	/**
+	 * Возвращает первую позицию, на которой заданный элемент появляется в массиве,
+	 * либо элемент массива удовлетворяет заданному предикату.
+	 *
+	 * @param	{Object}	o
+	 * @param	{?*}		o.of	Элемент.
+	 * @param	{?Function}	o.where	Предикат.
+	 * @returns	{?number}
+	 */
 	firstIndex({ of, where } = {}) {
 		if(where && typeof where !== 'function') {
 			throw new TypeError(0);
@@ -350,6 +359,15 @@ return class CFArray extends CFObject {
 		}
 	}
 
+	/**
+	 * Возвращает последнюю позицию, на которой заданный элемент появляется в массиве,
+	 * либо элемент массива удовлетворяет заданному предикату.
+	 *
+	 * @param	{Object}	o
+	 * @param	{?*}		o.of	Элемент.
+	 * @param	{?Function}	o.where	Предикат.
+	 * @returns	{?number}
+	 */
 	lastIndex({ of, where } = {}) {
 		if(where && typeof where !== 'function') {
 			throw new TypeError(0);
@@ -541,9 +559,9 @@ return class CFArray extends CFObject {
 	/**
 	 * Удаляет либо все элементы из массива, либо удовлетворяющие заданному предикату.
 	 *
-	 * @param {Object}		object
-	 * @param {Function}	object.where		Предикат.
-	 * @param {boolean}		object.keepCount	Сохранение количества элементов с очисткой позиций.
+	 * @param {Object}		o
+	 * @param {Function}	o.where		Предикат.
+	 * @param {boolean}		o.keepCount	Сохранение количества элементов с очисткой позиций.
 	 */
 	removeAll({ where, keepCount = false } = {}) {
 		if(where && typeof where !== 'function')	throw new TypeError(0);
@@ -575,6 +593,9 @@ return class CFArray extends CFObject {
 	}
 
 	release(forced = false) {
+		if(typeof forced !== 'boolean') {
+			throw new TypeError(0);
+		}
 		if(!forced && this.__retained) {
 			this.__retained = false; return;
 		}
