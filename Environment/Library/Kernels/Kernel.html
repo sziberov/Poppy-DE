@@ -1876,9 +1876,9 @@
 			 *
 			 * @param {?number}							processID	Идентификатор процесса.
 			 * @param {Object}							caller		Обращающийся контекст.
-			 * @param {Object}							class_		Класс обращения.
-			 * @param {?string}							field		Поле обращения.
-			 * @param {?('get'|'set'|'call'|'delete')}	type		Тип обращения. Получение (по умолчанию), присваивание, вызов и удаление.
+			 * @param {Object}							class_		Класс или объект.
+			 * @param {?string}							field		Поле.
+			 * @param {?('get'|'set'|'call'|'delete')}	type		Тип обращения: получение (по умолчанию), присваивание, вызов и удаление.
 			 * @param {?*}								arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
 			 */
 			classProtected(processID, caller, class_, field, type = 'get', ...arguments_) {

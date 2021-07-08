@@ -592,21 +592,8 @@ return class CFArray extends CFObject {
 		}
 	}
 
-	release(forced = false) {
-		if(typeof forced !== 'boolean') {
-			throw new TypeError(0);
-		}
-		if(!forced && this.__retained) {
-			this.__retained = false; return;
-		}
-
-		this.remove(...this);
-
-		super.release();
-	}
-
 	destructor() {
-		this.removeAll({ where: () => true });
+		this.remove(...this);
 
 		super.destructor();
 	}

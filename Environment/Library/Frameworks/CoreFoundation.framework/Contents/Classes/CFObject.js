@@ -73,6 +73,10 @@ return class CFObject extends Object {
 		return this.constructor.__observation.observers.filter(v => v.object === this);
 	}
 
+	get retained() {
+		return this.__retained;
+	}
+
 	[Symbol.get](self, key) {
 		let value = self[key]
 
@@ -191,53 +195,53 @@ return class CFObject extends Object {
 	}
 
 	/**
-	 * Перевод объект в режим удержания, что не позволит следующему запросу [release(forced = false)]{@link release} запуститься.
+	 * Перевод объект в режим удержания, что не позволит (одному) следующему запросу [release()]{@link CFObject.release} запуститься.
 	 */
 	retain() {
 		this.__retained = true;
 	}
 
 	/**
-	 * Сообщает объекту об окончании работы с ним, что ведёт к естественному освобождению памяти.
-	 * Если объект является коллекцией, всем полям также посылается данное сообщение.
+	 * Сообщает объекту об окончании работы с ним, что ведёт к освобождению памяти, если он не находится в режиме удержания,
+	 * и возвращает логическое значение, указывающее, выполнен ли запрос.
 	 *
-	 * @param {boolean} forced Игнорирование режима удержания.
+	 * @returns {boolean}
 	 */
-	release(forced = false) {
-		if(typeof forced !== 'boolean') {
-			throw new TypeError(0);
-		}
-		if(!forced && this.__retained) {
-			this.__retained = false; return;
-		}
+	release() {
+		if(this.__retained) {
+			this.__retained = false;
 
-		if(this[Symbol.collection] === true) {
-			for(let k of Object.getOwnPropertyNames(this)) {
-				let value = this[k]
-
-				delete this[k]
-
-				if(Object.isObject(value) && value !== this) {
-					value.release?.();
-				}
-			}
-		}
-
-		for(let v of this.constructor.__observation.observers.filter(v => v.object === this)) {
-			this.removeObserver(v.processInfo, v.ID);
+			return false;
 		}
 
 		this.destructor();
+
+		return true;
 	}
 
 	/**
-	 * Освобождает память, занятую объектом, удаляя все его поля и прототип.
+	 * Освобождает память, занятую объектом, в порядке:
+	 * - Поля
+	 * - Наблюдатели
+	 * - Прототип
 	 * <br>
-	 * _Этот метод является составной частью [release()]{@link release} и не рекомендуется для самостоятельного вызова._
+	 * Каждому полю также остылается сообщение [release()]{@link CFObject.release} после его удаления.
+	 * <br>
+	 * _Этот метод является скорее служебным чем публичным и не рекомендуется для прямого вызова в обход [release()]{@link CFObject.release}._
 	 */
 	destructor() {
 		for(let k of [...Object.getOwnPropertyNames(this), ...Object.getOwnPropertySymbols(this)]) {
+			let value = this[k]
+
 			delete this[k]
+
+			if(Object.isObject(value) && value !== this) {
+				value.release?.();
+			}
+		}
+
+		for(let v of this.__observers) {
+			this.removeObserver(v.processInfo, v.ID);
 		}
 
 		this.__proto__ = null;
