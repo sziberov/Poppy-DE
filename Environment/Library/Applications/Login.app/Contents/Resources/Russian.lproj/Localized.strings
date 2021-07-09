@@ -10,6 +10,12 @@
 	"View as Analog": "В Аналоговом Виде",
 	"View as Digital": "В Цифровом Виде",
 	"Date & Time Preferences...": "Предпочтения Даты и Времени...",
+	"Processor": "Процессор",
+	"Memory": "Память",
+	"Graphics": "Графика",
+	"Software": "ПО",
+	"Serial Number": "Серийный Номер",
+	"Unknown": "Неизвестно",
 	"Force Quit Applications": "Принудительное Завершение Приложений",
 	"Force Quit Applications_Description": "Если приложение долгое время не отвечает, выберете его название и нажмите «Завершить»."
 }

@@ -1,7 +1,10 @@
-/*
-	CoreGraphics Framework v0.1:
-		Contains appearance|elements|font management tools.
-*/
+/**
+ * CoreGraphics Framework
+ *
+ * Contains appearance|elements|font management tools.
+ *
+ * @version 0.1
+ */
 
 _import('CoreFoundation');
 

@@ -102,53 +102,41 @@ return class {
 	}
 
 	about() {
-		var bytesConvert = (a) => {
-				var b = ['Bytes', 'KB', 'MB', 'GB', 'TB'],
-					c = parseInt(Math.floor(Math.log(a) / Math.log(1024))),
-					d = (a === 0 ? '0 Bytes' : Math.round(a / Math.pow(1024, c), 2) + ' ' + b[c]);
+		let bytesConvert = (a) => {
+				let b = ['Bytes', 'KB', 'MB', 'GB', 'TB'],
+					c = Math.floor(Math.log(a)/Math.log(1024)),
+					d = (a === 0 ? '0 Bytes' : Math.round(a/Math.pow(1024, c))+' '+b[c]);
 
 				return d;
 			},
 			system = _call('system'),
 			pc = 'Poppy Monoblock Pro 2019', //system.hostname(),
-			cpu = system.cpus()[0].model,
+			cpu = system.cpus()[0].model+' x'+system.cpus().length,
 			memory = bytesConvert(system.totalmem()),
-			gpu = (() => {
-				var variable;
-				/*
-				require('child_process').execSync('wmic path win32_VideoController get name', (error, stdout, stderr) => {
-					if(!_error && !_stderr) {
-						variable = stdout.replace('Name ', '').trim();
-					}
-				});
-				*/
-			//	console.log(variable);
-
-				return variable;
-			})(),
+			gpu = system.gpu,
 			software = _call('version', 'DE').join(' '),
 			window = LFApp.windows.find(v => v.tag === 'about');
 
 		if(!window) {
-			new LFWindow({ tag: 'about', width: 512, height: 184, type: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
+			new LFWindow({ tag: 'about', width: 512, height: 184, /*background: CGColor('100', '100', '100'),*/ type: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
 				new LFView({ yAlign: 'center', subviews: [
 					new LFImage({ width: 128, height: 128, shared: 'Monoblock' }),
 					new LFView({ type: 'vertical', subviews: [
 						new LFText({ string: pc, size: 'big', weight: 'bold' }),
 						new LFView({ subviews: [
 							new LFView({ type: 'vertical', tight: true, subviews: [
-								new LFText({ string: 'Processor', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Memory', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Graphics', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Software', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Serial Number', size: 'small', weight: 'bold' }),
+								new LFText({ string: CFLocalizedString('Processor'), size: 'small', weight: 'bold' }),
+								new LFText({ string: CFLocalizedString('Memory'), size: 'small', weight: 'bold' }),
+								new LFText({ string: CFLocalizedString('Graphics'), size: 'small', weight: 'bold' }),
+								new LFText({ string: CFLocalizedString('Software'), size: 'small', weight: 'bold' }),
+								new LFText({ string: CFLocalizedString('Serial Number'), size: 'small', weight: 'bold' }),
 							] }),
 							new LFView({ type: 'vertical', tight: true, subviews: [
 								new LFText({ string: cpu, size: 'small' }),
 								new LFText({ string: memory, size: 'small' }),
-								new LFText({ string: gpu || 'Unknown', size: 'small' }),
+								new LFText({ string: gpu ?? CFLocalizedString('Unknown'), size: 'small' }),
 								new LFText({ string: software, size: 'small' }),
-								new LFText({ string: 'Unknown', size: 'small' })
+								new LFText({ string: CFLocalizedString('Unknown'), size: 'small' })
 							] })
 						] })
 					] })

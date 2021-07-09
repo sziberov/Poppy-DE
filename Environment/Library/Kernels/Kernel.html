@@ -708,12 +708,11 @@
 			}
 			*/
 
-			drColor(red, green, blue, alpha) {
-				red = typeof red == 'string' ? red+'%': red;
-				green = typeof green == 'string' ? green+'%': green;
-				blue = typeof blue == 'string' ? blue+'%': blue;
-				alpha ??= 1;
-				alpha = typeof alpha == 'string' ? Number(alpha)/100 : alpha;
+			drColor(red, green, blue, alpha = 1) {
+				red = typeof red === 'string' ? red+'%': red;
+				green = typeof green === 'string' ? green+'%': green;
+				blue = typeof blue === 'string' ? blue+'%': blue;
+				alpha = typeof alpha === 'string' ? Number(alpha)/100 : alpha;
 
 				return `rgba(${ red }, ${ green }, ${ blue }, ${ alpha })`;
 			}
@@ -2035,6 +2034,15 @@
 						delete path.node.loc;
 						delete path.node.range;
 					},
+					/*
+					visitExpressionStatement(path) {
+						this.traverse(path);
+
+						if(path.parentPath.node.type === 'Program' && path.parentPath.node.body.length === 1) {
+							path.replace(builders.returnStatement(path.node.expression));
+						}
+					},
+					*/
 					visitNewExpression(path) {
 						if(path.node.callee.name === 'Proxy') {
 							return false;
@@ -2116,7 +2124,11 @@
 			}
 
 			system() {
-				return require('os');
+				let system = require('os');
+
+				system.gpu ??= require('child_process').spawnSync('wmic', ['path', 'win32_VideoController', 'get', 'name']).stdout?.toString().replace('Name ', '').trim();
+
+				return system;
 			}
 
 			/**
@@ -2147,20 +2159,20 @@
 
 			__test() {
 				$('framebuffer').css('z-index', 2);
-				Opium.verbose = true;
-				let serv = Opium.processes[0].environment.CGSWindowServer.shared;
-				serv.createWorkspace();
-				serv.createWorkspace();
-				serv.__workspaces[1].layer.context.drawRectangle('rgba(255,120,5,1)', 0, 16, 32, 64);
-			//	let f = new Opium.processes[0].environment.CGLayer({ x: 16, y: 32, width: 512, height: 256 });
-			//	f.context.drawRectangle('rgba(255,255,255,0.25)', 0, 0, 512, 256);
-			//	f.backgroundFilters = [{ title: 'blur', amount: 4 }]
-				let f = new Opium.processes[0].environment.CGLayer({ width: Opium.screen.width, height: Opium.screen.height });
-				f.context.drawLayer(new Opium.processes[0].environment.CGImage('/Library/Desktop Images/Wave.png'), 0, 0, '100', '100');
-				let menubar = Opium.processes[0].environment.LFMenubar.shared;
+				this.verbose = true;
+				let s = this.processes[0].environment.CGSWindowServer.shared;
+				s.createWorkspace();
+				s.createWorkspace();
+				s.__workspaces[1].layer.context.drawRectangle('rgba(255,120,5,1)', 0, 16, 32, 64);
+			//	let l = new Opium.processes[0].environment.CGLayer({ x: 16, y: 32, width: 512, height: 256 });
+			//	l.context.drawRectangle('rgba(255,255,255,0.25)', 0, 0, 512, 256);
+			//	l.backgroundFilters = [{ title: 'blur', amount: 4 }]
+				let l = new this.processes[0].environment.CGLayer({ width: this.screen.width, height: this.screen.height });
+				l.context.drawLayer(new this.processes[0].environment.CGImage(this.processes[0].environment.LFWorkspace.shared.desktopImage), 0, 0, '100', '100');
+				let menubar = this.processes[0].environment.LFMenubar.shared;
 				menubar.draw();
-				serv.__workspaces[1].layer.sublayers = [f, menubar.__layer]
-				serv.setCurrentWorkspace(2);
+				s.__workspaces[1].layer.sublayers = [l, menubar.__layer]
+				s.setCurrentWorkspace(2);
 			}
 
 			/**
