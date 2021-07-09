@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return class CFArray extends CFObject {
+return class CFArrayNew extends CFObject {
 	static add(array, ...value) {
 		if(!Object.isObject(array) || !Object.isKindOf(array, this) || !Array.isArray(array)) {
 			throw new TypeError(0);
@@ -269,7 +269,7 @@ return class CFArray extends CFObject {
 	 * @param {number}	o.at			Позиция
 	 */
 	insert({ element, contentsOf, at } = {}) {
-		if(contentsOf && !Array.isArray(contentsOf) && !Object.isKindOf(contentsOf, CFArray)) {
+		if(contentsOf && !Array.isArray(contentsOf) && !Object.isKindOf(contentsOf, CFArrayNew)) {
 			throw new TypeError(0);
 		}
 
@@ -306,7 +306,7 @@ return class CFArray extends CFObject {
 	 * Возвращает первый элемент массива, удовлетворяющий заданному предикату.
 	 *
 	 * @param	{Function} function_
-	 * @returns	{*}
+	 * @returns	{?*}
 	 */
 	first(function_) {
 		if(typeof function_ !== 'function') {
@@ -345,7 +345,7 @@ return class CFArray extends CFObject {
 	 * Возвращает последний элемент массива, удовлетворяющий заданному предикату.
 	 *
 	 * @param	{Function} function_
-	 * @returns	{*}
+	 * @returns	{?*}
 	 */
 	last(function_) {
 		if(typeof function_ !== 'function') {
@@ -381,10 +381,10 @@ return class CFArray extends CFObject {
 	}
 
 	/**
-	 * Возвращает массив, содержащий результаты сопоставления заданной функции с элементами последовательности.
+	 * Возвращает массив, содержащий результаты сопоставления заданной функции с элементами.
 	 *
 	 * @param	{Function} function_
-	 * @returns	{CFArray}
+	 * @returns	{CFArrayNew}
 	 */
 	map(function_) {
 		if(typeof function_ !== 'function') {
@@ -404,7 +404,7 @@ return class CFArray extends CFObject {
 	 * Возвращает массив, содержащий элементы, удовлетворяющие заданному предикату.
 	 *
 	 * @param	{Function} function_
-	 * @returns	{CFArray}
+	 * @returns	{CFArrayNew}
 	 */
 	filter(function_) {
 		if(typeof function_ !== 'function') {

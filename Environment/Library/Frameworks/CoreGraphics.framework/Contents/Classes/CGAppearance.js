@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared[_title] || class CGAppearance {
+return $CFShared[_title] ?? class CGAppearance {
 	static __URLSs = []
 
 	constructor(URL) {

@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared[_title] || class CGFontManager {
+return $CFShared[_title] ?? class CGFontManager {
 	static __shared;
 
 	static get shared() {

@@ -12,6 +12,8 @@
 		 */
 
 		const Opium = new class Opium {
+			__verbose = false;
+
 			uptimeStart = Date.now();
 			framebuffer = this.drCreate(this.screen.width, this.screen.height);
 			colors = {
@@ -89,9 +91,10 @@
 					try {
 						document.querySelectorAll('framebuffer')[0].appendChild(this.framebuffer);
 
+					//	this.verbose = true;
+
 						this.fbWrite(undefined, '');
 						this.bootState(true);
-					//	this.verbose = true;
 
 						this.eventCatcherCreate(undefined, 'terminalChanged', (a) => {
 							let terminal = this.terminals.find(v => v.ID === a.terminalID),
@@ -161,6 +164,10 @@
 						0.1
 					]
 				}
+			}
+
+			get verbose() {
+				return this.__verbose;
 			}
 
 			/**
@@ -253,8 +260,17 @@
 				return this.objects.processes;
 			}
 
-			get verbose() {
-				return $('kdb, boot').is('[verbose]');
+			set verbose(value) {
+				if(typeof value !== 'boolean') {
+					return;
+				}
+
+				this.__verbose = value;
+				if(value) {
+					$('kdb, boot').attr('verbose', '');
+				} else {
+					$('kdb, boot').removeAttr('verbose');
+				}
 			}
 
 			set files(value) {
@@ -287,14 +303,6 @@
 
 			set processes(value) {
 				this.objects.processes = value;
-			}
-
-			set verbose(value) {
-				if(value === true) {
-					$('kdb, boot').attr('verbose', '');
-				} else {
-					$('kdb, boot').removeAttr('verbose');
-				}
 			}
 
 			kdbAdd(...a) {
@@ -1752,10 +1760,10 @@
 			/**
 			 * Завершает указанный процесс, перед этим удаляя все связанные с ним объекты.
 			 *
-			 * @param {number}	processID	Идентификатор процесса.
-			 * @param {boolean}	quiet		Завершение без отчёта на консоль.
+			 * @param {number}		processID	Идентификатор процесса.
+			 * @param {?boolean}	quiet		Завершение без отчёта на консоль.
 			 */
-			processKill(processID, quiet) {
+			processKill(processID, quiet = false) {
 				let process = this.processes.find(v => v.ID === processID);
 
 				if(!process) {
@@ -1876,7 +1884,7 @@
 			 * @param {?number}							processID	Идентификатор процесса.
 			 * @param {Object}							caller		Обращающийся контекст.
 			 * @param {Object}							class_		Класс или объект.
-			 * @param {?string}							field		Поле.
+			 * @param {?(string|number|Symbol)}			field		Поле.
 			 * @param {?('get'|'set'|'call'|'delete')}	type		Тип обращения: получение (по умолчанию), присваивание, вызов и удаление.
 			 * @param {?*}								arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
 			 */
@@ -1887,20 +1895,21 @@
 				if(!caller || !class_) {
 					return;
 				}
-				if(field === undefined || field == null) {
+				if(field == null) {
 					return class_;
 				}
 
-				let symbol = typeof field === 'symbol',
+				let number = typeof field === 'number',
+					symbol = typeof field === 'symbol',
 					reserved = ['__proto__', '__friends__'].includes(field) || symbol,
-					private_ = !symbol && /^__./.test(field),
-					protected_ = !symbol && /^_[^_]/.test(field),
+					private_ = !number && !reserved && field.indexOf('__') === 0,
+					protected_ = !number && !reserved && !private_ && field.indexOf('_') === 0,
 					mutating = type === 'set' && !(field in class_) || type === 'delete' && field in class_,
 					environment = this.processes.find(v => v.ID === processID)?.environment,
 					global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
 					equals = Object.isMemberOf(caller, class_) || caller === class_,
 					inherits = Object.isKindOf(caller, class_),
-					friends = (class_.constructor || class_).__friends__ || [],
+					friends = (class_.constructor ?? class_).__friends__ || [],
 					befriends = !!friends.find(v => Object.isMemberOf(caller, v)),
 					mutable = Object.isObject(class_) && (Object.isMemberOf(class_, Object) || Object.isMemberOf(class_, Array) || class_[Symbol.collection] === true);
 
@@ -2160,9 +2169,10 @@
 			__test() {
 				$('framebuffer').css('z-index', 2);
 				this.verbose = true;
-				let s = this.processes[0].environment.CGSWindowServer.shared;
-				s.createWorkspace();
-				s.createWorkspace();
+				let s = this.processes[0].environment.CGSWindowServer.shared,
+					c = this.processes[0].environment.CGSConnection.shared;
+				s.createWorkspace(c);
+				s.createWorkspace(c);
 				s.__workspaces[1].layer.context.drawRectangle('rgba(255,120,5,1)', 0, 16, 32, 64);
 			//	let l = new Opium.processes[0].environment.CGLayer({ x: 16, y: 32, width: 512, height: 256 });
 			//	l.context.drawRectangle('rgba(255,255,255,0.25)', 0, 0, 512, 256);
@@ -2172,7 +2182,7 @@
 				let menubar = this.processes[0].environment.LFMenubar.shared;
 				menubar.draw();
 				s.__workspaces[1].layer.sublayers = [l, menubar.__layer]
-				s.setCurrentWorkspace(2);
+				s.setCurrentWorkspace(c, 2);
 			}
 
 			/**
@@ -2190,8 +2200,7 @@
 			 *       по сути своей тех же ID, что и везде).
 			 * - [~] Добавить в CFObject проверку доступа полей для observer'ов, либо просто ограничить до публичных-only.
 			 * - [~] Добавить классы-интерфейсы к объектам CGSWindowServer.
-			 * - [~] Разобраться с созданием окон в CGSWindowServer (узнать, где именно должен храниться слой окна и как передаваться серверу;
-			 *       обеспечить отрисовку слоёв окон в .__draw()).
+			 * - [~] Разобраться с созданием окон в CGSWindowServer (обеспечить отрисовку слоёв окон в .__draw()).
 			 * - [~] Добавить аналог .needsDisplay в CGLayer.
 			 * - [~] Избавиться от некорректного класса LFFrame. Заголовки окон и всё остальное, что не входит в .contentView,
 			 *       должно иметь прозрачный фон, а градиент отрисовываться на самом LFWindow, при этом размеры градиента должны

@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared[_title] || class LFWorkspace extends LFView {
+return $CFShared[_title] ?? class LFWorkspace extends LFView {
 	static __shared;
 
 	static get shared() {

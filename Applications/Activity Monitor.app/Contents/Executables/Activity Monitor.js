@@ -3,7 +3,6 @@ return class {
 		_import('Leaf');
 
 		LFApp.quitableBySingleWindow = true;
-
 		LFApp.menuItems = [
 			new LFMenuItem({ title: CFLocalizedString('File'),
 				menu: new LFMenu({ items: [
@@ -62,7 +61,7 @@ return class {
 
 		if(application) {
 			let window = LFApp.windows.find(v => v.tag === application.identifier),
-				process = _request('info', application.processIdentifier);
+				process = _call('info', application.processIdentifier);
 
 			if(!window) {
 				new LFWindow({ tag: application.identifier, width: 384, type: ['titled', 'closable', 'minimizable'], title: application.title,

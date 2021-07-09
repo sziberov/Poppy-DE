@@ -10,7 +10,7 @@
  */
 
 // noinspection JSAnnotator
-return $CFShared[_title] || class CGSWindowServer {
+return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 	static __shared;
 
 	static get shared() {
@@ -21,13 +21,15 @@ return $CFShared[_title] || class CGSWindowServer {
 		return this.__shared;
 	}
 
-	__connections = new CFArray();
-	__workspaces = new CFArray();
-	__windows = new CFArray();
+	__connections = new CFArrayNew();
+	__workspaces = new CFArrayNew();
+	__windows = new CFArrayNew();
+//	__cursors = new CFArrayNew();
 	__cursor;
 	__layer = new CGLayer({ width: CGScreen.size.width, height: CGScreen.size.height });
 
 	constructor() {
+		super();
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;
 		} else {
@@ -35,8 +37,8 @@ return $CFShared[_title] || class CGSWindowServer {
 		}
 
 		CFEvent.addHandler('workspaceListChanged', (a) => {
-			if(a.event === 'added' && !this.__workspaces.some(v => v.current)) {
-				this.setCurrentWorkspace(a.value);
+			if(a.event === 'added' && !this.__workspaces.first(v => v.current)) {
+				this.setCurrentWorkspace(CGSConnection.shared, a.value);
 			}
 		});
 		CFEvent.addHandler('workspaceChanged', (a) => {
@@ -56,8 +58,9 @@ return $CFShared[_title] || class CGSWindowServer {
 			}
 		});
 
-		this.createWorkspace();
-		this.createCursor();
+		this.setConnectionUniversalOwner(CGSConnection.shared, CGSConnection.shared, true);
+		this.createWorkspace(CGSConnection.shared);
+		this.createCursor(CGSConnection.shared);
 	}
 
 	__draw() {
@@ -71,7 +74,7 @@ return $CFShared[_title] || class CGSWindowServer {
 				v.layer.hidden = true;
 			} else {
 				v.layer.hidden = false;
-				currentPosition = workspaces.indexOf(v);
+				currentPosition = workspaces.firstIndex({ of: v });
 			}
 			layers.push(v.layer);
 		}
@@ -92,9 +95,9 @@ return $CFShared[_title] || class CGSWindowServer {
 
 	createConnection(processInfo) {
 		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
-		if(this.__connections.find(v => v.processID === processInfo.identifier))	throw new RangeError(1);
+		if(this.__connections.first(v => v.processID === processInfo.identifier))	throw new RangeError(1);
 
-		let ID = new Number(this.__connections.length > 0 ? Math.max(...this.__connections.map(v => v.ID))+1 : 1);	// Упаковка примитива в объект даёт безопасность сравнений, передать в качестве аргумента чужой ID просто так не получится
+		let ID = new Number(!this.__connections.empty ? Math.max(...this.__connections.map(v => v.ID))+1 : 1);	// Упаковка примитива в объект даёт безопасность сравнений, передать в качестве аргумента чужой ID просто так не получится
 
 		this.__connections.add({
 			ID: ID,
@@ -109,25 +112,25 @@ return $CFShared[_title] || class CGSWindowServer {
 	getConnectionID(connectionID, processID) {
 		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
 		if(typeof processID !== 'number')														throw new TypeError(1);
-		if(!this.__connections.find(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
+		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
 
-		return this.__connections.find(v => v.processID === processID)?.ID;
+		return this.__connections.first(v => v.processID === processID)?.ID;
 	}
 
 	getConnectionProcessID(connectionID, connectionID_) {
 		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
 		if(!Object.isKindOf(connectionID_, Number))												throw new TypeError(1);
-		if(!this.__connections.find(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
+		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
 
-		return this.__connections.find(v => v.ID === connectionID_)?.processID;
+		return this.__connections.first(v => v.ID === connectionID_)?.processID;
 	}
 
 	getConnectionUniversalOwner(connectionID, connectionID_) {
 		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
 		if(!Object.isKindOf(connectionID_, Number))												throw new TypeError(1);
-		if(!this.__connections.find(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
+		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
 
-		return this.__connections.find(v => v.ID === connectionID_)?.universalOwner;
+		return this.__connections.first(v => v.ID === connectionID_)?.universalOwner;
 	}
 
 	setConnectionUniversalOwner(connectionID, connectionID_, value) {
@@ -135,26 +138,29 @@ return $CFShared[_title] || class CGSWindowServer {
 		if(!Object.isKindOf(connectionID_, Number))												throw new TypeError(1);
 		if(typeof value !== 'boolean')															throw new TypeError(2);
 		if(
-			this.__connections.filter(v => v.universalOwner).length > 0 &&
-			this.__connections.find(v => v.ID === connectionID && !v.universalOwner)
+			this.__connections.first(v => v.universalOwner) &&
+			this.__connections.first(v => v.ID === connectionID && !v.universalOwner)
 		)																						throw new RangeError(3);
 
-		this.__connections.find(v => v.ID === connectionID_)?.universalOwner = value;
+		this.__connections.first(v => v.ID === connectionID_)?.universalOwner = value;
 	}
 
 	destroyConnection(connectionID, connectionID_) {
 		if(!Object.isKindOf(connectionID, Number))													throw new TypeError(0);
 		if(!Object.isKindOf(connectionID_, Number))													throw new TypeError(1);
 		if(connectionID !== connectionID_) {
-			if(!this.__connections.find(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
+			if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
 		}
 
-		this.__connections.removeByFilter(v => v.ID === connectionID_);
+		this.__connections.removeAll({ where: v => v.ID === connectionID_ });
 		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'connectionsListChanged', { event: 'removed', value: connectionID_ });
 	}
 
-	createWorkspace() {
-		let ID = this.__workspaces.length > 0 ? Math.max(...this.__workspaces.map(v => v.ID))+1 : 1;
+	createWorkspace(connectionID) {
+		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
+		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(1);
+
+		let ID = !this.__workspaces.empty ? Math.max(...this.__workspaces.map(v => v.ID))+1 : 1;
 
 		this.__workspaces.add({
 			ID: ID,
@@ -167,13 +173,15 @@ return $CFShared[_title] || class CGSWindowServer {
 	}
 
 	getCurrentWorkspace() {
-		return this.__workspaces.find(v => v.current)?.ID;
+		return this.__workspaces.first(v => v.current)?.ID;
 	}
 
-	setCurrentWorkspace(workspaceID) {
-		if(typeof workspaceID !== 'number')											throw new TypeError(0);
-		if(!this.__workspaces.find(v => v.ID === workspaceID))				throw new RangeError(1);
-		if(this.__workspaces.find(v => v.ID === workspaceID && v.current))	return;
+	setCurrentWorkspace(connectionID, workspaceID) {
+		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
+		if(typeof workspaceID !== 'number')														throw new TypeError(1);
+		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
+		if(!this.__workspaces.first(v => v.ID === workspaceID))							throw new RangeError(3);
+		if(this.__workspaces.first(v => v.ID === workspaceID && v.current))				return;
 
 		for(let v of this.__workspaces) {
 			v.current = v.ID === workspaceID;
@@ -181,21 +189,26 @@ return $CFShared[_title] || class CGSWindowServer {
 		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'workspaceChanged', { event: 'current', value: workspaceID });
 	}
 
-	destroyWorkspace(workspaceID) {
-		this.__workspaces.removeByFilter(v => v.ID === workspaceID);
+	destroyWorkspace(connectionID, workspaceID) {
+		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
+		if(typeof workspaceID !== 'number')														throw new TypeError(1);
+		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
+		if(!this.__workspaces.first(v => v.ID === workspaceID))							throw new RangeError(3);
+
+		this.__workspaces.removeAll({ where: v => v.ID === workspaceID });
 		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'workspaceListChanged', { event: 'removed', value: workspaceID });
 	}
 
 	createWindow(connectionID, workspaceID, x, y, width, height) {
 		if(!Object.isKindOf(connectionID, Number))							throw new TypeError(0);
-		if(!this.__connections.find(v => v.ID === connectionID))	throw new RangeError(1);
+		if(!this.__connections.first(v => v.ID === connectionID))	throw new RangeError(1);
 		if(workspaceID) {
 			if(typeof workspaceID !== 'number')								throw new TypeError(2);
-			if(!this.__workspaces.find(v => v.ID === workspaceID))	throw new RangeError(3);
+			if(!this.__workspaces.first(v => v.ID === workspaceID))	throw new RangeError(3);
 		}
 
 		let window = {
-			ID: this.__windows.length > 0 ? Math.max(...this.__windows.map(v => v.ID))+1 : 1,
+			ID: !this.__windows.empty ? Math.max(...this.__windows.map(v => v.ID))+1 : 1,
 			connectionID: connectionID,
 			workspaceID: workspaceID ?? this.getCurrentWorkspace(),
 			layer: new CGLayer({ x: x, y: y, width: width, height: height })
@@ -219,6 +232,8 @@ return $CFShared[_title] || class CGSWindowServer {
 
 	getWindowDepth() {}
 
+	getWindowContext() {}
+
 	setWindowWorkspace() {}
 
 	setWindowOrigin() {}
@@ -231,12 +246,12 @@ return $CFShared[_title] || class CGSWindowServer {
 
 	destroyWindow() {}
 
-	createCursor() {
+	createCursor(connectionID, layer) {
 		this.__cursor = {
 			layer: new CGLayer({ width: 32, height: 32 })
 		}
 
-		let layer = this.__cursor.layer;
+		layer = this.__cursor.layer;
 
 		layer.context.drawRectangle(CGColor(0, 0, 0), 0, 0, layer.width, layer.height);
 	}

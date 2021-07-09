@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared[_title] || class CGLayer {
+return $CFShared[_title] ?? class CGLayer {
 	static __friends__ = [CGContext, CGImage, CGSWindowServer]
 
 	__layer = _call('drCreate', 0, 0);
@@ -7,13 +7,15 @@ return $CFShared[_title] || class CGLayer {
 	__sublayers = new CFArray();
 	__x;
 	__y;
+	__z;
 	__backgroundFilters = new CFArray();
 	__mask;
 	__hidden;
 
-	constructor({ x = 0, y = 0, width = 0, height = 0 } = {}) {
+	constructor({ x = 0, y = 0, z = 0, width = 0, height = 0 } = {}) {
 		this.x = x;
 		this.y = y;
+		this.z = z;
 		this.width = width;
 		this.height = height;
 	}
@@ -32,6 +34,10 @@ return $CFShared[_title] || class CGLayer {
 
 	get y() {
 		return this.__y;
+	}
+
+	get z() {
+		return this.__z;
 	}
 
 	get width() {
@@ -81,6 +87,14 @@ return $CFShared[_title] || class CGLayer {
 		this.__y = value;
 	}
 
+	set z(value) {
+		if(typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__z = value;
+	}
+
 	set width(value) {
 		if(typeof value !== 'number')	throw new TypeError(0);
 		if(value < 0)					throw new RangeError(1);
@@ -123,7 +137,7 @@ return $CFShared[_title] || class CGLayer {
 	}
 
 	draw() {
-		let layer = new CGLayer({ x: this.x, y: this.y, width: this.width, height: this.height });
+		let layer = new CGLayer({ x: this.x, y: this.y, z: this.z, width: this.width, height: this.height });
 
 		layer.context.drawLayer(this, 0, 0);
 		for(let v of this.sublayers) {

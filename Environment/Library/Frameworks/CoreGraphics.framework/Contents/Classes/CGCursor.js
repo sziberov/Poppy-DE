@@ -1,5 +1,5 @@
 // noinspection JSAnnotator
-return $CFShared[_title] || class CGCursor {
+return $CFShared[_title] ?? class CGCursor {
 	static __shared;
 
 	static get shared() {
@@ -10,17 +10,17 @@ return $CFShared[_title] || class CGCursor {
 		return this.__shared;
 	}
 
+	__element;
+	__event;
+	__type;
+	__hidden = false;
+
 	constructor() {
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;
 		} else {
 			console.error(0); return;
 		}
-
-		this.__element;
-		this.__event;
-		this.__type;
-		this.__hidden = false;
 
 		this.add();
 	}
