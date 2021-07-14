@@ -89,7 +89,7 @@ return class CFObject extends Object {
 		let in_ = key in this;
 
 		if(this.__shouldNotifyObservers) {
-			for(let v of this.__observers || []) {
+			for(let v of this.__observers ?? []) {
 				v.function(in_ ? 'willChangeValueForKey' : 'willAddKey', key, !key.startsWith('_') ? value : undefined);
 			}
 		}
@@ -97,7 +97,7 @@ return class CFObject extends Object {
 		self[key] = value;
 
 		if(this.__shouldNotifyObservers) {
-			for(let v of this.__observers || []) {
+			for(let v of this.__observers ?? []) {
 				v.function(in_ ? 'didChangeValueForKey' : 'didAddKey', key, !key.startsWith('_') ? value : undefined);
 			}
 		}
@@ -121,7 +121,7 @@ return class CFObject extends Object {
 		let value = this[key]
 
 		if(this.__shouldNotifyObservers) {
-			for(let v of this.__observers || []) {
+			for(let v of this.__observers ?? []) {
 				v.function('willRemoveKey', key, !key.startsWith('_') ? value : undefined);
 			}
 		}
@@ -133,7 +133,7 @@ return class CFObject extends Object {
 		}
 
 		if(this.__shouldNotifyObservers) {
-			for(let v of this.__observers || []) {
+			for(let v of this.__observers ?? []) {
 				v.function('didRemoveKey', key, !key.startsWith('_') ? value : undefined);
 			}
 		}

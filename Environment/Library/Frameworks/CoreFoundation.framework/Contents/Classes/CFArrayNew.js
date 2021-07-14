@@ -55,12 +55,12 @@ return class CFArrayNew extends CFObject {
 
 					this.__type = value.type;
 				}
-				if(value.with) {
-					if(!Array.isArray(value.with)) {
+				if(value.elements) {
+					if(!Array.isArray(value.elements)) {
 						throw new TypeError(1);
 					}
 
-					this.add(...value.with);
+					this.add(...value.elements);
 				} else
 				if(value.count) {
 					if(!Number.isInteger(value.count)) {
@@ -138,7 +138,7 @@ return class CFArrayNew extends CFObject {
 		let in_ = key in this;
 
 		if(this.__shouldNotifyObservers) {
-			for(let v of this.__observers || []) {
+			for(let v of this.__observers ?? []) {
 				v.function(in_ ? 'willChangeValueForIndex' : 'willAddIndex', key, value);
 			}
 		}
@@ -149,7 +149,7 @@ return class CFArrayNew extends CFObject {
 			self[key] = value;
 		}
 		if(this.__shouldNotifyObservers) {
-			for(let v of this.__observers || []) {
+			for(let v of this.__observers ?? []) {
 				v.function(in_ ? 'didChangeValueForIndex' : 'didAddIndex', key, value);
 			}
 		}
@@ -177,7 +177,7 @@ return class CFArrayNew extends CFObject {
 		}
 
 		if(this.__shouldNotifyObservers) {
-			for(let v of this.__observers || []) {
+			for(let v of this.__observers ?? []) {
 				v.function('willRemoveIndex', key, value);
 			}
 		}
@@ -201,7 +201,7 @@ return class CFArrayNew extends CFObject {
 		this.__shouldNotifyObservers = snoBackup;
 
 		if(this.__shouldNotifyObservers) {
-			for(let v of this.__observers || []) {
+			for(let v of this.__observers ?? []) {
 				v.function('didRemoveIndex', key, value);
 			}
 		}
@@ -235,25 +235,25 @@ return class CFArrayNew extends CFObject {
 	/**
 	 * Добавляет новый элемент в конец массива.
 	 *
-	 * @param {*} values
+	 * @param {*} elements
 	 */
-	add(...values) {
-		if(values.length === 1) {
-			this[this.count] = values[0]
+	add(...elements) {
+		if(elements.length === 1) {
+			this[this.count] = elements[0]
 		}
-		if(values.length > 1) {
-			let indexes = new Array(values.length).fill().map((v, k) => this.count+k);
+		if(elements.length > 1) {
+			let indexes = new Array(elements.length).fill().map((v, k) => this.count+k);
 
 			this.__shouldNotifyObservers = false;
 
-			for(let v of this.__observers || []) {
-				v.function('willAdd', indexes, values);
+			for(let v of this.__observers ?? []) {
+				v.function('willAdd', indexes, elements);
 			}
-			for(let v of values) {
+			for(let v of elements) {
 				this[this.count] = v;
 			}
-			for(let v of this.__observers || []) {
-				v.function('didAdd', indexes, values);
+			for(let v of this.__observers ?? []) {
+				v.function('didAdd', indexes, elements);
 			}
 
 			this.__shouldNotifyObservers = true;
@@ -264,38 +264,37 @@ return class CFArrayNew extends CFObject {
 	 * Вставляет новый элемент или элементы массива в указанную позицию.
 	 *
 	 * @param {Object}	o
-	 * @param {?*}		o.element		Элемент
-	 * @param {?*[]}	o.contentsOf	Массив элементов
-	 * @param {number}	o.at			Позиция
+	 * @param {?*}		o.element	Элемент
+	 * @param {?*[]}	o.elements	Массив элементов
+	 * @param {number}	o.at		Позиция
 	 */
-	insert({ element, contentsOf, at } = {}) {
-		if(contentsOf && !Array.isArray(contentsOf) && !Object.isKindOf(contentsOf, CFArrayNew)) {
-			throw new TypeError(0);
-		}
+	insert({ element, elements, at } = {}) {
+		if(elements && !Array.isArray(elements) && !Object.isKindOf(elements, CFArrayNew))	throw new TypeError(0);
+		if(!Number.isInteger(at))															throw new TypeError(1);
 
 		let left = new Array(at).fill().map((v, k) => this[k]),
-			middle = contentsOf ?? [element],
+			middle = elements ?? [element],
 			right = new Array(this.count-at).fill().map((v, k) => this[at+k]),
 			sum = [...left, ...middle, ...right],
 			indexes = new Array(middle.length).fill().map((v, k) => at+k);
 
 		this.__shouldNotifyObservers = false;
 
-		for(let v of this.__observers || []) {
-			if(!contentsOf) {
+		for(let v of this.__observers ?? []) {
+			if(!elements) {
 				v.function('willInsertIndex', at, element);
 			} else {
-				v.function('willInsert', indexes, contentsOf);
+				v.function('willInsert', indexes, elements);
 			}
 		}
 		for(let k in sum) {
 			this[k] = sum[k]
 		}
-		for(let v of this.__observers || []) {
-			if(!contentsOf) {
+		for(let v of this.__observers ?? []) {
+			if(!elements) {
 				v.function('didInsertIndex', at, element);
 			} else {
-				v.function('didInsert', indexes, contentsOf);
+				v.function('didInsert', indexes, elements);
 			}
 		}
 
@@ -303,19 +302,23 @@ return class CFArrayNew extends CFObject {
 	}
 
 	/**
-	 * Возвращает первый элемент массива, удовлетворяющий заданному предикату.
+	 * Возвращает первый элемент массива, либо первый элемент, удовлетворяющий заданному предикату.
 	 *
-	 * @param	{Function} function_
+	 * @param	{Object}	o
+	 * @param	{?Function} o.where
 	 * @returns	{?*}
 	 */
-	first(function_) {
-		if(typeof function_ !== 'function') {
-			throw new TypeError(0);
-		}
+	first({ where } = {}) {
+		if(where && typeof where !== 'function')	throw new TypeError(0);
+		if(this.empty)								return;
 
-		for(let v of this) {
-			if(function_(v)) {
-				return v;
+		if(!where) {
+			return this[0]
+		} else {
+			for(let v of this) {
+				if(where(v)) {
+					return v;
+				}
 			}
 		}
 	}
@@ -340,21 +343,24 @@ return class CFArrayNew extends CFObject {
 			}
 		}
 	}
-
 	/**
-	 * Возвращает последний элемент массива, удовлетворяющий заданному предикату.
+	 * Возвращает последний элемент массива, либо последний элемент, удовлетворяющий заданному предикату.
 	 *
-	 * @param	{Function} function_
+	 * @param	{Object}	o
+	 * @param	{?Function} o.where
 	 * @returns	{?*}
 	 */
-	last(function_) {
-		if(typeof function_ !== 'function') {
-			throw new TypeError(0);
-		}
+	last({ where } = {}) {
+		if(where && typeof where !== 'function')	throw new TypeError(0);
+		if(this.empty)								return;
 
-		for(let k = this.count-1; k > -1; k--) {
-			if(function_(this[k])) {
-				return this[k]
+		if(!where) {
+			return this[this.count-1]
+		} else {
+			for(let k = this.count-1; k > -1; k--) {
+				if(where(this[k])) {
+					return this[k]
+				}
 			}
 		}
 	}
@@ -445,11 +451,23 @@ return class CFArrayNew extends CFObject {
 	/**
 	 * Возвращает логическое значение, указывающее, содержит ли массив данный элемент.
 	 *
-	 * @param	{*} value
+	 * @param	{Object}	o
+	 * @param	{?*}		o.element
+	 * @param	{?Function}	o.where
 	 * @returns	{boolean}
 	 */
-	contains(value) {
-		return this.firstIndex({ of: value }) !== undefined;
+	contains({ element, where } = {}) {
+		if(where && typeof where !== 'function') {
+			throw new TypeError(0);
+		}
+
+		for(let v of this) {
+			if(!where ? v === element : where(v)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -485,12 +503,12 @@ return class CFArrayNew extends CFObject {
 	/**
 	 * Удаляет первое вхождение заданного элемента из массива.
 	 *
-	 * @param {*} values
+	 * @param {*} elements
 	 */
-	remove(...values) {
+	remove(...elements) {
 		let indexes = []
 
-		for(let v of values) {
+		for(let v of elements) {
 			if(this.contains(v)) {
 				indexes.push(this.firstIndex({ of: v }));
 			}
@@ -502,14 +520,14 @@ return class CFArrayNew extends CFObject {
 		if(indexes.length > 1) {
 			this.__shouldNotifyObservers = false;
 
-			for(let v of this.__observers || []) {
-				v.function('willRemove', indexes, values);
+			for(let v of this.__observers ?? []) {
+				v.function('willRemove', indexes, elements);
 			}
 			for(let k of [...indexes].reverse()) {
 				delete this[k]
 			}
-			for(let v of this.__observers || []) {
-				v.function('didRemove', indexes, values);
+			for(let v of this.__observers ?? []) {
+				v.function('didRemove', indexes, elements);
 			}
 
 			this.__shouldNotifyObservers = true;
@@ -560,7 +578,7 @@ return class CFArrayNew extends CFObject {
 	 * Удаляет либо все элементы из массива, либо удовлетворяющие заданному предикату.
 	 *
 	 * @param {Object}		o
-	 * @param {Function}	o.where		Предикат.
+	 * @param {?Function}	o.where		Предикат.
 	 * @param {boolean}		o.keepCount	Сохранение количества элементов с очисткой позиций.
 	 */
 	removeAll({ where, keepCount = false } = {}) {

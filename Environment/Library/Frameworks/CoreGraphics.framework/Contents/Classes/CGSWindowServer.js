@@ -8,8 +8,6 @@
  *
  * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
  */
-
-// noinspection JSAnnotator
 return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 	static __shared;
 
@@ -24,7 +22,7 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 	__connections = new CFArrayNew();
 	__workspaces = new CFArrayNew();
 	__windows = new CFArrayNew();
-//	__cursors = new CFArrayNew();
+	__cursors = new CFArrayNew();
 	__cursor;
 	__layer = new CGLayer({ width: CGScreen.size.width, height: CGScreen.size.height });
 
@@ -37,7 +35,7 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 		}
 
 		CFEvent.addHandler('workspaceListChanged', (a) => {
-			if(a.event === 'added' && !this.__workspaces.first(v => v.current)) {
+			if(a.event === 'added' && !this.__workspaces.contains({ where: v => v.current })) {
 				this.setCurrentWorkspace(CGSConnection.shared, a.value);
 			}
 		});
@@ -94,8 +92,8 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 	}
 
 	createConnection(processInfo) {
-		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))	throw new TypeError(0);
-		if(this.__connections.first(v => v.processID === processInfo.identifier))	throw new RangeError(1);
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))		throw new TypeError(0);
+		if(this.__connections.contains({ where: v => v.processID === processInfo.identifier }))	throw new RangeError(1);
 
 		let ID = new Number(!this.__connections.empty ? Math.max(...this.__connections.map(v => v.ID))+1 : 1);	// Упаковка примитива в объект даёт безопасность сравнений, передать в качестве аргумента чужой ID просто так не получится
 
@@ -110,55 +108,56 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 	}
 
 	getConnectionID(connectionID, processID) {
-		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
-		if(typeof processID !== 'number')														throw new TypeError(1);
-		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
+		if(!Object.isKindOf(connectionID, Number))													throw new TypeError(0);
+		if(typeof processID !== 'number')															throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner }))	throw new RangeError(2);
 
-		return this.__connections.first(v => v.processID === processID)?.ID;
+		return this.__connections.first({ where: v => v.processID === processID })?.ID;
 	}
 
 	getConnectionProcessID(connectionID, connectionID_) {
-		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
-		if(!Object.isKindOf(connectionID_, Number))												throw new TypeError(1);
-		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
+		if(!Object.isKindOf(connectionID, Number))													throw new TypeError(0);
+		if(!Object.isKindOf(connectionID_, Number))													throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner }))	throw new RangeError(2);
 
-		return this.__connections.first(v => v.ID === connectionID_)?.processID;
+		return this.__connections.first({ where: v => v.ID === connectionID_ })?.processID;
 	}
 
 	getConnectionUniversalOwner(connectionID, connectionID_) {
-		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
-		if(!Object.isKindOf(connectionID_, Number))												throw new TypeError(1);
-		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
+		if(!Object.isKindOf(connectionID, Number))													throw new TypeError(0);
+		if(!Object.isKindOf(connectionID_, Number))													throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner }))	throw new RangeError(2);
 
-		return this.__connections.first(v => v.ID === connectionID_)?.universalOwner;
+		return this.__connections.first({ where: v => v.ID === connectionID_ })?.universalOwner;
 	}
 
 	setConnectionUniversalOwner(connectionID, connectionID_, value) {
-		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
-		if(!Object.isKindOf(connectionID_, Number))												throw new TypeError(1);
-		if(typeof value !== 'boolean')															throw new TypeError(2);
+		if(!Object.isKindOf(connectionID, Number))													throw new TypeError(0);
+		if(!Object.isKindOf(connectionID_, Number))													throw new TypeError(1);
+		if(typeof value !== 'boolean')																throw new TypeError(2);
 		if(
-			this.__connections.first(v => v.universalOwner) &&
-			this.__connections.first(v => v.ID === connectionID && !v.universalOwner)
-		)																						throw new RangeError(3);
+			this.__connections.contains({ where: v => v.universalOwner }) &&
+			this.__connections.contains({ where: v => v.ID === connectionID && !v.universalOwner })
+		)																							throw new RangeError(3);
 
-		this.__connections.first(v => v.ID === connectionID_)?.universalOwner = value;
+		this.__connections.first({ where: v => v.ID === connectionID_ })?.universalOwner = value;
 	}
 
 	destroyConnection(connectionID, connectionID_) {
-		if(!Object.isKindOf(connectionID, Number))													throw new TypeError(0);
-		if(!Object.isKindOf(connectionID_, Number))													throw new TypeError(1);
-		if(connectionID !== connectionID_) {
-			if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
-		}
+		if(!Object.isKindOf(connectionID, Number))														throw new TypeError(0);
+		if(!Object.isKindOf(connectionID_, Number))														throw new TypeError(1);
+		if(
+			connectionID !== connectionID_ &&
+			!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner })
+		)																								throw new RangeError(2);
 
 		this.__connections.removeAll({ where: v => v.ID === connectionID_ });
 		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'connectionsListChanged', { event: 'removed', value: connectionID_ });
 	}
 
 	createWorkspace(connectionID) {
-		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
-		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(1);
+		if(!Object.isKindOf(connectionID, Number))													throw new TypeError(0);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner }))	throw new RangeError(1);
 
 		let ID = !this.__workspaces.empty ? Math.max(...this.__workspaces.map(v => v.ID))+1 : 1;
 
@@ -173,15 +172,15 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 	}
 
 	getCurrentWorkspace() {
-		return this.__workspaces.first(v => v.current)?.ID;
+		return this.__workspaces.first({ where: v => v.current })?.ID;
 	}
 
 	setCurrentWorkspace(connectionID, workspaceID) {
-		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
-		if(typeof workspaceID !== 'number')														throw new TypeError(1);
-		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
-		if(!this.__workspaces.first(v => v.ID === workspaceID))							throw new RangeError(3);
-		if(this.__workspaces.first(v => v.ID === workspaceID && v.current))				return;
+		if(!Object.isKindOf(connectionID, Number))													throw new TypeError(0);
+		if(typeof workspaceID !== 'number')															throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner }))	throw new RangeError(2);
+		if(!this.__workspaces.contains({ where: v => v.ID === workspaceID }))						throw new RangeError(3);
+		if(this.__workspaces.contains({ where: v => v.ID === workspaceID && v.current }))			return;
 
 		for(let v of this.__workspaces) {
 			v.current = v.ID === workspaceID;
@@ -190,21 +189,21 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 	}
 
 	destroyWorkspace(connectionID, workspaceID) {
-		if(!Object.isKindOf(connectionID, Number))												throw new TypeError(0);
-		if(typeof workspaceID !== 'number')														throw new TypeError(1);
-		if(!this.__connections.first(v => v.ID === connectionID && v.universalOwner))	throw new RangeError(2);
-		if(!this.__workspaces.first(v => v.ID === workspaceID))							throw new RangeError(3);
+		if(!Object.isKindOf(connectionID, Number))													throw new TypeError(0);
+		if(typeof workspaceID !== 'number')															throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner }))	throw new RangeError(2);
+		if(!this.__workspaces.contains({ where: v => v.ID === workspaceID }))						throw new RangeError(3);
 
 		this.__workspaces.removeAll({ where: v => v.ID === workspaceID });
 		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'workspaceListChanged', { event: 'removed', value: workspaceID });
 	}
 
 	createWindow(connectionID, workspaceID, x, y, width, height) {
-		if(!Object.isKindOf(connectionID, Number))							throw new TypeError(0);
-		if(!this.__connections.first(v => v.ID === connectionID))	throw new RangeError(1);
+		if(!Object.isKindOf(connectionID, Number))									throw new TypeError(0);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID }))		throw new RangeError(1);
 		if(workspaceID) {
-			if(typeof workspaceID !== 'number')								throw new TypeError(2);
-			if(!this.__workspaces.first(v => v.ID === workspaceID))	throw new RangeError(3);
+			if(typeof workspaceID !== 'number')										throw new TypeError(2);
+			if(!this.__workspaces.contains({ where: v => v.ID === workspaceID }))	throw new RangeError(3);
 		}
 
 		let window = {
@@ -246,14 +245,27 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 
 	destroyWindow() {}
 
-	createCursor(connectionID, layer) {
+	createCursor(connectionID, layers, hotspot, current, global, delay) {
+		if(!Object.isKindOf(connectionID, Number))								throw new TypeError(0);
+		if(layers && !Object.isKindOf(layers, CFArray))							throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID }))	throw new RangeError(2);
+
+		let cursor = {
+			ID: !this.__cursors.empty ? Math.max(...this.__windows.map(v => v.ID))+1 : 1,
+			layers: layers,
+			current: undefined,
+			global: undefined
+		}
+
 		this.__cursor = {
 			layer: new CGLayer({ width: 32, height: 32 })
 		}
 
-		layer = this.__cursor.layer;
+		let layer = this.__cursor.layer;
 
 		layer.context.drawRectangle(CGColor(0, 0, 0), 0, 0, layer.width, layer.height);
+
+		return cursor.ID;
 	}
 
 	getCursorOrigin() {
