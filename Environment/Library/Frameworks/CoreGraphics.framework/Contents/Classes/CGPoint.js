@@ -1,6 +1,6 @@
-// Тип, обозначающий точку в двумерной системе координат.
-//
-// noinspection JSAnnotator
+/**
+ * Тип, обозначающий точку в двумерной системе координат.
+ */
 return class CGPoint extends CFObject {
 	__x;
 	__y;

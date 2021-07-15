@@ -1,4 +1,3 @@
-// noinspection JSAnnotator
 return class CFArrayNew extends CFObject {
 	static add(array, ...value) {
 		if(!Object.isObject(array) || !Object.isKindOf(array, this) || !Array.isArray(array)) {

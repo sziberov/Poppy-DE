@@ -245,17 +245,25 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 
 	destroyWindow() {}
 
-	createCursor(connectionID, layers, hotspot, current, global, delay) {
+	createCursor(connectionID, layers, hotspot = new CGPoint(), current = false, global = false, delay = 33.3) {
 		if(!Object.isKindOf(connectionID, Number))								throw new TypeError(0);
 		if(layers && !Object.isKindOf(layers, CFArray))							throw new TypeError(1);
-		if(!this.__connections.contains({ where: v => v.ID === connectionID }))	throw new RangeError(2);
+		if(!Object.isKindOf(hotspot, CGPoint))									throw new TypeError(2);
+		if(typeof current !== 'boolean')										throw new TypeError(3);
+		if(typeof global !== 'boolean')											throw new TypeError(4);
+		if(typeof delay !== 'number')											throw new TypeError(5);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID }))	throw new RangeError(6);
 
 		let cursor = {
 			ID: !this.__cursors.empty ? Math.max(...this.__windows.map(v => v.ID))+1 : 1,
 			layers: layers,
-			current: undefined,
-			global: undefined
+			hotspot: hotspot,
+			current: current,
+			global: global,
+			delay: delay
 		}
+
+		this.__cursors.add(cursor);
 
 		this.__cursor = {
 			layer: new CGLayer({ width: 32, height: 32 })
