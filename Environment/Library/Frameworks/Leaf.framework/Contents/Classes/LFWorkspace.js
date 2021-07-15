@@ -10,7 +10,7 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 		return this.__shared;
 	}
 
-	__launchedApplications = new CFArray();
+	__launchedApplications = new CFArrayOld();
 	__desktopImage;
 
 	constructor({ desktopImage } = {}) {
@@ -49,7 +49,7 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 				}
 			}
 		});
-		CFArray.addObserver(this.subviews, (a) => {
+		CFArrayOld.addObserver(this.subviews, (a) => {
 			if(!Object.isKindOf(a.value, LFWindow)) {
 				return;
 			}

@@ -8,6 +8,7 @@
  *
  * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
  */
+// noinspection JSAnnotator
 return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 	static __shared;
 
@@ -19,11 +20,15 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 		return this.__shared;
 	}
 
-	__connections = new CFArrayNew();
-	__workspaces = new CFArrayNew();
-	__windows = new CFArrayNew();
-	__cursors = new CFArrayNew();
-	__cursor;
+	__connections = new CFArray();
+	__workspaces = new CFArray();
+	__windows = new CFArray();
+	__cursors = new CFArray();
+	__cursor = new CFObject({
+		origin: new CGPoint(),
+		obscured: false,
+		scale: 1
+	});
 	__layer = new CGLayer({ width: CGScreen.size.width, height: CGScreen.size.height });
 
 	constructor() {
@@ -67,6 +72,9 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 			currentPosition = 0,
 			layers = []
 
+		layer.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, layer.width, layer.height);
+		layer.context.drawRectangle(CGColor(0, 0, 0, 0.25), 0, 0, layer.width, layer.height);
+
 		for(let v of workspaces) {
 			if(!v.current) {
 				v.layer.hidden = true;
@@ -80,13 +88,17 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 			v.x = v.width*layers.indexOf(v)-v.width*currentPosition;
 		}
 
-		layer.sublayers = [
-			...layers,
-			...this.__cursor ? [this.__cursor.layer] : []
-		]
+		if(!this.__cursors.empty) {
+			let cursor = this.__cursors.first({ where: v => v.current }),
+				cursorLayer = cursor.layers[0]
 
-		layer.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, layer.width, layer.height);
-		layer.context.drawRectangle(CGColor(0, 0, 0, 0.25), 0, 0, layer.width, layer.height);
+			cursorLayer.x = this.__cursor.origin.x-cursor.hotspot.x;
+			cursorLayer.y = this.__cursor.origin.y-cursor.hotspot.y;
+
+			layers.push(cursorLayer);
+		}
+
+		layer.sublayers = layers;
 
 		_call('fbWrite', this.__layer.draw().__layer);
 	}
@@ -245,9 +257,9 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 
 	destroyWindow() {}
 
-	createCursor(connectionID, layers, hotspot = new CGPoint(), current = false, global = false, delay = 33.3) {
+	createCursor(connectionID, layers = new CFArray(), hotspot = new CGPoint(), current = false, global = false, delay = 33.3) {
 		if(!Object.isKindOf(connectionID, Number))								throw new TypeError(0);
-		if(layers && !Object.isKindOf(layers, CFArray))							throw new TypeError(1);
+		if(!Object.isKindOf(layers, CFArray))								throw new TypeError(1);
 		if(!Object.isKindOf(hotspot, CGPoint))									throw new TypeError(2);
 		if(typeof current !== 'boolean')										throw new TypeError(3);
 		if(typeof global !== 'boolean')											throw new TypeError(4);
@@ -258,38 +270,41 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 			ID: !this.__cursors.empty ? Math.max(...this.__windows.map(v => v.ID))+1 : 1,
 			layers: layers,
 			hotspot: hotspot,
-			current: current,
+			current: this.__cursors.empty ? true : false,
 			global: global,
 			delay: delay
 		}
 
-		this.__cursors.add(cursor);
+		if(cursor.layers.empty) {
+			let layer = cursor.layers[0] = new CGLayer({ width: 32, height: 32 });
 
-		this.__cursor = {
-			layer: new CGLayer({ width: 32, height: 32 })
+			layer.context.drawRectangle(CGColor(0, 0, 0), 0, 0, layer.width, layer.height);
 		}
 
-		let layer = this.__cursor.layer;
-
-		layer.context.drawRectangle(CGColor(0, 0, 0), 0, 0, layer.width, layer.height);
+		this.__cursors.add(cursor);
+		this.setCurrentCursor(CGSConnection.shared, cursor.ID);
 
 		return cursor.ID;
 	}
 
+	getCurrentCursor(connectionID) {}
+
 	getCursorOrigin() {
 		return {
-			x: this.__cursor.layer.x,
-			y: this.__cursor.layer.y
+			x: this.__cursor.origin.x,
+			y: this.__cursor.origin.y
 		}
 	}
 
+	setCurrentCursor(connectionID, cursorID) {}
+
 	setCursorOrigin(x, y) {
-		if(!this.__cursor) {
+		if(this.__cursors.empty) {
 			return;
 		}
 
-		this.__cursor.layer.x = x;
-		this.__cursor.layer.y = y;
+		this.__cursor.origin.x = x;
+		this.__cursor.origin.y = y;
 
 		this.__draw();
 	}
