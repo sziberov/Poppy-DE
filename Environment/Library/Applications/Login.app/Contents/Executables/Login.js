@@ -1,7 +1,8 @@
+_import('Leaf');
+
+// noinspection JSAnnotator
 return class {
 	constructor() {
-		_import('Leaf');
-
 		this.__services = [
 			{
 				identifier: 'ru.poppy.enviro',

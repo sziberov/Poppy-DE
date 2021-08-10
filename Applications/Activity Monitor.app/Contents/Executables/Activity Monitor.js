@@ -1,7 +1,8 @@
+_import('Leaf');
+
+// noinspection JSAnnotator
 return class {
 	constructor() {
-		_import('Leaf');
-
 		LFApp.quitableBySingleWindow = true;
 		LFApp.menuItems = [
 			new LFMenuItem({ title: CFLocalizedString('File'),
@@ -32,7 +33,7 @@ return class {
 
 		this.table = LFApp.windows[0].view.subviews[0]
 		this.update();
-		CFArray.addObserver(LFWorkspace.shared.launchedApplications, () => this.update());
+		CFArrayOld.addObserver(LFWorkspace.shared.launchedApplications, () => this.update());
 	}
 
 	update() {

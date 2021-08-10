@@ -1,7 +1,8 @@
+_import('Leaf');
+
+// noinspection JSAnnotator
 return class {
 	constructor() {
-		_import('Leaf');
-
 		LFApp.menuItems = [
 			new LFMenuItem({ title: CFLocalizedString('File'),
 				menu: new LFMenu({ items: [

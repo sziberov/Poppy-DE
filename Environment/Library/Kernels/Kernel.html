@@ -1284,22 +1284,9 @@
 				`);
 			}
 
-			/**
-			 * Load one library (one big class-containing library or single class) per object.
-			 * If loaded - add attached process to ID list.
-			 *
-			 * Should:
-			 * If first load - eval code.
-			 * Use library own Proxified context with link to caller's context (sync warning!).
-			 * Link to caller's context get's set using process ID that passed by his Proxy as call to dylib's symbol every time.
-			 * All caller-specific data wrote by/to library should be in fact stored in callers context using Proxy.
-			 *
-			 * Reality:
-			 * Just caches loaded libraries code.
- 			 */
-			dlLoad(processID, path, title) {
+			async dlLoad(processID, path, title) {
 				if(!processID || !path || !title) {
-					console.error(0); return;
+					throw 0;
 				}
 
 				let dl = this.dl.find(v => v.path === path);
@@ -1309,37 +1296,29 @@
 						this.kdbAdd(`dlLoad@${ processID }: Library already attached to process: ${ path }`);
 					}
 
-					return dl.ID;
+					throw 1;
 				}
 
 				if(!dl) {
 					if(!this.fsExists(path)) {
 						this.kdbAdd(`dlLoad@${ processID }: Unable to access requested library: ${ path }`);
 
-						console.error(1); return;
+						throw 2;
 					}
 
 					dl = {
 						ID: Math.max(...this.dl.map(v => v.ID).initialize(0))+1,
 						processID: [],
 						path: path,
-						code: undefined,
-					//	environment: undefined
+						code: undefined
 					}
 
 					try {
 						dl.code = this.codePrepare(this.fsRead(path));
-						/*
-						dl.environment = this.sbCreate(new Proxy({}, {
-							get: (target, key) => {
-								return this.processes.find(v => v.ID === dl.processID).environment[key] || target[key]
-							}
-						}));
-						*/
 					} catch(error) {
 						this.kdbAdd(`dlLoad@${ processID }: Unable to parse requested library: ${ path }`, error.stack);
 
-						console.error(2); return;
+						throw 3;
 					}
 
 					this.dl.push(dl);
@@ -1349,23 +1328,34 @@
 
 				let process = this.processes.find(v => v.ID === processID);
 
-				try {
-					this.sbExecute(`var ${ title } = (() => { let _title = '${ title }', _path = '${ path }'; ${ dl.code } })();`, process.environment, title);
-				} catch(error) {
-					this.dlUnload(processID, dl.ID);
-					this.kdbAdd(`dlLoad@${ processID }: Unable to execute requested library: "${ error.name }: ${ error.message }"@${ path }`, error.stack);
+				this.sbExecute(`
+					var ${ title } = (async () => {
+						let _title = '${ title }',
+							_path = '${ path }';
 
-					console.error(3); return;
-				}
-				if(this.verbose) {
-					this.kdbAdd(`
-						dlLoad@${ processID }: Successfully created object:
-						    ID: ${ dl.ID }
-						    Path: ${ path }
-					`);
-				}
+						${ dl.code }
+					});
+				`, process.environment, title);
 
-				return dl.ID;
+				return new Promise((resolve, reject) => {
+					process.environment[title]().then(v => {
+						process.environment[title] = v;
+						if(this.verbose) {
+							this.kdbAdd(`
+								dlLoad@${ processID }: Successfully created object:
+								    ID: ${ dl.ID }
+								    Path: ${ path }
+							`);
+						}
+
+						resolve(dl.ID);
+					}, error => {
+						this.dlUnload(processID, dl.ID);
+						this.kdbAdd(`dlLoad@${ processID }: Unable to execute requested library: "${ error.name }: ${ error.message }"@${ path }`, error.stack);
+
+						reject(4);
+					});
+				});
 			}
 
 			dlUnload(processID, dlID) {
@@ -1549,9 +1539,9 @@
 			/**
 			 * Запускает код в окружении.
 			 *
-			 * @param {string}	code Код.
-			 * @param {Object}	environment Окружение.
-			 * @param {?string}	title Название окружения, видимое при отладке.
+			 * @param {string}	code		Код.
+			 * @param {Object}	environment	Окружение.
+			 * @param {?string}	title		Название окружения, видимое при отладке.
 			 */
 			sbExecute(code, environment, title) {
 				return require('vm').runInContext(code, environment, {
@@ -1621,14 +1611,14 @@
 			 * @param	{string[]}	arguments_	Параметры запуска, передаваемые в точку вхождения.
 			 * @returns	{?Object}				Информация о процессе.
 			 */
-			processExecute(terminalID, processID, login, password, path, ...arguments_) {
+			async processExecute(terminalID, processID, login, password, path, ...arguments_) {
 				let user = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === login && v.Password === password),
 					executable = this.fsRead(path);
 
 				if(terminalID && !this.terminals.find(v => v.ID === terminalID)) {
 					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Incorrect terminal`);
 
-					console.error(0); return;
+					throw 0;
 				}
 				if(!terminalID) {
 					terminalID = this.terminalCreate();
@@ -1636,18 +1626,18 @@
 				if(!user) {
 					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Incorrect authorization`);
 
-					console.error(1); return;
+					throw 1;
 				}
 				if(!executable) {
 					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Unable to access executable`);
 
-					console.error(2); return;
+					throw 2;
 				}
-				if(!executable.startsWith('return class {') || !executable.endsWith('}')) {
-					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Non-executable format`);
+			//	if(!executable.startsWith('return class {') || !executable.endsWith('}')) {
+			//		this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Non-executable format`);
 
-					console.error(3); return;
-				}
+			//		throw 3;
+			//	}
 
 				var process = {
 						ID: Math.max(...this.processes.map(v => v.ID).initialize(0))+1,
@@ -1658,59 +1648,61 @@
 						arguments: arguments_.filter(v => typeof v === 'string'),
 						environment: undefined
 					}
-					process.environment = this.sbCreate(new Proxy({
-						_call: (...a) => this.processRequest(process, ...a),
-						_import: (...a) => this.processRequest(process, 'import', ...a),
-						_protected: (...a) => this.processRequest(process, 'protected', ...a)
-					}, {
-						get: (target, key) => {
-							if(key === 'path') {
-								return process.path;
-							}
-							if(key === '_arguments') {
-								return [...process.arguments]
-							}
-							if(['_environment', 'window'].includes(key)) {
-								return target;
-							}
-							if(key === 'require') {
-								return;
-							}
-							/*
-							for(let v of this.dl.filter(v => v.processID === process.ID).reverse()) {
-								if(v.environment[key]) {
-									v.environment.__process = process.environment;
 
-									return v.environment[key]
-								}
-							}
-							*/
-
-							return target[key] || this.environment[key]
+				process.environment = this.sbCreate(new Proxy({
+					_call: (...a) => this.processRequest(process, ...a),
+					_import: (...a) => this.processRequest(process, 'import', ...a),
+					_protected: (...a) => this.processRequest(process, 'protected', ...a)
+				}, {
+					get: (target, key) => {
+						if(key === 'path') {
+							return process.path;
 						}
-					}));
+						if(key === '_arguments') {
+							return [...process.arguments]
+						}
+						if(['_environment', 'window'].includes(key)) {
+							return target;
+						}
+						if(key === 'require') {
+							return;
+						}
+
+						return target[key] || this.environment[key]
+					}
+				}));
 
 				this.processes.push(process);
-				try {
-					this.sbExecute(`var _executable = new ((() => { ${ this.codePrepare(executable) } })())(..._arguments);`, process.environment, process.path);
-					this.kdbAdd(`
-						processExecute: Process started:
-						    ID: ${ process.ID }
-						    Parent ID: ${ process.parentID }
-						    Terminal ID: ${ process.terminalID }
-						    User: ${ process.user }
-						    Path: ${ process.path }
-					`);
-					this.eventThrow(undefined, undefined, 'processListChanged', { event: 'added', value: process.ID });
+				this.kdbAdd(`
+					processExecute: Process started:
+					    ID: ${ process.ID }
+					    Parent ID: ${ process.parentID }
+					    Terminal ID: ${ process.terminalID }
+					    User: ${ process.user }
+					    Path: ${ process.path }
+				`);
+				this.eventThrow(undefined, undefined, 'processListChanged', { event: 'added', value: process.ID });
+				this.sbExecute(`
+					var _executable = (async () => {
+						${ this.codePrepare(executable) }
+					});
+				`, process.environment, process.path);
 
-					return this.processInfo(process.ID);
-				} catch(error) {
-					error.fileName = process.path;
-					this.kdbAdd(`processExecute: Process failed to start: "${ error.name }: ${ error.message }":`, error.stack);
-					this.processKill(process.ID, true);
-
-					throw error;
-				}
+				return new Promise((resolve, reject) => {
+					process.environment._executable().then(v => {
+						try {
+							process.environment._executable = new v(...process.arguments);
+							resolve(this.processInfo(process.ID));
+						} catch(error) {
+							error.fileName = process.path;
+							this.kdbAdd(`processExecute: Process failed to start: "${ error.name }: ${ error.message }":`, error.stack);
+							this.processKill(process.ID, true);
+							reject(4);
+						}
+					}, e => {
+						reject(5);
+					});
+				});
 			}
 
 			/**
@@ -1805,7 +1797,7 @@
 			 * @param {string}	framework	Название фреймворка.
 			 * @param {?string}	class_		Название класса.
 			 */
-			classImport(process, framework, class_) {
+			async classImport(process, framework, class_) {
 				class_ ??= framework;
 
 				let pathSearch = [
@@ -1827,21 +1819,29 @@
 				if(!path) {
 					this.kdbAdd(`classImport: Unable to access requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
 
-					console.error(0); return;
+					throw new Error(0);
 				}
 
-				if(this.dlLoad(process.ID, path, class_)) {
-					if(framework === class_) {
-						this.kdbAdd(`classImport: Successfully imported main class of ${ framework } framework into process: ${ process.ID }`);
-						this.eventThrow(undefined, process.ID, 'frameworkListChanged', { event: 'added', title: framework, path: path });
-					} else {
-						if(this.verbose) {
-							this.kdbAdd(`classImport: Successfully imported ${ class_ } class of ${ framework } framework into process: ${ process.ID }`);
+				return new Promise((resolve, reject) => {
+					this.dlLoad(process.ID, path, class_).then(v => {
+						if(framework === class_) {
+							this.kdbAdd(`classImport: Successfully imported main class of ${ framework } framework into process: ${ process.ID }`);
+							this.eventThrow(undefined, process.ID, 'frameworkListChanged', { event: 'added', title: framework, path: path });
+						} else {
+							if(this.verbose) {
+								this.kdbAdd(`classImport: Successfully imported ${ class_ } class of ${ framework } framework into process: ${ process.ID }`);
+							}
 						}
-					}
-				} else {
-					this.kdbAdd(`classImport: Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
-				}
+						resolve();
+					}, e => {
+						if(e !== 1) {
+							this.kdbAdd(`classImport: Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
+							reject(1);
+						} else {
+							resolve();
+						}
+					});
+				});
 			}
 
 			/**
@@ -2052,6 +2052,13 @@
 						}
 					},
 					*/
+					visitCallExpression(path) {
+						this.traverse(path);
+
+						if(path.node.callee.name === '_import') {
+							path.replace(builders.awaitExpression(path.node));
+						}
+					},
 					visitNewExpression(path) {
 						if(path.node.callee.name === 'Proxy') {
 							return false;
@@ -2211,7 +2218,7 @@
 			 *       неудобным в той же анимации скольжения, когда нельзя просто взять и отрисовать один слой окна среди кучи других без
 			 *       каких либо модификаций. С другой стороны, мешанина из окон тоже должна контролироваться, и для предотвращения наложения
 			 *       workspac'ов каждое окно должно будет ограничиваться маской (иногда, вероятно, двойной; чьё положение придётся менять
-			 *       соответсвенно положению окна), что наверняка также скажется на производительности. Какое из двух зол меньшее -
+			 *       соответственно положению окна), что наверняка также скажется на производительности. Какое из двух зол меньшее -
 			 *       не знаю, лично мне кажеться первое, но судя по моим стресс-тестам WindowServer'а в OS X 10.9, принцип отрисовки там
 			 *       больше схож со вторым описанием (один единый слой и куча масок), так что с этим ещё предстоит разбираться...
 			 * - [~] Добавить аналог .needsDisplay в CGLayer.
@@ -2225,12 +2232,12 @@
 			 *       За отрисовку обоев на каждом workspac'е должен отвечать Dock, создавая их как независимые окна.
 			 *       Любые view'ы должны отрисовываться посредством LFWindow (CGSWindow).
 			 * - [~] Написать Mission Control (часть Dock) и Notification Center.
-			 * - [?] Обеспечить асинхронность процессов (мультизадачность).
+			 * - [~] Отследить и убрать повторный запуск дока.
+			 * - [~] Обеспечить асинхронность процессов (мультизадачность).
 			 * - [?] Добавить проверку необходимости оператора ?. в .codePrepare() (вместо его слепой расстановки вовсюда).
 			 * - [?] Законопатить дырку безопасности, связанную с возможностью перезаписи приватных полей классами-наследниками.
 			 * - [?] Раскомментить и переписать processFork() так, чтобы он соответствовал реализации в Linux (создаётся дочерний процесс
 			 *       с окружением и объектами скопированными из родительского).
-			 * - [X] Выделять под каждый .framework свой участок памяти.
 			 *
 			 * Обозначения:
 			 * - ! - Важные, текущие задачи.
