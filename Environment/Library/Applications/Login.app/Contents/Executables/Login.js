@@ -1,18 +1,18 @@
 _import('Leaf');
 
 // noinspection JSAnnotator
-return class {
+return class Main {
 	constructor() {
 		this.__services = [
 			{
 				identifier: 'ru.poppy.enviro',
 				URL: '/Environment/Library/Applications/Enviro',
-				error: false
+				status: 'stopped'
 			},
 			{
 				identifier: 'ru.poppy.dock',
 				URL: '/Environment/Library/Applications/Dock',
-				error: false
+				status: 'stopped'
 			}
 		]
 
@@ -87,17 +87,19 @@ return class {
 		]
 
 		this.launchServices();
-		CFArrayOld.addObserver(LFWorkspace.shared.launchedApplications, () => this.launchServices());
+		CFArrayOld.addObserver(LFWorkspace.shared.launchedApplications, (a) => this.launchServices(a));
 	}
 
-	launchServices() {
+	launchServices(a) {
+		if(a?.event === 'removed') {
+			this.__services.find(v => v.identifier === a.value.identifier && v.status !== 'failed').status = 'stopped';
+		}
 		for(let v of this.__services) {
-			if(!v.error && !LFWorkspace.shared.getApplication(v.identifier)) {
-				try {
-					LFWorkspace.shared.launchApplication(v.URL);
-				} catch {
-					v.error = true;
-				}
+			if(!['launching', 'failed'].includes(v.status) && !LFWorkspace.shared.getApplication(v.identifier)) {
+				v.status = 'launching';
+				LFWorkspace.shared.launchApplication(v.URL).catch(e => {
+					v.status = 'failed';
+				});
 			}
 		}
 	}

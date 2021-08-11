@@ -1,7 +1,7 @@
 _import('Leaf');
 
 // noinspection JSAnnotator
-return class {
+return class Main {
 	constructor() {
 		LFApp.menuItems = [
 			new LFMenuItem({ title: CFLocalizedString('File'),
@@ -76,9 +76,9 @@ return class {
 			LFWorkspace.shared.desktopImage = '';
 		} }));
 		for(let v of _call('readDir', '/Library/Desktop Images')) {
-			table.push(new LFTableRow({ title: v.name, action: function(v) {
-				return () => LFWorkspace.shared.desktopImage = '/Library/Desktop Images/'+v.name;
-			}.bind(this)(v) }));
+			table.push(new LFTableRow({ title: v.name, action: () => {
+				LFWorkspace.shared.desktopImage = '/Library/Desktop Images/'+v.name;
+			} }));
 		}
 		window.view.subviews[1].subviews[0].subviews = table;
 	}

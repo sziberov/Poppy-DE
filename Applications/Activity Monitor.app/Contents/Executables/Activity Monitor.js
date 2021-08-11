@@ -1,7 +1,7 @@
 _import('Leaf');
 
 // noinspection JSAnnotator
-return class {
+return class Main {
 	constructor() {
 		LFApp.quitableBySingleWindow = true;
 		LFApp.menuItems = [
@@ -40,11 +40,7 @@ return class {
 		let update = []
 
 		for(let v of LFWorkspace.shared.launchedApplications) {
-			update.push(
-				new LFTableRow({ title: v.title, data: { application: v }, action: function(v) {
-					return () => v.focus()
-				}.bind(this)(v) })
-			);
+			update.push(new LFTableRow({ title: v.title, data: { application: v }, action: () => v.focus() }));
 		}
 		this.table.subviews = update;
 	}
@@ -61,11 +57,11 @@ return class {
 		let application = this.table.activeRow?.data.application;
 
 		if(application) {
-			let window = LFApp.windows.find(v => v.tag === application.identifier),
+			let window = LFApp.windows.find(v => v.tag === application.processIdentifier),
 				process = _call('info', application.processIdentifier);
 
 			if(!window) {
-				new LFWindow({ tag: application.identifier, width: 384, type: ['titled', 'closable', 'minimizable'], title: application.title,
+				new LFWindow({ tag: process.ID, width: 384, type: ['titled', 'closable', 'minimizable'], title: application.title,
 					view: new LFView({ type: 'vertical', subviews: [
 						new LFView({ subviews: [
 							new LFView({ type: 'vertical', tight: true, subviews: [

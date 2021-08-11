@@ -1,5 +1,11 @@
 {
 	"name": "Poppy-DE",
+	"description": "Free cross-platform OS X-like user interface and applications implementation.",
+	"license": "CC-BY-NC-ND-4.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/sziberov/Poppy-DE.git"
+	},
 	"main": "Environment/Library/Kernels/Kernel.html",
 	"window": {
 		"fullscreen": true
@@ -7,8 +13,8 @@
 	"dependencies": {
 		"ast-types": "^0.14.2",
 		"fast-xml-parser": "^3.19.0",
-		"flow-parser": "^0.154.0",
+		"flow-parser": "^0.157.0",
 		"pngjs": "^6.0.0",
-		"recast": "^0.20.4"
+		"recast": "^0.20.5"
 	}
 }

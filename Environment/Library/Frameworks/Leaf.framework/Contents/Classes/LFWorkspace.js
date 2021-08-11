@@ -90,7 +90,7 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 		LFMenu.deactivateAll();
 	}
 
-	launchApplication(URL, ...arguments_) {
+	async launchApplication(URL, ...arguments_) {
 		URL = URL.endsWith('.app') ? URL : URL+'.app';
 
 		try {
@@ -107,23 +107,20 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 		}
 
 		if(!this.getApplication(identifier)) {
-			try {
+			return new Promise((resolve, reject) => {
 				let user = new CFPreferences('Global').get().Users.find(v => v.Group === 1);
 
-				_call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
-
-				return this.getApplication(identifier);
-			} catch(error) {
-				if(this.getApplication(identifier)) {
-					this.getApplication(identifier).quit();
-				}
-				new LFAlert({
-					message: `"${ title }" unable to launch.`,
-					information: error.name+': '+error.message
+				_call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_).then(v => {
+					resolve(this.getApplication(identifier));
+				}, error => {
+					this.getApplication(identifier)?.quit();
+					new LFAlert({
+						message: `"${ title }" unable to launch.`,
+						information: error.name+': '+error.message
+					});
+					reject(error);
 				});
-
-				throw error;
-			}
+			});
 		} else {
 			this.getApplication(identifier).focus();
 		}

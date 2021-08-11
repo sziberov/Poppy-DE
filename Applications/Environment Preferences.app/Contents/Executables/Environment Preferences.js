@@ -1,7 +1,7 @@
 _import('Leaf');
 
 // noinspection JSAnnotator
-return class {
+return class Main {
 	constructor() {
 		LFApp.quitableBySingleWindow = true;
 

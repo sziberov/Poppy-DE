@@ -67,6 +67,7 @@
 					Math: Math,
 					Number: Number,
 					Object: Object,
+					Promise: Promise,
 					Proxy: Proxy,
 					RangeError: RangeError,
 					Symbol: Symbol,
@@ -88,65 +89,63 @@
 				this.environment.Function.prototype.constructor = this.environment.Function;
 
 				$(() => {
-					try {
-						document.querySelectorAll('framebuffer')[0].appendChild(this.framebuffer);
+					document.querySelectorAll('framebuffer')[0].appendChild(this.framebuffer);
 
-					//	this.verbose = true;
+				//	this.verbose = true;
 
-						this.fbWrite(undefined, '');
-						this.bootState(true);
+					this.fbWrite(undefined, '');
+					this.bootState(true);
 
-						this.eventCatcherCreate(undefined, 'terminalChanged', (a) => {
-							let terminal = this.terminals.find(v => v.ID === a.terminalID),
-								string = {
-									ID: a.stringID,
-									processID: a.processID,
-									value: a.value
-								},
-								process = this.processes.find(v => v.ID === a.processID);
+					this.eventCatcherCreate(undefined, 'terminalChanged', (a) => {
+						let terminal = this.terminals.find(v => v.ID === a.terminalID),
+							string = {
+								ID: a.stringID,
+								processID: a.processID,
+								value: a.value
+							},
+							process = this.processes.find(v => v.ID === a.processID);
 
-							string.value = process ? process.path.split('/').pop()+': '+string.value : string.value;
+						string.value = process ? process.path.split('/').pop()+': '+string.value : string.value;
 
-							if(a.event === 'output' && terminal.current && terminal.mode === 'text') {
-								let layer = this.drCreate(this.screen.width, this.screen.height),
-									font = this.drOpen(this.images.font),
-									alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~',
-									width = 8,
-									height = 16;
+						if(a.event === 'output' && terminal.current && terminal.mode === 'text') {
+							let layer = this.drCreate(this.screen.width, this.screen.height),
+								font = this.drOpen(this.images.font),
+								alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~',
+								width = 8,
+								height = 16;
 
-								this.drDraw(layer, 'rectangle', this.colors.black, 0, string.ID*height-height, string.value.length*width, height);
-								for(let i in string.value) {
-									let position = alphabet.indexOf(string.value[i]);
+							this.drDraw(layer, 'rectangle', this.colors.black, 0, string.ID*height-height, string.value.length*width, height);
+							for(let i in string.value) {
+								let position = alphabet.indexOf(string.value[i]);
 
-									if(position > -1) {
-										let symbol = this.drCreate(width, height);
+								if(position > -1) {
+									let symbol = this.drCreate(width, height);
 
-										this.drDraw(symbol, 'rectangle', this.colors.white, 0, 0, width, height);
-										this.drMask(symbol, this.drClip(font, position*width, 0, width, height));
-										this.drDraw(layer, 'layer', symbol, i*width, string.ID*height-height);
-									}
+									this.drDraw(symbol, 'rectangle', this.colors.white, 0, 0, width, height);
+									this.drMask(symbol, this.drClip(font, position*width, 0, width, height));
+									this.drDraw(layer, 'layer', symbol, i*width, string.ID*height-height);
 								}
-								this.fbWrite(undefined, layer);
 							}
-						});
+							this.fbWrite(undefined, layer);
+						}
+					});
 
-						this.timerCreate(undefined, true, 1000, () => {
-							this.eventThrow(undefined, undefined, 'dateChanged');
-						});
-						$(document).on('click dblclick contextmenu mouseover mouseenter mouseout mouseleave mousedown mouseup mousemove', '*', (e) => {
-							if(this.verbose) {
-								this.eventThrow(undefined, undefined, 'mouseChanged', { event: e.type, value: e.originalEvent });
-							}
-						});
+					this.timerCreate(undefined, true, 1000, () => {
+						this.eventThrow(undefined, undefined, 'dateChanged');
+					});
+					$(document).on('click dblclick contextmenu mouseover mouseenter mouseout mouseleave mousedown mouseup mousemove', '*', (e) => {
+						if(this.verbose) {
+							this.eventThrow(undefined, undefined, 'mouseChanged', { event: e.type, value: e.originalEvent });
+						}
+					});
 
-					//	this.timerCreate(undefined, false, 125/2, () => {
-							this.bootState(false);
-					//	});
+				//	this.timerCreate(undefined, false, 125/2, () => {
+						this.bootState(false);
+				//	});
 
-						this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js');
-					} catch(error) {
+					this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js').catch(error => {
 						this.kdbPanic(error);
-					}
+					});
 				});
 			}
 
@@ -1674,7 +1673,7 @@
 
 				this.processes.push(process);
 				this.kdbAdd(`
-					processExecute: Process started:
+					processExecute${ processID ? '@'+processID : '' }: Process started:
 					    ID: ${ process.ID }
 					    Parent ID: ${ process.parentID }
 					    Terminal ID: ${ process.terminalID }
@@ -1690,17 +1689,22 @@
 
 				return new Promise((resolve, reject) => {
 					process.environment._executable().then(v => {
+						if(v.prototype?.constructor.name !== 'Main') {
+							this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process stopped: Cannot find entry point`);
+							this.processKill(process.ID, true);
+							reject(new Error('Cannot find entry point'));
+						}
 						try {
 							process.environment._executable = new v(...process.arguments);
 							resolve(this.processInfo(process.ID));
 						} catch(error) {
 							error.fileName = process.path;
-							this.kdbAdd(`processExecute: Process failed to start: "${ error.name }: ${ error.message }":`, error.stack);
+							this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process failed: "${ error.name }: ${ error.message }":`, error.stack);
 							this.processKill(process.ID, true);
-							reject(4);
+							reject(error);
 						}
 					}, e => {
-						reject(5);
+						reject(4);
 					});
 				});
 			}
@@ -1990,6 +1994,8 @@
 			/**
 			 * Подготавливает код для исполнения в процессах.
 			 * - Заменяет любое несанкционированное использование `classProtected()` на undefined.
+			 * - ~~Заменяет обычные `import` на вызовы `await import()`.~~
+			 * - Добавляет `await` передо всеми вызовами `import()`.
 			 * - Заменяет обычный синтаксис приватных полей на нужный для `classProtected()`.
 			 * - Заменяет обычные обращения к полям на проходящие через `classProtected()`.
 			 *
@@ -1999,16 +2005,23 @@
 			 * @returns	{string}
 			 */
 			codePrepare(code) {
-				let { visit, builders } = require('ast-types');
-
-				let ast = require('flow-parser').parse(code, {
-					esproposal_class_instance_fields: true,
-					esproposal_class_static_fields: true,
-					esproposal_decorators: true,
-					esproposal_export_star_as: true,
-					esproposal_nullish_coalescing: true,
-					esproposal_optional_chaining: true
-				});
+				let recast = require('recast'),
+					visit = recast.visit,
+					builders = recast.types.builders,
+					ast = recast.parse(code, {
+						parser: {
+							parse(source) {
+								return require('flow-parser').parse(source, {
+									esproposal_class_instance_fields: true,
+									esproposal_class_static_fields: true,
+									esproposal_decorators: true,
+									esproposal_export_star_as: true,
+									esproposal_nullish_coalescing: true,
+									esproposal_optional_chaining: true
+								})
+							}
+						}
+					});
 
 				visit(ast, {
 					visitIdentifier(path) {
@@ -2052,10 +2065,19 @@
 						}
 					},
 					*/
+					/*
+					visitImportDeclaration(path) {
+						if(path.node.specifiers.length === 0) {
+							path.replace(builders.awaitExpression(builders.callExpression(builders.identifier('_import'), [path.node.source])));
+						}
+
+						this.traverse(path);
+					},
+					*/
 					visitCallExpression(path) {
 						this.traverse(path);
 
-						if(path.node.callee.name === '_import') {
+						if(path.node.callee.name === '_import' && path.parentPath.node.type !== 'AwaitExpression') {
 							path.replace(builders.awaitExpression(path.node));
 						}
 					},
@@ -2134,7 +2156,7 @@
 					}
 				});
 
-				code = require('recast').print(ast).code;
+				code = recast.print(ast).code;
 
 				return code;
 			}
