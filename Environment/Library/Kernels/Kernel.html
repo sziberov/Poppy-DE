@@ -96,7 +96,7 @@
 					await this.fbWrite(undefined, '');
 					await this.bootState(true);
 
-					this.eventCatcherCreate(undefined, 'terminalChanged', (a) => {
+					this.eventCatcherCreate(undefined, 'terminalChanged', async (a) => {
 						let terminal = this.terminals.find(v => v.ID === a.terminalID),
 							string = {
 								ID: a.stringID,
@@ -109,7 +109,7 @@
 
 						if(a.event === 'output' && terminal.current && terminal.mode === 'text') {
 							let layer = this.drCreate(this.screen.width, this.screen.height),
-								font = this.drOpen(this.images.font),
+								font = await this.drOpen(this.images.font),
 								alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~',
 								width = 8,
 								height = 16;
@@ -139,11 +139,11 @@
 						}
 					});
 
-					this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js').then(v => {
+//					this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js').then(v => {
 						this.bootState(false);
-					}, error => {
-						this.kdbPanic(error);
-					});
+//					}, error => {
+//						this.kdbPanic(error);
+//					});
 				});
 
 				return this;
@@ -326,7 +326,7 @@
 				$('kdb strings').text('');
 			}
 
-			kdbPanic(a = {}) {
+			async kdbPanic(a = {}) {
 				for(let v of this.timers) {
 					this.timerDestroy(undefined, v.ID);
 				}
@@ -354,7 +354,7 @@
 				$('kdb').attr('panic', '');
 
 				let layer = this.drCreate(this.screen.width, this.screen.height),
-					image = this.drOpen(this.images.panic);
+					image = await this.drOpen(this.images.panic);
 
 				this.drDraw(layer, 'rectangle', 'rgba(0%,0%,0%,0.25)', 0, 0, layer.width, layer.height);
 				this.drDraw(layer, 'layer', image, layer.width/2-image.width/2, layer.height/2-image.height/2);
@@ -372,10 +372,10 @@
 							this.bootTimerID = undefined;
 						}
 					},
-					true: () => {
+					true: async () => {
 						if(!this.bootTimerID) {
-							let logo = this.drOpen(this.images.logo),
-								spinner = this.drOpen(this.images.spinner),
+							let logo = await this.drOpen(this.images.logo),
+								spinner = await this.drOpen(this.images.spinner),
 								spinnerBackground = this.drCreate(spinner.width, spinner.height),
 								spinnerIteration = 0;
 
@@ -622,7 +622,7 @@
 					this.drDraw(layer, 'rectangle', this.colors.black, 0, 0, layer.width, layer.height);
 				} else
 				if(value instanceof Buffer) {
-					this.drDraw(layer, 'layer', this.drOpen(value));
+					this.drDraw(layer, 'layer', await this.drOpen(value));
 				} else
 				if(value instanceof HTMLCanvasElement) {
 					this.drDraw(layer, 'layer', value);
@@ -645,10 +645,42 @@
 				return layer;
 			}
 
-			drOpen(data, type) {
+			async drOpen(data, type) {
+				let base64 = /^data:(.+);base64,(.+)/i,
+					URL = /^([a-z]+:\/\/)?[a-z0-9/?#. -]+$/gi;
+
+				if(!data instanceof Buffer && !base64.test(data) && !URL.test(data)) {
+					return;
+				}
+
+				if(data instanceof Buffer) {
+					type = type ?? this.fsType(data);
+					data = data.toString('base64');
+				}
+				if(base64.test(data)) {
+					type = type ?? data.match(base64)[1]
+					data = data.match(base64)[2]
+				}
+
+				let image = new Image(),
+					source = !URL.test(data) ? 'data:'+type+';base64,'+data : data;
+
+				await new Promise(resolve => {
+					image.onload = () => resolve();
+					image.src = source;
+				});
+
+				let layer = this.drCreate(image.naturalWidth, image.naturalHeight);
+
+				layer.context2d.drawImage(image, 0, 0);
+
+				return layer;
+			}
+
+			drOpenSync(data, type) {
 				let regex = /^data:image\/(.*);base64,/gi;
 
-				if(!data || !data instanceof Buffer && !(typeof data == 'string' || regex.test(data))) {
+				if(!data || !data instanceof Buffer && !(typeof data === 'string' || regex.test(data))) {
 					console.error(0); return;
 				}
 
@@ -688,42 +720,6 @@
 
 				return layer;
 			}
-
-			/*
-			async drOpenAsync(data, type) {
-				let regex = /^data:image\/(.*);base64,/gi;
-
-				if(!data || !data instanceof Buffer && !(typeof data == 'string' || regex.test(data))) {
-					return;
-				}
-
-				if(data instanceof Buffer) {
-					data = data.toString('base64');
-					type =
-						type == 'png' ? 'png' :
-						type == 'svg' ? 'svg+xml' :
-						'png';
-				} else {
-					type = [...data.matchAll(regex)][0][1]
-					data = data.replace(regex, '');
-				}
-
-				let image;
-
-				await (async () => new Promise((resolve) => {
-					image = $('<img>')[0]
-
-					image.onload = () => resolve(image);
-					image.src = 'data:image/'+type+';base64,'+data;
-				}))();
-
-				let layer = this.drCreate(image.naturalWidth, image.naturalHeight);
-
-				layer.context2d.drawImage(image, 0, 0);
-
-				return layer;
-			}
-			*/
 
 			drColor(red, green, blue, alpha = 1) {
 				red = typeof red === 'string' ? red+'%': red;
