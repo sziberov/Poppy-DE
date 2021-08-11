@@ -7,9 +7,9 @@ return $CFShared[_title] ?? class CGAppearance {
 		this.element;
 	}
 
-	add() {
+	async add() {
 		if(!this.element && this.URL && !this.constructor.__URLSs.includes(this.URL)) {
-			let file = CFFile.content(this.URL),
+			let file = await CFFile.content(this.URL),
 				type =
 					this.URL.endsWith('.less') ? 'less' :
 					this.URL.endsWith('.css') ? 'css' :

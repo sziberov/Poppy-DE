@@ -54,8 +54,8 @@
 			bootTimerID;
 			environment;
 
-			constructor() {
-				this.extensionExecute();
+			async initialize() {
+				await this.extensionExecute();
 
 				this.environment = {
 					...window,
@@ -88,12 +88,12 @@
 				this.environment.Function.prototype = Function.prototype;
 				this.environment.Function.prototype.constructor = this.environment.Function;
 
-				$(() => {
+				$(async () => {
 					document.querySelectorAll('framebuffer')[0].appendChild(this.framebuffer);
 
-				//	this.verbose = true;
+					//	this.verbose = true;
 
-					this.fbWrite(undefined, '');
+					await this.fbWrite(undefined, '');
 					this.bootState(true);
 
 					this.eventCatcherCreate(undefined, 'terminalChanged', (a) => {
@@ -139,14 +139,16 @@
 						}
 					});
 
-				//	this.timerCreate(undefined, false, 125/2, () => {
-						this.bootState(false);
-				//	});
+					//	this.timerCreate(undefined, false, 125/2, () => {
+					this.bootState(false);
+					//	});
 
 					this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js').catch(error => {
 						this.kdbPanic(error);
 					});
 				});
+
+				return this;
 			}
 
 			/**
@@ -364,15 +366,15 @@
 			bootState(value) {
 				let layer = this.drCreate(this.screen.width, this.screen.height);
 
-				switch(value) {
-					case false:
+				({
+					false: () => {
 						if(this.bootTimerID) {
 							this.timerDestroy(undefined, this.bootTimerID);
 
 							this.bootTimerID = undefined;
 						}
-					break
-					case true:
+					},
+					true: () => {
 						if(!this.bootTimerID) {
 							let logo = this.drOpen(this.images.logo),
 								spinner = this.drOpen(this.images.spinner),
@@ -395,16 +397,24 @@
 								this.fbWrite(undefined, layer);
 							});
 						}
-					break
+					}
+				})[value]();
+			}
+
+			async fsExists(path) {
+				try {
+					return await require('fs').promises.access('.'+path) === undefined && (await require('fs').promises.stat('.'+path)).isFile();
+				} catch(error) {
+					return false;
 				}
 			}
 
-			fsExists(path) {
-				return require('fs').existsSync('.'+path) && require('fs').lstatSync('.'+path).isFile();
-			}
-
-			fsExistsDirectory(path) {
-				return require('fs').existsSync('.'+path) && require('fs').lstatSync('.'+path).isDirectory();
+			async fsExistsDirectory(path) {
+				try {
+					return await require('fs').promises.access('.'+path) === undefined && (await require('fs').promises.stat('.'+path)).isDirectory();
+				} catch(error) {
+					return false;
+				}
 			}
 
 			fsOpen(processID, path, mode) {
@@ -432,9 +442,9 @@
 				return ID;
 			}
 
-			fsRead(path, a) {
-				if(this.fsExists(path)) {
-					let c = require('fs').readFileSync('.'+path);
+			async fsRead(path, a) {
+				if(await this.fsExists(path)) {
+					let c = await require('fs').promises.readFile('.'+path);
 
 					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || a ? c : c.toString();
 				} else {
@@ -444,29 +454,29 @@
 				}
 			}
 
-			fsReadDirectory(path) {
-				if(this.fsExistsDirectory(path)) {
-					return require('fs').readdirSync('.'+path, { withFileTypes: true });
+			async fsReadDirectory(path) {
+				if(await this.fsExistsDirectory(path)) {
+					return require('fs').promises.readdir('.'+path, { withFileTypes: true });
 				} else {
 					return []
 				}
 			}
 
-			fsReadPreferences(process, identifier) {
+			async fsReadPreferences(process, identifier) {
 				let properties =
-						(process ? this.fsRead('/Users/'+process.user+'/Library/Preferences/'+identifier+'.plist') : undefined) ||
-						this.fsRead('/Library/Preferences/'+identifier+'.plist') ||
-						this.fsRead('/Environment/Library/Preferences/'+identifier+'.plist');
+						(process ? await this.fsRead('/Users/'+process.user+'/Library/Preferences/'+identifier+'.plist') : undefined) ||
+						await this.fsRead('/Library/Preferences/'+identifier+'.plist') ||
+						await this.fsRead('/Environment/Library/Preferences/'+identifier+'.plist');
 
 				return properties ? JSON.parse(properties) : undefined;
 			}
 
-			fsWrite(path, content) {
-				try {
-					let event = this.fsRead(path) ? 'written' : 'created';
+			async fsWrite(path, content) {
+				let event = await this.fsRead(path) ? 'written' : 'created';
 
-					require('fs').writeFileSync('.'+path, content, { flag: 'w' });	// content.toString();
-					this.eventThrow(undefined, undefined, 'fsChanged', { event: event, value: path });
+				try {
+					await require('fs').promises.writeFile('.'+path, content, { flag: 'w' });	// content.toString();
+					await this.eventThrow(undefined, undefined, 'fsChanged', { event: event, value: path });
 
 					return true;
 				} catch(error) {
@@ -474,8 +484,8 @@
 				}
 			}
 
-			fsWritePreferences(process, identifier, properties, type) {
-				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
+			async fsWritePreferences(process, identifier, properties, type) {
+				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				type ??= process ? 'user' : 'shared';
 
@@ -501,9 +511,9 @@
 				}[type]();
 			}
 
-			fsRemove(path) {
+			async fsRemove(path) {
 				try {
-					require('fs').unlinkSync('.'+path);
+					await require('fs').promises.unlink('.'+path);
 
 					return true;
 				} catch {
@@ -574,20 +584,22 @@
 				}
 			}
 
-			extensionExecute(...a) {
+			async extensionExecute(...a) {
 				a = Array.isArray(a) ? a : []
 
 				if(a.length === 0) {
-					for(let v of this.fsReadDirectory('/Environment/Library/Extensions')) {
+					for(let v of await this.fsReadDirectory('/Environment/Library/Extensions')) {
 						a.push(v.name.replace('.kext', ''));
 					}
 				}
-				for(let v of a) {
-					let b = `/Environment/Library/Extensions/${ v }.kext/Contents/Executables/${ v }.js`;
 
-					if(this.fsRead(b)) {
+				for(let v of a) {
+					let b = `/Environment/Library/Extensions/${ v }.kext/Contents/Executables/${ v }.js`,
+						c = await this.fsRead(b);
+
+					if(c) {
 					//	window[v] = require(`../Extensions/${ v }.kext/Contents/Classes/${ v }.js`);
-						new Function(this.fsRead(b))();
+						new Function(c)();
 					}
 				}
 			}
@@ -596,8 +608,8 @@
 				return this.drClose(this.framebuffer);
 			}
 
-			fbWrite(process, value) {
-				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
+			async fbWrite(process, value) {
+				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
 					console.error(0); return;
@@ -617,7 +629,7 @@
 				if(value instanceof HTMLCanvasElement) {
 					this.drDraw(layer, 'layer', value);
 				}
-				this.eventThrow(undefined, undefined, 'fbChanged');
+				await this.eventThrow(undefined, undefined, 'fbChanged');
 			}
 
 			drCreate(width, height) {
@@ -700,10 +712,10 @@
 
 				let image;
 
-				await (async () => new Promise((resolved) => {
+				await (async () => new Promise((resolve) => {
 					image = $('<img>')[0]
 
-					image.onload = () => resolved(image);
+					image.onload = () => resolve(image);
 					image.src = 'data:image/'+type+';base64,'+data;
 				}))();
 
@@ -949,7 +961,7 @@
 				return Buffer.from(Buffer.from(data.replace(regex, ''), 'base64'));
 			}
 
-			eventThrow(processID, processID_, title, ...arguments_) {
+			async eventThrow(processID, processID_, title, ...arguments_) {
 				if(processID && this.eventsReserved.includes(title)) {
 					this.kdbAdd(`
 						eventThrow@${ processID }: Processes aren't allowed to throw reserved events:
@@ -961,7 +973,7 @@
 				}
 				if(processID && processID_ && processID !== processID_) {
 					let process = this.processes.find(v => v.ID === processID),
-						group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process.user)?.Group;
+						group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process.user)?.Group;
 
 					if(group > 0) {
 						this.kdbAdd(`
@@ -1299,7 +1311,7 @@
 				}
 
 				if(!dl) {
-					if(!this.fsExists(path)) {
+					if(!await this.fsExists(path)) {
 						this.kdbAdd(`dlLoad@${ processID }: Unable to access requested library: ${ path }`);
 
 						throw 2;
@@ -1313,7 +1325,11 @@
 					}
 
 					try {
-						dl.code = this.codePrepare(this.fsRead(path));
+						dl.code = this.codePrepare(`
+							var ${ title } = (async (_title, _path) => {
+								${ await this.fsRead(path) }
+							});
+						`);
 					} catch(error) {
 						this.kdbAdd(`dlLoad@${ processID }: Unable to parse requested library: ${ path }`, error.stack);
 
@@ -1327,17 +1343,14 @@
 
 				let process = this.processes.find(v => v.ID === processID);
 
-				this.sbExecute(`
-					var ${ title } = (async () => {
-						let _title = '${ title }',
-							_path = '${ path }';
-
-						${ dl.code }
-					});
-				`, process.environment, title);
+				try {
+					this.sbExecute(dl.code, process.environment, title);
+				} catch(error) {
+					console.log(error);
+				}
 
 				return new Promise((resolve, reject) => {
-					process.environment[title]().then(v => {
+					process.environment[title](title, path).then(v => {
 						process.environment[title] = v;
 						if(this.verbose) {
 							this.kdbAdd(`
@@ -1386,7 +1399,7 @@
 				}
 			}
 
-			terminalCreate(process) {
+			async terminalCreate(process) {
 				let ID = Math.max(...this.terminals.map(v => v.ID).initialize(0))+1;
 
 				this.terminals.push({
@@ -1396,7 +1409,7 @@
 					current: !this.terminals.some(v => v.current),
 					strings: []
 				});
-				this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'added', value: ID });
+				await this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'added', value: ID });
 
 				return ID;
 			}
@@ -1417,7 +1430,7 @@
 				this.eventThrow(undefined, undefined, 'terminalChanged', { event: 'input', processID: processID, value: value });
 			}
 
-			terminalOutput(process, value, terminalID) {
+			async terminalOutput(process, value, terminalID) {
 				terminalID ??= process?.terminalID;
 
 				let terminal = this.terminals.find(v => v.ID === terminalID);
@@ -1443,7 +1456,7 @@
 					}
 
 				terminal.strings.push(string);
-				this.eventThrow(undefined, undefined, 'terminalChanged', {
+				await this.eventThrow(undefined, undefined, 'terminalChanged', {
 					event: 'output',
 					terminalID: terminal.ID,
 					stringID: ID,
@@ -1455,10 +1468,10 @@
 				//	get: (target, key) => {
 				//		return key !== 'ID' ? target[key] : undefined;
 				//	},
-					set: (target, key, value) => {
+					set: async (target, key, value) => {
 						if(key === 'value') {
 							target[key] = value;
-							this.eventThrow(undefined, undefined, 'terminalChanged', {
+							await this.eventThrow(undefined, undefined, 'terminalChanged', {
 								event: 'output',
 								terminalID: terminal.ID,
 								stringID: ID,
@@ -1611,8 +1624,8 @@
 			 * @returns	{?Object}				Информация о процессе.
 			 */
 			async processExecute(terminalID, processID, login, password, path, ...arguments_) {
-				let user = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === login && v.Password === password),
-					executable = this.fsRead(path);
+				let user = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === login && v.Password === password),
+					executable = await this.fsRead(path);
 
 				if(terminalID && !this.terminals.find(v => v.ID === terminalID)) {
 					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Incorrect terminal`);
@@ -1620,7 +1633,7 @@
 					throw 0;
 				}
 				if(!terminalID) {
-					terminalID = this.terminalCreate();
+					terminalID = await this.terminalCreate();
 				}
 				if(!user) {
 					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Incorrect authorization`);
@@ -1680,12 +1693,12 @@
 					    User: ${ process.user }
 					    Path: ${ process.path }
 				`);
-				this.eventThrow(undefined, undefined, 'processListChanged', { event: 'added', value: process.ID });
-				this.sbExecute(`
+				await this.eventThrow(undefined, undefined, 'processListChanged', { event: 'added', value: process.ID });
+				this.sbExecute(this.codePrepare(`
 					var _executable = (async () => {
-						${ this.codePrepare(executable) }
+						${ executable }
 					});
-				`, process.environment, process.path);
+				`), process.environment, process.path);
 
 				return new Promise((resolve, reject) => {
 					process.environment._executable().then(v => {
@@ -1813,7 +1826,7 @@
 
 				for(let v of pathSearch) {
 					let a = v+'/Classes/'+class_+'.js',
-						b = this.fsExists(a);
+						b = await this.fsExists(a);
 
 					if(b) {
 						path = a; break;
@@ -1827,10 +1840,10 @@
 				}
 
 				return new Promise((resolve, reject) => {
-					this.dlLoad(process.ID, path, class_).then(v => {
+					this.dlLoad(process.ID, path, class_).then(async v => {
 						if(framework === class_) {
 							this.kdbAdd(`classImport: Successfully imported main class of ${ framework } framework into process: ${ process.ID }`);
-							this.eventThrow(undefined, process.ID, 'frameworkListChanged', { event: 'added', title: framework, path: path });
+							await this.eventThrow(undefined, process.ID, 'frameworkListChanged', { event: 'added', title: framework, path: path });
 						} else {
 							if(this.verbose) {
 								this.kdbAdd(`classImport: Successfully imported ${ class_ } class of ${ framework } framework into process: ${ process.ID }`);
@@ -1927,6 +1940,8 @@
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected field: ${ field }`); return;
 				}
 				if(mutating && !global && !equals && !befriends && !mutable) {
+					console.log(caller);
+					console.log(class_);
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't mutate field: ${ field }`); return;
 				}
 
@@ -2172,8 +2187,8 @@
 			/**
 			 * Перезапускает Окружение.
 			 */
-			environmentRelaunch(process) {
-				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
+			async environmentRelaunch(process) {
+				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
 					console.error(0); return;
@@ -2185,8 +2200,8 @@
 			/**
 			 * Завершает Окружение.
 			 */
-			environmentQuit(process) {
-				let group = this.fsReadPreferences(undefined, 'Global').Users.find(v => v.Login === process?.user)?.Group;
+			async environmentQuit(process) {
+				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
 					console.error(0); return;
@@ -2195,7 +2210,7 @@
 				require('nw.gui').App.quit();
 			}
 
-			__test() {
+			async __test() {
 				$('framebuffer').css('z-index', 2);
 				this.verbose = true;
 				let s = this.processes[0].environment.CGSWindowServer.shared,
@@ -2207,7 +2222,7 @@
 			//	l.context.drawRectangle('rgba(255,255,255,0.25)', 0, 0, 512, 256);
 			//	l.backgroundFilters = [{ title: 'blur', amount: 4 }]
 				let l = new this.processes[0].environment.CGLayer({ width: this.screen.width, height: this.screen.height });
-				l.context.drawLayer(new this.processes[0].environment.CGImage(this.processes[0].environment.LFWorkspace.shared.desktopImage), 0, 0, '100', '100');
+				l.context.drawLayer(await this.processes[0].environment.CGImage.new(this.processes[0].environment.LFWorkspace.shared.desktopImage), 0, 0, '100', '100');
 				let menubar = this.processes[0].environment.LFMenubar.shared;
 				menubar.draw();
 				s.__workspaces[1].layer.sublayers = [l, menubar.__layer]
@@ -2254,7 +2269,8 @@
 			 *       За отрисовку обоев на каждом workspac'е должен отвечать Dock, создавая их как независимые окна.
 			 *       Любые view'ы должны отрисовываться посредством LFWindow (CGSWindow).
 			 * - [~] Написать Mission Control (часть Dock) и Notification Center.
-			 * - [~] Отследить и убрать повторный запуск дока.
+			 * - [~] Заменить _import() в классах на import при первой возможности (когда исправят баг в recast).
+			 * - [~] Добавить необходимые _import()'ы в классы.
 			 * - [~] Обеспечить асинхронность процессов (мультизадачность).
 			 * - [?] Добавить проверку необходимости оператора ?. в .codePrepare() (вместо его слепой расстановки вовсюда).
 			 * - [?] Законопатить дырку безопасности, связанную с возможностью перезаписи приватных полей классами-наследниками.
@@ -2267,7 +2283,7 @@
 			 * - ? - Задачи с низким приоритетом по причине неясности пути и/или неуверенности в нужде реализации.
 			 * - X - Скорее всего отменённые задачи.
 			 */
-		}
+		}().initialize();
 	</script>
 	<style type="text/css">
 		@font-face {

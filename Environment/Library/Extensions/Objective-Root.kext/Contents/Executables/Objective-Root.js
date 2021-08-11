@@ -148,6 +148,17 @@ let arrayFields = {
 		},
 		enumerable: false,
 		writable: true
+	},
+	findAsync: {
+		value: async function(function_) {
+			let promises = this.map(function_),
+				results = await Promise.all(promises),
+				index = results.findIndex(v => v);
+
+			return this[index]
+		},
+		enumerable: false,
+		writable: true
 	}
 }
 

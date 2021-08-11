@@ -1,3 +1,4 @@
+
 // noinspection JSAnnotator
 return class CGContext {
 	__externalLayer;

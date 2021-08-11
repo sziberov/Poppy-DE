@@ -1,24 +1,24 @@
+_import('CoreFoundation', 'CFProcessInfo');
+_import('CoreFoundation', 'CFFile');
+_import('CoreFoundation', 'CFDirectory');
+_import('CoreFoundation', 'CFPreferences');
+
 // noinspection JSAnnotator
 return class CFBundle {
-	static __main = new this(CFProcessInfo.shared.path);
-//	static __current = new this(_path);
+	static main;
 
-	static get main() {
-		return this.__main;
+	static async new(URL) {
+		let self = new this();
+
+		await self.setURL(URL);
+
+		return self;
 	}
-
-//	static get current() {
-//		return this.__current;
-//	}
 
 	__URL;
 
 	properties = {}
 	localizations = {}
-
-	constructor(URL) {
-		this.URL = URL;
-	}
 
 	get URL() {
 		return this.__URL;
@@ -36,7 +36,7 @@ return class CFBundle {
 		return this.contentsURL+'/Resources';
 	}
 
-	set URL(value) {
+	async setURL(value) {
 		if(typeof value !== 'string') {
 			throw new TypeError(0);
 		}
@@ -49,7 +49,7 @@ return class CFBundle {
 
 		this.__URL = value;
 
-		for(let directory of CFDirectory.content(this.resourcesURL, 'Directories')) {
+		for(let directory of await CFDirectory.content(this.resourcesURL, 'Directories')) {
 			let directoryExtension = '.lproj';
 
 			if(directory.endsWith(directoryExtension)) {
@@ -57,12 +57,12 @@ return class CFBundle {
 
 				this.localizations[directoryTitle] = {}
 
-				for(let file of CFDirectory.content(this.resourcesURL+'/'+directory, 'Files')) {
+				for(let file of await CFDirectory.content(this.resourcesURL+'/'+directory, 'Files')) {
 					let fileExtension = '.strings';
 
 					if(file.endsWith(fileExtension)) {
 						let fileTitle = file.split(fileExtension)[0],
-							fileContent = JSON.parse(CFFile.content(this.resourcesURL+'/'+directory+'/'+file));
+							fileContent = JSON.parse(await CFFile.content(this.resourcesURL+'/'+directory+'/'+file));
 
 						this.localizations[directoryTitle][fileTitle] = fileContent;
 					}
@@ -74,8 +74,8 @@ return class CFBundle {
 			}
 		}
 
-		let properties = CFFile.content(this.contentsURL+'/Info.plist'),
-			language = new CFPreferences('Global').get().PreferredLanguages[0],
+		let properties = await CFFile.content(this.contentsURL+'/Info.plist'),
+			language = (await CFPreferences.new('Global')).get().PreferredLanguages[0],
 			localizedStrings = this.localizations[language]?.InfoPlist
 
 		if(properties) {

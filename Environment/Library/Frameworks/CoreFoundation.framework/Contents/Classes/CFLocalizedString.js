@@ -1,7 +1,10 @@
-// noinspection JSAnnotator
-return CFLocalizedString = (key, bundle = CFBundle.main) => {
-	let language = new CFPreferences('Global').get().PreferredLanguages[0],
-		localizedStrings = bundle.localizations[language]?.Localized
+_import('CoreFoundation', 'CFPreferences');
+_import('CoreFoundation', 'CFBundle');
 
-	return language && localizedStrings ? localizedStrings[key] || value || key : value || key
+// noinspection JSAnnotator
+return CFLocalizedString = async (key, bundle) => {
+	let language = (await CFPreferences.new('Global')).get().PreferredLanguages[0],
+		localizedStrings = (bundle ?? await CFBundle.main).localizations[language]?.Localized;
+
+	return language && localizedStrings ? localizedStrings[key] ?? value ?? key : value ?? key;
 }

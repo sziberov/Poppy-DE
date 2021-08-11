@@ -1,23 +1,32 @@
+_import('CoreFoundation', 'CFProcessInfo');
+_import('CoreFoundation', 'CFPreferences');
+
 // noinspection JSAnnotator
 return class CFIdentity {
 	static __shared;
 
 	static get shared() {
-		if(!this.__shared) {
-			new this();
-		}
+		return new Promise(async () => {
+			if(!this.__shared) {
+				await this.new();
+			}
 
-		return this.__shared;
+			return this.__shared;
+		});
 	}
 
-	constructor() {
-		if(!this.constructor.__shared) {
-			this.constructor.__shared = this;
+	static async new() {
+		let self = this.__shared ?? new this();
+
+		if(!this.__shared) {
+			this.__shared = self;
 		} else {
 			console.error(0); return;
 		}
 
-		this.__user = new CFPreferences('Global').get().Users.find(v => v.Login === CFProcessInfo.shared.user);
+		self.__user = (await CFPreferences.new('Global')).get().Users.find(v => v.Login === CFProcessInfo.shared.user);
+
+		return self;
 	}
 
 	get ID() {

@@ -3,6 +3,12 @@ _import('Leaf');
 // noinspection JSAnnotator
 return class Main {
 	constructor() {
+		this.initialize().catch(error => {
+			throw error;
+		});
+	}
+
+	async initialize() {
 		this.__services = [
 			{
 				identifier: 'ru.poppy.enviro',
@@ -19,19 +25,19 @@ return class Main {
 		LFApp.focusingPolicy = 1;
 
 		new CGCursor();
-		new CGFontManager('/Environment/Library/Fonts');
+		CGFontManager.new('/Environment/Library/Fonts');
 		LFWorkspace.shared.desktopImage = '/Library/Desktop Images/249785.png';
 		LFWorkspace.shared.add();
 
 		LFMenubar.shared.mainMenu.items = [
-			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateLogo' }),
+			new LFMenuItem({ title: '', image: await LFImage.new({ shared: 'TemplateLogo' }),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: CFLocalizedString('About This Poppy'), action: () => this.about() }),
+					new LFMenuItem({ title: await CFLocalizedString('About This Poppy'), action: () => this.about() }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: CFLocalizedString('Environment Preferences'), action: () => LFWorkspace.shared.launchApplication('/Applications/Environment Preferences') }),
-					new LFMenuItem({ title: CFLocalizedString('Dock'),
+					new LFMenuItem({ title: await CFLocalizedString('Environment Preferences'), action: () => LFWorkspace.shared.launchApplication('/Applications/Environment Preferences') }),
+					new LFMenuItem({ title: await CFLocalizedString('Dock'),
 						menu: new LFMenu({ items: [
-							new LFMenuItem({ title: 'Test Alert', action: () => new LFAlert() }),
+							new LFMenuItem({ title: 'Test Alert', action: () => LFAlert.new() }),
 							new LFMenuItem({ title: 'Submenu',
 								menu: new LFMenu({ items: [
 									new LFMenuItem(),
@@ -41,19 +47,19 @@ return class Main {
 						] })
 					}),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: CFLocalizedString('Force Quit'), action: () => this.forceQuit() }),
-					new LFMenuItem({ title: CFLocalizedString('Activity Monitor'), action: () => LFWorkspace.shared.launchApplication('/Applications/Activity Monitor') }),
+					new LFMenuItem({ title: await CFLocalizedString('Force Quit'), action: () => this.forceQuit() }),
+					new LFMenuItem({ title: await CFLocalizedString('Activity Monitor'), action: () => LFWorkspace.shared.launchApplication('/Applications/Activity Monitor') }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: CFLocalizedString('Relaunch'), action: () => _call('relaunch') }),
-					new LFMenuItem({ title: CFLocalizedString('Quit'), action: () => _call('quit') })
+					new LFMenuItem({ title: await CFLocalizedString('Relaunch'), action: () => _call('relaunch') }),
+					new LFMenuItem({ title: await CFLocalizedString('Quit'), action: () => _call('quit') })
 				] })
 			})
 		]
 		LFMenubar.shared.statusMenu.items = [
-			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateNotifications' }), action: () => alert('HUHU') }),
-			new LFMenuItem({ title: '', image: new LFImage({ shared: 'TemplateSearch' }),
+			new LFMenuItem({ title: '', image: await LFImage.new({ shared: 'TemplateNotifications' }), action: () => alert('HUHU') }),
+			new LFMenuItem({ title: '', image: await LFImage.new({ shared: 'TemplateSearch' }),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: CFLocalizedString('Search...') })
+					new LFMenuItem({ title: await CFLocalizedString('Search...') })
 				] })
 			}),
 			new LFMenuItem({ title: 'DIES', action: function() { this.title = 'Random Title' } }),
@@ -70,13 +76,13 @@ return class Main {
 				//	_call('timerCreate', true, 1000, update);
 				},
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: CFLocalizedString('View as Analog') }),
-					new LFMenuItem({ title: CFLocalizedString('View as Digital') }),
+					new LFMenuItem({ title: await CFLocalizedString('View as Analog') }),
+					new LFMenuItem({ title: await CFLocalizedString('View as Digital') }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: CFLocalizedString('Date & Time Preferences...'), action: () => LFWorkspace.shared.launchApplication('/Applications/Environment Preferences') })
+					new LFMenuItem({ title: await CFLocalizedString('Date & Time Preferences...'), action: () => LFWorkspace.shared.launchApplication('/Applications/Environment Preferences') })
 				] })
 			}),
-			new LFMenuItem({ title: '', image: new LFImage({ width: 24, shared: 'TemplateBatteryConnected' }),
+			new LFMenuItem({ title: '', image: await LFImage.new({ width: 24, shared: 'TemplateBatteryConnected' }),
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: '100% Remaining' }),
 					new LFMenuItem({ title: 'Power Source: Charger' }),
@@ -104,7 +110,7 @@ return class Main {
 		}
 	}
 
-	about() {
+	async about() {
 		let bytesConvert = (a) => {
 				let b = ['Bytes', 'KB', 'MB', 'GB', 'TB'],
 					c = Math.floor(Math.log(a)/Math.log(1024)),
@@ -121,25 +127,25 @@ return class Main {
 			window = LFApp.windows.find(v => v.tag === 'about');
 
 		if(!window) {
-			new LFWindow({ tag: 'about', width: 512, height: 184, /*background: CGColor('100', '100', '100'),*/ type: ['titled', 'closable', 'minimizable'], title: CFLocalizedString('About This Poppy'), view:
+			new LFWindow({ tag: 'about', width: 512, height: 184, /*background: CGColor('100', '100', '100'),*/ type: ['titled', 'closable', 'minimizable'], title: await CFLocalizedString('About This Poppy'), view:
 				new LFView({ yAlign: 'center', subviews: [
-					new LFImage({ width: 128, height: 128, shared: 'Monoblock' }),
+					await LFImage.new({ width: 128, height: 128, shared: 'Monoblock' }),
 					new LFView({ type: 'vertical', subviews: [
 						new LFText({ string: pc, size: 'big', weight: 'bold' }),
 						new LFView({ subviews: [
 							new LFView({ type: 'vertical', tight: true, subviews: [
-								new LFText({ string: CFLocalizedString('Processor'), size: 'small', weight: 'bold' }),
-								new LFText({ string: CFLocalizedString('Memory'), size: 'small', weight: 'bold' }),
-								new LFText({ string: CFLocalizedString('Graphics'), size: 'small', weight: 'bold' }),
-								new LFText({ string: CFLocalizedString('Software'), size: 'small', weight: 'bold' }),
-								new LFText({ string: CFLocalizedString('Serial Number'), size: 'small', weight: 'bold' }),
+								new LFText({ string: await CFLocalizedString('Processor'), size: 'small', weight: 'bold' }),
+								new LFText({ string: await CFLocalizedString('Memory'), size: 'small', weight: 'bold' }),
+								new LFText({ string: await CFLocalizedString('Graphics'), size: 'small', weight: 'bold' }),
+								new LFText({ string: await CFLocalizedString('Software'), size: 'small', weight: 'bold' }),
+								new LFText({ string: await CFLocalizedString('Serial Number'), size: 'small', weight: 'bold' }),
 							] }),
 							new LFView({ type: 'vertical', tight: true, subviews: [
 								new LFText({ string: cpu, size: 'small' }),
 								new LFText({ string: memory, size: 'small' }),
-								new LFText({ string: gpu ?? CFLocalizedString('Unknown'), size: 'small' }),
+								new LFText({ string: gpu ?? await CFLocalizedString('Unknown'), size: 'small' }),
 								new LFText({ string: software, size: 'small' }),
-								new LFText({ string: CFLocalizedString('Unknown'), size: 'small' })
+								new LFText({ string: await CFLocalizedString('Unknown'), size: 'small' })
 							] })
 						] })
 					] })
@@ -150,13 +156,13 @@ return class Main {
 		}
 	}
 
-	forceQuit() {
+	async forceQuit() {
 		let window = LFApp.windows.find(v => v.tag === 'forceQuit');
 
 		if(!window) {
-			new LFWindow({ tag: 'forceQuit', width: 384, type: ['titled', 'closable', 'resizable'], title: CFLocalizedString('Force Quit Applications'),
+			new LFWindow({ tag: 'forceQuit', width: 384, type: ['titled', 'closable', 'resizable'], title: await CFLocalizedString('Force Quit Applications'),
 				view: new LFView({ type: 'vertical', subviews: [
-					new LFText({ string: CFLocalizedString('Force Quit Applications_Description'), size: 'small' })
+					new LFText({ string: await CFLocalizedString('Force Quit Applications_Description'), size: 'small' })
 				] })
 			});
 		} else {

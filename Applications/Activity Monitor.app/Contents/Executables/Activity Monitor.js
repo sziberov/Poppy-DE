@@ -3,28 +3,34 @@ _import('Leaf');
 // noinspection JSAnnotator
 return class Main {
 	constructor() {
+		this.initialize().catch(error => {
+			throw error;
+		});
+	}
+
+	async initialize() {
 		LFApp.quitableBySingleWindow = true;
 		LFApp.menuItems = [
-			new LFMenuItem({ title: CFLocalizedString('File'),
+			new LFMenuItem({ title: await CFLocalizedString('File'),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: CFLocalizedString('Switch'), action: () => this.switch() }),
-					new LFMenuItem({ title: CFLocalizedString('Quit'), action: () => this.quit() })
+					new LFMenuItem({ title: await CFLocalizedString('Switch'), action: () => this.switch() }),
+					new LFMenuItem({ title: await CFLocalizedString('Quit'), action: () => this.quit() })
 				] })
 			}),
-			new LFMenuItem({ title: CFLocalizedString('Edit') }),
-			new LFMenuItem({ title: CFLocalizedString('View'),
+			new LFMenuItem({ title: await CFLocalizedString('Edit') }),
+			new LFMenuItem({ title: await CFLocalizedString('View'),
 				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: CFLocalizedString('Update'), action: () => this.update() })
+					new LFMenuItem({ title: await CFLocalizedString('Update'), action: () => this.update() })
 				] })
 			}),
-			new LFMenuItem({ title: CFLocalizedString('Window') }),
-			new LFMenuItem({ title: CFLocalizedString('Help') })
+			new LFMenuItem({ title: await CFLocalizedString('Window') }),
+			new LFMenuItem({ title: await CFLocalizedString('Help') })
 		]
 
 		new LFWindow({ width: 512, height: 256, title: LFApp.title,
 			toolbar: new LFToolbar({ subviews: [
-				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateQuit' }), action: () => this.quit() }),
-				new LFButton({ title: '', image: new LFImage({ shared: 'TemplateInfo' }), action: () => this.information() })
+				new LFButton({ title: '', image: await LFImage.new({ shared: 'TemplateQuit' }), action: () => this.quit() }),
+				new LFButton({ title: '', image: await LFImage.new({ shared: 'TemplateInfo' }), action: () => this.information() })
 			] }),
 			view: new LFView({ tight: true, yAlign: 'stretch', subviews: [
 				new LFTable()
@@ -53,7 +59,7 @@ return class Main {
 		this.table.activeRow?.data.application.focus();
 	}
 
-	information() {
+	async information() {
 		let application = this.table.activeRow?.data.application;
 
 		if(application) {
@@ -79,7 +85,7 @@ return class Main {
 								new LFText({ string: application.identifier, size: 'small' })
 							] })
 						] }),
-						new LFButton({ title: CFLocalizedString('Quit'), action: function() {
+						new LFButton({ title: await CFLocalizedString('Quit'), action: function() {
 							this.get('Superview', LFWindow).close();
 							application.quit();
 						} })

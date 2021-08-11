@@ -110,22 +110,22 @@ return class LFApplication {
 
 	update(mode) {
 		return {
-			MenuItems: () => {
+			MenuItems: async () => {
 				if(this.focusingPolicy < 1 && LFWorkspace.shared.getApplication(this.identifier)) {
-					let bundle = new CFBundle(_path);
+					let bundle = await CFBundle.new(_path);
 
 					LFMenubar.shared.applicationMenu.items = [
 						new LFMenuItem({ title: this.title,
 							menu: new LFMenu({ items: [
-								new LFMenuItem({ title: CFLocalizedString('About', bundle)+' '+this.title, action: () => this.about() }),
+								new LFMenuItem({ title: await CFLocalizedString('About', bundle)+' '+this.title, action: () => this.about() }),
 								new LFMenuItem().separator(),
-								new LFMenuItem({ title: CFLocalizedString('Services', bundle) }),
+								new LFMenuItem({ title: await CFLocalizedString('Services', bundle) }),
 								new LFMenuItem().separator(),
-								new LFMenuItem({ title: CFLocalizedString('Hide', bundle)+' '+this.title }),
-								new LFMenuItem({ title: CFLocalizedString('Hide Others', bundle) }),
-								new LFMenuItem({ title: CFLocalizedString('Show All', bundle) }),
+								new LFMenuItem({ title: await CFLocalizedString('Hide', bundle)+' '+this.title }),
+								new LFMenuItem({ title: await CFLocalizedString('Hide Others', bundle) }),
+								new LFMenuItem({ title: await CFLocalizedString('Show All', bundle) }),
 								new LFMenuItem().separator(),
-								new LFMenuItem({ title: CFLocalizedString('Quit', bundle)+' '+this.title, action: () => this.quit() })
+								new LFMenuItem({ title: await CFLocalizedString('Quit', bundle)+' '+this.title, action: () => this.quit() })
 							] })
 						}),
 						...this.menuItems
@@ -170,14 +170,14 @@ return class LFApplication {
 		try {
 			this.application[method](..._arguments);
 		} catch(error) {
-			new LFAlert({
+			LFAlert.new({
 				message: `"${ this.title }"'s method returned exception.`,
 				information: error.name+': '+error.message
 			});
 		}
 	}
 
-	about() {
+	async about() {
 		if(typeof this.application.about === 'function') {
 			this.application.about();
 		} else {
@@ -186,9 +186,9 @@ return class LFApplication {
 			if(!window) {
 				new LFWindow({ tag: 'about', width: 256, type: ['titled', 'closable', 'minimizable'], title: '', view:
 					new LFView({ type: 'vertical', yAlign: 'center', subviews: [
-						...this.icon ? [new LFImage({ width: 64, height: 64, url: this.icon })] : [],
+						...this.icon ? [await LFImage.new({ width: 64, height: 64, url: this.icon })] : [],
 						new LFText({ string: this.title, weight: 'bold' }),
-						...this.version ? [new LFText({ string: CFLocalizedString('Version', new CFBundle(_path))+' '+this.version, size: 'small' })] : [],
+						...this.version ? [new LFText({ string: await CFLocalizedString('Version', await CFBundle.new(_path))+' '+this.version, size: 'small' })] : [],
 						...this.license ? [new LFText({ string: this.license, size: 'small' })] : []
 					] })
 				}).center();

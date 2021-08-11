@@ -11,7 +11,6 @@
 		"fullscreen": true
 	},
 	"dependencies": {
-		"ast-types": "^0.14.2",
 		"fast-xml-parser": "^3.19.0",
 		"flow-parser": "^0.157.0",
 		"pngjs": "^6.0.0",

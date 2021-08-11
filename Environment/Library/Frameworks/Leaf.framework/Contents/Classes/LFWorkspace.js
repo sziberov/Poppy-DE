@@ -94,11 +94,11 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 		URL = URL.endsWith('.app') ? URL : URL+'.app';
 
 		try {
-			var bundle = new CFBundle(URL),
+			var bundle = await CFBundle.new(URL),
 				identifier = bundle.properties.CFBundleIdentifier,
 				title = bundle.properties.CFBundleTitle;
 		} catch(error) {
-			new LFAlert({
+			LFAlert.new({
 				message: 'Application unable to load.',
 				information: error.name+': '+error.message
 			});
@@ -107,20 +107,21 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 		}
 
 		if(!this.getApplication(identifier)) {
-			return new Promise((resolve, reject) => {
-				let user = new CFPreferences('Global').get().Users.find(v => v.Group === 1);
+			let user = (await CFPreferences.new('Global')).get().Users.find(v => v.Group === 1);
 
-				_call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_).then(v => {
-					resolve(this.getApplication(identifier));
-				}, error => {
-					this.getApplication(identifier)?.quit();
-					new LFAlert({
-						message: `"${ title }" unable to launch.`,
-						information: error.name+': '+error.message
-					});
-					reject(error);
+			try {
+				await _call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
+
+				return this.getApplication(identifier);
+			} catch(error) {
+				this.getApplication(identifier)?.quit();
+				LFAlert.new({
+					message: `"${ title }" unable to launch.`,
+					information: error.name+': '+error.message
 				});
-			});
+
+				throw(error);
+			}
 		} else {
 			this.getApplication(identifier).focus();
 		}

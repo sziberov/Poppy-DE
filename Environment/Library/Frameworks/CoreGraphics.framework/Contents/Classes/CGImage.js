@@ -1,13 +1,13 @@
 // noinspection JSAnnotator
 return class CGImage {
-	constructor(URL, type) {
+	static async new(URL, type) {
 		if(typeof URL !== 'string') {
-			console.error(0); return;
+			throw new TypeError(0);
 		}
 
 		let layer = new CGLayer();
 
-		layer.__layer = _call('drOpen', CFFile.content(URL), type);
+		layer.__layer = _call('drOpen', await CFFile.content(URL), type);
 
 		return layer;
 	}

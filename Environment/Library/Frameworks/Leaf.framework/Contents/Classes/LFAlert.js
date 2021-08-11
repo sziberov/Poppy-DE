@@ -4,18 +4,20 @@ return class LFAlert {
 	__message;
 	__information;
 
-	constructor({ type = 'warning', message = 'Message.', information = 'Information.' } = {}) {
-		this.type = type;
-		this.message = message;
-		this.information = information;
+	static async new({ type = 'warning', message = 'Message.', information = 'Information.' } = {}) {
+		let self = new this();
+
+		self.type = type;
+		self.message = message;
+		self.information = information;
 
 		return new LFWindow({ width: 512, level: 'floating', type: ['closable'], view:
 			new LFView({ type: 'vertical', yAlign: 'stretch', subviews: [
 				new LFView({ subviews: [
-					new LFImage({ width: 64, height: 64, shared: this.type[0].toUpperCase()+this.type.substring(1) }),
+					await LFImage.new({ width: 64, height: 64, shared: self.type[0].toUpperCase()+self.type.substring(1) }),
 					new LFView({ type: 'vertical', subviews: [
-						...this.message ? [new LFText({ string: this.message, weight: 'bold' })] : [],
-						...this.information ? [new LFText({ string: this.information })] : [],
+						...self.message ? [new LFText({ string: self.message, weight: 'bold' })] : [],
+						...self.information ? [new LFText({ string: self.information })] : [],
 					] })
 				] }),
 				new LFView({ xAlign: 'end', subviews: [

@@ -30,7 +30,7 @@ if(!CGSWindowServer.shared) {
 	new CGSWindowServer();
 }
 
-CFProcessInfo.shared.environment.$CGAppearance = new CGAppearance(new CFBundle(_path).resourcesURL+'/Appearance.css').add();
+CFProcessInfo.shared.environment.$CGAppearance = await new CGAppearance((await CFBundle.new(_path)).resourcesURL+'/Appearance.css').add();
 
 $CFShared.CGSWindowServer = CGSWindowServer;
 $CFShared.CGAppearance = CGAppearance;

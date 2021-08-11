@@ -4,12 +4,14 @@ return class LFImage extends LFView {
 	__height;
 	__url;
 
-	constructor({ width = 16, height = 16, url, shared } = {}) {
-		super(...arguments);
+	static async new({ width = 16, height = 16, url, shared } = {}) {
+		let self = new this();
 
-		this.width = width;
-		this.height = height;
-		this.url = shared ? new CFBundle('/Environment/Library/Frameworks/CoreTypes.bundle').resourcesURL+'/'+shared+'.icns' : url;
+		self.width = width;
+		self.height = height;
+		self.url = shared ? (await CFBundle.new('/Environment/Library/Frameworks/CoreTypes.bundle')).resourcesURL+'/'+shared+'.icns' : url;
+
+		return self;
 	}
 
 	create() {

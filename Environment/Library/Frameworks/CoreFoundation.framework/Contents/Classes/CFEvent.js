@@ -4,7 +4,7 @@ return class CFEvent {
 		if(processID && typeof processID !== 'number')	throw new TypeError(0);
 		if(typeof event !== 'string')					throw new TypeError(1);
 
-		_call('throw', processID, event, ...arguments_);
+		return _call('throw', processID, event, ...arguments_);
 	}
 
 	static addHandler(event, function_) {

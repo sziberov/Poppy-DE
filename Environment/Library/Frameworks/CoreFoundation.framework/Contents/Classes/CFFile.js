@@ -1,7 +1,7 @@
 // noinspection JSAnnotator
 return class CFFile {
 	static create(URL) {
-		_call('write', URL, '');
+		return _call('write', URL, '');
 	}
 
 	static content(URL, content) {
@@ -14,6 +14,6 @@ return class CFFile {
 	}
 
 	static remove(URL) {
-		_call('remove', URL);
+		return _call('remove', URL);
 	}
 }

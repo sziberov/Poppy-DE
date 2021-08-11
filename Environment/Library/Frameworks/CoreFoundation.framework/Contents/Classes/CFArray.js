@@ -1,3 +1,6 @@
+_import('CoreFoundation', 'CFEvent');
+_import('CoreFoundation', 'CFObject');
+
 // noinspection JSAnnotator
 return class CFArray extends CFObject {
 	static add(array, ...value) {

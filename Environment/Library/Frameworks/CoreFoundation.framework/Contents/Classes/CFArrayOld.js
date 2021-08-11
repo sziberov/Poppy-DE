@@ -1,3 +1,6 @@
+_import('CoreFoundation', 'CFProcessInfo');
+_import('CoreFoundation', 'CFEvent');
+
 // noinspection JSAnnotator
 return class CFArrayOld extends Array {
 	[Symbol.collection] = true;
