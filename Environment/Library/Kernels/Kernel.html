@@ -91,10 +91,10 @@
 				$(async () => {
 					document.querySelectorAll('framebuffer')[0].appendChild(this.framebuffer);
 
-					//	this.verbose = true;
+				//	this.verbose = true;
 
 					await this.fbWrite(undefined, '');
-					this.bootState(true);
+					await this.bootState(true);
 
 					this.eventCatcherCreate(undefined, 'terminalChanged', (a) => {
 						let terminal = this.terminals.find(v => v.ID === a.terminalID),
@@ -139,11 +139,9 @@
 						}
 					});
 
-					//	this.timerCreate(undefined, false, 125/2, () => {
-					this.bootState(false);
-					//	});
-
-					this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js').catch(error => {
+					this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js').then(v => {
+						this.bootState(false);
+					}, error => {
 						this.kdbPanic(error);
 					});
 				});
@@ -363,7 +361,7 @@
 				this.fbWrite(undefined, layer);
 			}
 
-			bootState(value) {
+			async bootState(value) {
 				let layer = this.drCreate(this.screen.width, this.screen.height);
 
 				({
@@ -385,7 +383,7 @@
 							this.drDraw(layer, 'layer', logo, layer.width/2-logo.width/2, layer.height/2-logo.height/2);
 							this.drDraw(spinnerBackground, 'rectangle', this.colors.lightGray, 0, 0, spinnerBackground.width, spinnerBackground.height);
 
-							this.bootTimerID = this.timerCreate(undefined, true, 125/2, () => {
+							this.bootTimerID = this.timerCreate(undefined, true, 125/2, async () => {
 								spinnerIteration = spinnerIteration > 10 ? 0 : ++spinnerIteration;
 
 								let x = layer.width/2,
@@ -2271,7 +2269,7 @@
 			 * - [~] Написать Mission Control (часть Dock) и Notification Center.
 			 * - [~] Заменить _import() в классах на import при первой возможности (когда исправят баг в recast).
 			 * - [~] Добавить необходимые _import()'ы в классы.
-			 * - [~] Обеспечить асинхронность процессов (мультизадачность).
+			 * - [~] Доработать (оптимизировать) асинхронность процессов (мультизадачность).
 			 * - [?] Добавить проверку необходимости оператора ?. в .codePrepare() (вместо его слепой расстановки вовсюда).
 			 * - [?] Законопатить дырку безопасности, связанную с возможностью перезаписи приватных полей классами-наследниками.
 			 * - [?] Раскомментить и переписать processFork() так, чтобы он соответствовал реализации в Linux (создаётся дочерний процесс
