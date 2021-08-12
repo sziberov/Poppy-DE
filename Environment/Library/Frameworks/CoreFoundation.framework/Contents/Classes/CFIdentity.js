@@ -6,12 +6,12 @@ return class CFIdentity {
 	static __shared;
 
 	static get shared() {
-		return new Promise(async () => {
+		return new Promise(async (resolve) => {
 			if(!this.__shared) {
 				await this.new();
 			}
 
-			return this.__shared;
+			resolve(this.__shared);
 		});
 	}
 
