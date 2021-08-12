@@ -112,20 +112,18 @@ return class LFApplication {
 		return {
 			MenuItems: async () => {
 				if(this.focusingPolicy < 1 && LFWorkspace.shared.getApplication(this.identifier)) {
-					let bundle = await CFBundle.new(_path);
-
 					LFMenubar.shared.applicationMenu.items = [
 						new LFMenuItem({ title: this.title,
 							menu: new LFMenu({ items: [
-								new LFMenuItem({ title: await CFLocalizedString('About', bundle)+' '+this.title, action: () => this.about() }),
+								new LFMenuItem({ title: await CFLocalizedString('About', $LFBundle)+' '+this.title, action: () => this.about() }),
 								new LFMenuItem().separator(),
-								new LFMenuItem({ title: await CFLocalizedString('Services', bundle) }),
+								new LFMenuItem({ title: await CFLocalizedString('Services', $LFBundle) }),
 								new LFMenuItem().separator(),
-								new LFMenuItem({ title: await CFLocalizedString('Hide', bundle)+' '+this.title }),
-								new LFMenuItem({ title: await CFLocalizedString('Hide Others', bundle) }),
-								new LFMenuItem({ title: await CFLocalizedString('Show All', bundle) }),
+								new LFMenuItem({ title: await CFLocalizedString('Hide', $LFBundle)+' '+this.title }),
+								new LFMenuItem({ title: await CFLocalizedString('Hide Others', $LFBundle) }),
+								new LFMenuItem({ title: await CFLocalizedString('Show All', $LFBundle) }),
 								new LFMenuItem().separator(),
-								new LFMenuItem({ title: await CFLocalizedString('Quit', bundle)+' '+this.title, action: () => this.quit() })
+								new LFMenuItem({ title: await CFLocalizedString('Quit', $LFBundle)+' '+this.title, action: () => this.quit() })
 							] })
 						}),
 						...this.menuItems

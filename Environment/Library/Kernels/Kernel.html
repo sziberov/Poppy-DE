@@ -309,10 +309,12 @@
 						a = a.replace(/^\t*/gm, '').trim().split(/^/gm);
 
 						for(let v of a) {
-							let b = $('kdb strings');
+							if(this.verbose) {
+								let b = $('kdb strings');
 
-							b.append('<string><text>'+v+'</text></string>');
-							b[0].scrollTop = b[0].scrollHeight;
+								b.append('<string><text>'+v+'</text></string>');
+								b[0].scrollTop = b[0].scrollHeight;
+							}
 							console.log(v);
 						}
 					}
@@ -2269,8 +2271,10 @@
 			 *       должно иметь прозрачный фон, а градиент отрисовываться на самом LFWindow, при этом размеры градиента должны
 			 *       устанавливаться в момент отрисовки в зависимости от размеров и положения .contentView.
 			 * - [~] Добавить проверку типов вовсюда.
-			 * - [~] Переписать LFWorkspace так, чтобы он не отвечал за вмещение в себя view'ов. Любые view'ы должны отрисовываться
-			 *       посредством LFWindow (CGSWindow).
+			 * - [~] Переписать LFWorkspace так, чтобы он не отвечал за вмещение в себя view'ов. Любые view'ы (в том числе LFMenubar)
+			 *       должны отрисовываться посредством LFWindow (CGSWindow).
+			 * - [~] Исправить остаточные меню приложений (когда параллельно было отправлено два вызова:
+			 *       на завершение приложения и обновление его меню).
 			 * - [~] Дописать в Dock'е поддержку изображений для нескольких workspac'ов.
 			 * - [~] Написать Mission Control (часть Dock) и Notification Center.
 			 * - [~] Заменить _import() в классах на import при первой возможности (когда исправят баг в recast).
