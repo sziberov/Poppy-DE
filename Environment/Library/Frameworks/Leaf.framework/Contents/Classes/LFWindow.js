@@ -216,11 +216,11 @@ return class LFWindow extends LFView {
 		if(!Array.isArray(value))																											throw new TypeError(0);
 		for(let v of value) {
 			if(typeof v !== 'string')																										throw new TypeError(1);
-			if(!['titled', 'closable', 'minimizable', 'resizable', 'fullscreen', 'borderless', 'unifiedTitlebarAndToolbar'].includes(v))	throw new RangeError(2);
+			if(!['titled', 'closable', 'minimizable', 'resizable', 'maximized', 'fullscreen', 'borderless', 'unifiedTitlebarAndToolbar'].includes(v))	throw new RangeError(2);
 		}
 
 		this.__type = value;
-		for(let v of ['fullscreen', 'borderless', 'unifiedTitlebarAndToolbar']) {
+		for(let v of ['maximized', 'fullscreen', 'borderless', 'unifiedTitlebarAndToolbar']) {
 			this.attributes[v] = value.includes(v) ? '' : undefined;
 		}
 	}
@@ -296,6 +296,7 @@ return class LFWindow extends LFView {
 			}
 			this.style['z-index'] = topDepth+1;
 			this.attributes['focused'] = '';
+			LFMenubar.shared.style['z-index'] = (LFWorkspace.shared.subviews.find(v => v.level === this.constructor.level.background).style['z-index'] ?? -1)+1;
 		}
 		if(this.application) {
 			this.main = true;

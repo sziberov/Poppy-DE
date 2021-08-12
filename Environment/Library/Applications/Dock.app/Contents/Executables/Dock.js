@@ -2,19 +2,17 @@ _import('Leaf');
 
 // noinspection JSAnnotator
 return class Main {
+	desktopImageWindow;
+
 	constructor() {
 		LFApp.focusingPolicy = 1;
 
-		/*
-		new LFWindow({ level: 'base', type: ['borderless', 'fullscreen'], background: '#404040', view:
+		this.desktopImageWindow = new LFWindow({ level: 'background', type: ['borderless', 'fullscreen'], view:
 			new LFView()
 		});
-		new LFWindow({ tag: 'background', level: 'background', type: ['borderless', 'fullscreen'], view:
-			new LFView({
-				subviews: new LFImage()
-			})
-		});
-		*/
+
+		this.updateDesktopImage();
+		CFEvent.addHandler('LFWorkspaceDesktopImageNotification', (a) => this.updateDesktopImage(a));
 
 		/*
 		<Dock>
@@ -25,5 +23,9 @@ return class Main {
 			<Activity></Activity>
 		</Dock>
 		*/
+	}
+
+	updateDesktopImage(a) {
+		this.desktopImageWindow.style['background'] = a ? a.event === 'changed' ? `url('${ a.value }') center / cover` : '' : `url('${ LFWorkspace.shared.desktopImage }') center / cover`;
 	}
 }

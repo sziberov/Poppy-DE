@@ -177,7 +177,7 @@ LFMenubar:after {
 	left: 0;
 
 	width: 100%;
-	height: 100%;
+	height: 16px;
 
 	background: linear-gradient(to bottom,
 		rgba(0%,0%,0%,0.25),
@@ -406,11 +406,18 @@ LFWindow[hidden] {
 	visibility: hidden;
 }
 
-LFWindow[fullscreen] {
+LFWindow[maximized] {
 	width: 100%;
 	height: calc(100% - 24px);
 
-	transform: translate3d(0px, 24px, 0)!important;
+	transform: translate3d(0, 24px, 0)!important;
+}
+
+LFWindow[fullscreen] {
+	width: 100%;
+	height: 100%;
+
+	transform: translate(0, 0)!important;
 }
 
 LFWindow[borderless] {

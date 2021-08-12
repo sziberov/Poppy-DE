@@ -22,7 +22,7 @@ return class LFFrame extends LFView {	// Не имеет ничего общег
 		dragCache[1] = event.pageX;
 		dragCache[2] = event.pageY >= 24 ? event.pageY : 24;
 
-	//	if(!window._.style.includes('fullscreen')) {
+	//	if(!window._.style.includes('maximized')) {
 			window.origin = { x: dragX, y: dragY }
 	//	}
 	}

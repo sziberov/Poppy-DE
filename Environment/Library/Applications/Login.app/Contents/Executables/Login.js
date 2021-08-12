@@ -92,11 +92,11 @@ return class Main {
 			})
 		]
 
-		this.launchServices();
-		CFArrayOld.addObserver(LFWorkspace.shared.launchedApplications, (a) => this.launchServices(a));
+		this.updateServices();
+		CFArrayOld.addObserver(LFWorkspace.shared.launchedApplications, (a) => this.updateServices(a));
 	}
 
-	launchServices(a) {
+	updateServices(a) {
 		if(a?.event === 'removed') {
 			this.__services.find(v => v.identifier === a.value.identifier && v.status !== 'failed').status = 'stopped';
 		}

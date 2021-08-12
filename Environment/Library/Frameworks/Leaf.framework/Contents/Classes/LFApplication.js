@@ -134,7 +134,7 @@ return class LFApplication {
 				} else {
 					let applications = LFWorkspace.shared.launchedApplications;
 
-					if(applications.length > 1) {
+					if(LFMenubar.shared.applicationMenu.application === LFLaunchedApplication.shared && applications.length > 1) {
 						applications[1].focus('Menu');
 					}
 				}

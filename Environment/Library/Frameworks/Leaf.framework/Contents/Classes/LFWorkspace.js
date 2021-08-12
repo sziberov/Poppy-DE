@@ -43,7 +43,7 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 
 				if(focused === application && default_) {
 					default_.focus();
-				} else
+				}
 				if(focused !== application) {
 					focused.focus();
 				}
@@ -83,7 +83,8 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 		}
 
 		this.__desktopImage = value;
-		this.style['background-image'] = `url('${ value ?? '' }')`;
+
+		CFEvent.dispatch(undefined, _title+'DesktopImageNotification', { event: value ? 'changed' : 'removed', value: value });
 	}
 
 	mousedown() {
