@@ -6,12 +6,12 @@ Poppy DE
 
 Архитектура:
 
-	NW.JS + ImageMagick				Нативное ПО
-		Opium Kernel				HTML + CSS + JS + Node.JS
+	NW.JS								Нативное ПО
+		Opium Kernel					HTML + CSS + JS + Node.JS
 			CoreFoundation Framework	.framework Пакеты
 			CoreGraphics Framework
 			Leaf Framework
 			...
-				Enviro			.app Пакеты
+				Enviro					.app Пакеты
 				Dock
 				...

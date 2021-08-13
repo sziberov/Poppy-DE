@@ -6,12 +6,12 @@ Free cross-platform OS X-like user interface and applications implementation (at
 
 Architecture:
 
-	NW.JS + ImageMagick				Native
-		Opium Kernel				HTML + CSS + JS + Node.JS
+	NW.JS								Native
+		Opium Kernel					HTML + CSS + JS + Node.JS
 			CoreFoundation Framework	.framework Bundles
 			CoreGraphics Framework
 			Leaf Framework
 			...
-				Enviro			.app Bundles
+				Enviro					.app Bundles
 				Dock
 				...

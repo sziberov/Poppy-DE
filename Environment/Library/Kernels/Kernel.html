@@ -93,7 +93,7 @@
 
 				//	this.verbose = true;
 
-				//	await this.fbWrite(undefined, '');
+				//	await this.fbWrite();
 					await this.bootState(true);
 
 					this.eventCatcherCreate(undefined, 'terminalChanged', async (a) => {
@@ -138,7 +138,7 @@
 						}
 					});
 
-					for(let v of ['nw.gui', 'fs', 'fast-xml-parser', 'child_process', 'pngjs', 'vm', 'recast', 'flow-parser', 'os']) {
+					for(let v of ['nw.gui', 'fs', 'fast-xml-parser', 'child_process', 'vm', 'recast', 'flow-parser', 'os']) {
 						require(v);
 					}
 					this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js').then(v => {
@@ -424,9 +424,7 @@
 				let ID = Math.max(...this.files.map(v => v.ID).initialize(0))+1;
 
 				if(!['r', 'r+', 'w', 'w+', 'a', 'a+'].includes(mode)) {
-					this.kdbAdd(`fsOpen${ processID ? '@'+processID : '' }: Incorrect mode`);
-
-					console.error(0); return;
+					throw new TypeError(`fsOpen${ processID ? '@'+processID : '' }: Incorrect mode`);
 				}
 
 				this.files.push({
@@ -461,14 +459,18 @@
 				if(await this.fsExistsDirectory(path)) {
 					return require('fs').promises.readdir('.'+path, { withFileTypes: true });
 				} else {
+					if(this.verbose) {
+						this.kdbAdd('fsReadDirectory: Unable to access directory: '+path);
+					}
+
 					return []
 				}
 			}
 
 			async fsReadPreferences(process, identifier) {
 				let properties =
-						(process ? await this.fsRead('/Users/'+process.user+'/Library/Preferences/'+identifier+'.plist') : undefined) ||
-						await this.fsRead('/Library/Preferences/'+identifier+'.plist') ||
+						(process ? await this.fsRead('/Users/'+process.user+'/Library/Preferences/'+identifier+'.plist') : undefined) ??
+						await this.fsRead('/Library/Preferences/'+identifier+'.plist') ??
 						await this.fsRead('/Environment/Library/Preferences/'+identifier+'.plist');
 
 				return properties ? JSON.parse(properties) : undefined;
@@ -483,7 +485,7 @@
 
 					return true;
 				} catch(error) {
-					return error;
+					throw new Error(`fsWrite: Can't write to file: `+error.message);
 				}
 			}
 
@@ -492,17 +494,20 @@
 
 				type ??= process ? 'user' : 'shared';
 
-				if(type && !['user', 'shared', 'environment'].includes(type)) {
-					console.error(0); return;
-				}
-				if(type === 'user' && !process) {
-					console.error(1); return;
-				}
-				if(type === 'environment' && group > 0) {
-					console.error(2); return;
+				if(!['string', 'number'].includes(typeof identifier)) {
+					throw new TypeError('fsWritePreferences: Incorrect identifier');
 				}
 				if(!Object.isObject(properties)) {
-					console.error(3); return;
+					throw new TypeError('fsWritePreferences: Incorrect properties');
+				}
+				if(type && !['user', 'shared', 'environment'].includes(type)) {
+					throw new TypeError('fsWritePreferences: Incorrect type');
+				}
+				if(type === 'user' && !process) {
+					throw new RangeError('fsWritePreferences: Unable to find user without process set');
+				}
+				if(type === 'environment' && group > 0) {
+					throw new RangeError(`fsWritePreferences: Groups 1+ aren't allowed to write environment-wide preferences`);
 				}
 
 				properties = JSON.stringify(properties);
@@ -515,18 +520,24 @@
 			}
 
 			async fsRemove(path) {
-				try {
-					await require('fs').promises.unlink('.'+path);
+				if(await this.fsExists(path)) {
+					try {
+						await require('fs').promises.unlink('.'+path);
 
-					return true;
-				} catch {
-					console.error(0); return;
+						return true;
+					} catch(error) {
+						throw new Error('fsRemove: Unable to remove file: '+error.message);
+					}
+				} else {
+					if(this.verbose) {
+						this.kdbAdd('fsRemove: Unable to access file: '+path);
+					}
 				}
 			}
 
 			fsType(data, title) {
-				if(!data || !data instanceof Buffer) {
-					console.error(0); return;
+				if(!data instanceof Buffer) {
+					throw new TypeError('fsType: Incorrect data');
 				}
 
 				let types = [
@@ -607,6 +618,10 @@
 				}
 			}
 
+			workerCreate(code) {
+				return new Worker(URL.createObjectURL(new Blob([code], { type: 'application/javascript' })));
+			}
+
 			fbRead() {
 				return this.drClose(this.framebuffer);
 			}
@@ -615,20 +630,20 @@
 				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
-					console.error(0); return;
+					throw new Error(`fbWrite: Groups 1+ aren't allowed to write to framebuffer`);
 				}
-				if(value !== '' && !value instanceof Buffer && !value instanceof HTMLCanvasElement) {
-					console.error(1); return;
+				if(value !== undefined && !value instanceof Buffer && !value instanceof HTMLCanvasElement) {
+					throw new TypeError(`fbWrite: Incorrect value`);
 				}
 
 				let layer = this.framebuffer;
 
-				if(value === '') {
+				if(value === undefined) {
 					this.drDraw(layer, 'rectangle', this.colors.black, 0, 0, layer.width, layer.height);
-				} else
+				}
 				if(value instanceof Buffer) {
 					this.drDraw(layer, 'layer', await this.drOpen(value));
-				} else
+				}
 				if(value instanceof HTMLCanvasElement) {
 					this.drDraw(layer, 'layer', value);
 				}
@@ -637,7 +652,7 @@
 
 			drCreate(width, height) {
 				if(typeof width !== 'number' || typeof height !== 'number') {
-					console.error(0); return;
+					throw new TypeError('drCreate: Incorrect dimensions');
 				}
 
 				let layer = document.createElement('canvas');
@@ -655,7 +670,7 @@
 					URL = /^([a-z]+:\/\/)?[a-z0-9/?#. -]+$/gi;
 
 				if(!data instanceof Buffer && !base64.test(data) && !URL.test(data)) {
-					return;
+					throw new TypeError('drOpen: Incorrect data');
 				}
 
 				if(data instanceof Buffer) {
@@ -678,50 +693,6 @@
 				let layer = this.drCreate(image.naturalWidth, image.naturalHeight);
 
 				layer.context2d.drawImage(image, 0, 0);
-
-				return layer;
-			}
-
-			drOpenSync(data, type) {
-				let regex = /^data:image\/(.*);base64,/gi;
-
-				if(!data || !data instanceof Buffer && !(typeof data === 'string' || regex.test(data))) {
-					console.error(0); return;
-				}
-
-				if(typeof data == 'string') {
-					type ??= [...data.matchAll(regex)][0][1]
-						.replace('jpeg', 'jpg')
-						.replace('svg+xml', 'svg');
-					data = new Buffer(data.replace(regex, ''), 'base64');
-				} else {
-					type ??= this.fsType(data)?.match(/(?<=\/)(.*)/gi)[0]
-						.replace('jpeg', 'jpg')
-						.replace('svg+xml', 'svg');
-				}
-
-				if(!['gif', 'jpg', 'png', 'svg', 'pdf'].includes(type)) {
-					console.error(1); return;
-				}
-
-				if(type === 'gif') {
-					data = require('child_process').spawnSync('magick', ['gif:-[0]', 'png:-'], { input: data }).stdout;
-				}
-				if(type === 'jpg') {
-					data = require('child_process').spawnSync('magick', ['jpg:-', 'png:-'], { input: data }).stdout;
-				}
-				if(type === 'svg') {
-					data = require('child_process').spawnSync('magick', ['-background', 'none', 'svg:-', 'png:-'], { input: data }).stdout;
-				}
-				if(type === 'pdf') {
-					data = require('child_process').spawnSync('magick', ['-density', '96', '-quality', '100', 'pdf:-[0]', 'png:-'], { input: data }).stdout;
-				}
-
-				let image = require('pngjs').PNG.sync.read(data),	// Падает на ровном месте, если тип - jpg
-					imageData = new ImageData(new Uint8ClampedArray(image.data), image.width, image.height),
-					layer = this.drCreate(image.width, image.height);
-
-				layer.context2d.putImageData(imageData, 0, 0);
 
 				return layer;
 			}
