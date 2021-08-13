@@ -3,55 +3,34 @@ return class LFApplication {
 	static __shared;
 
 	static get shared() {
-		return new Promise(async (resolve) => {
-			if(!this.__shared) {
-				await this.new();
-			}
+		if(!this.__shared) {
+			new this();
+		}
 
-			resolve(this.__shared);
-		});
+		return this.__shared;
 	}
 
-	static async new() {
-		let self = this.__shared ?? new this();
+	__menuItems = new CFArrayOld();
+	__focusingPolicy = 0;
+	__quitableBySingleWindow = false;
 
-		if(!this.__shared) {
-			this.__shared = self;
+	constructor() {
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
 		} else {
 			console.error(0); return;
 		}
 
-		self.__menuMainItem = new LFMenuItem({ title: self.title,
-			menu: new LFMenu({ items: [
-				new LFMenuItem({ title: await CFLocalizedString('About', $LFBundle)+' '+self.title, action: () => self.about() }),
-				new LFMenuItem().separator(),
-				new LFMenuItem({ title: await CFLocalizedString('Services', $LFBundle) }),
-				new LFMenuItem().separator(),
-				new LFMenuItem({ title: await CFLocalizedString('Hide', $LFBundle)+' '+self.title }),
-				new LFMenuItem({ title: await CFLocalizedString('Hide Others', $LFBundle) }),
-				new LFMenuItem({ title: await CFLocalizedString('Show All', $LFBundle) }),
-				new LFMenuItem().separator(),
-				new LFMenuItem({ title: await CFLocalizedString('Quit', $LFBundle)+' '+self.title, action: () => self.quit() })
-			] })
-		});
+		this.process.environment.LFApp = this.constructor.shared;
 
-		self.process.environment.LFApp = await this.shared;
-
-		LFWorkspace.shared.launchedApplications.add(new LFLaunchedApplication(self));
+		LFWorkspace.shared.launchedApplications.add(new LFLaunchedApplication(this));
 		CFArrayOld.addObserver(LFWorkspace.shared.subviews, (a) => {
 			if(a.value.application === LFLaunchedApplication.shared && Object.isKindOf(a.value, LFWindow)) {
-				self.update('Windows');
+				this.update('Windows');
 			}
 		});
-		CFArrayOld.addObserver(self.menuItems, () => self.update('MenuItems'));
-
-		return self;
+		CFArrayOld.addObserver(this.menuItems, () => this.update('MenuItems'));
 	}
-
-	__menuMainItem;
-	__menuItems = new CFArrayOld();
-	__focusingPolicy = 0;
-	__quitableBySingleWindow = false;
 
 	get menuItems() {
 		return this.__menuItems;
@@ -132,8 +111,9 @@ return class LFApplication {
 	update(mode) {
 		return {
 			MenuItems: () => {
-				if(this.focusingPolicy < 1 && LFWorkspace.shared.getApplication(this.identifier)) {
-					LFMenubar.shared.applicationMenu.items = [this.__menuMainItem, ...this.menuItems]
+				if(this.focusingPolicy < 1 && this.menuItems.length > 0 && LFWorkspace.shared.getApplication(this.identifier)) {
+					this.menuItems[0].title = this.title ?? 'Application';
+					LFMenubar.shared.applicationMenu.items = this.menuItems;
 					LFMenubar.shared.applicationMenu.application = LFLaunchedApplication.shared;
 				} else {
 					let applications = LFWorkspace.shared.launchedApplications;

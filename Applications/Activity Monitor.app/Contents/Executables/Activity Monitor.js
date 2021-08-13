@@ -9,23 +9,36 @@ return class Main {
 	}
 
 	async initialize() {
-		LFApp.quitableBySingleWindow = true;
 		LFApp.menuItems = [
-			new LFMenuItem({ title: await CFLocalizedString('File'),
-				menu: new LFMenu({ items: [
+			new LFMenuItem({ menu:
+				new LFMenu({ items: [
+					new LFMenuItem({ title: await CFLocalizedString('About')+' '+LFApp.title, action: () => LFApp.about() }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: await CFLocalizedString('Services') }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: await CFLocalizedString('Hide')+' '+LFApp.title }),
+					new LFMenuItem({ title: await CFLocalizedString('Hide others') }),
+					new LFMenuItem({ title: await CFLocalizedString('Show all') }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: await CFLocalizedString('Quit')+' '+LFApp.title, action: () => LFApp.quit() })
+				] })
+			}),
+			new LFMenuItem({ title: await CFLocalizedString('File'), menu:
+				new LFMenu({ items: [
 					new LFMenuItem({ title: await CFLocalizedString('Switch'), action: () => this.switch() }),
 					new LFMenuItem({ title: await CFLocalizedString('Quit'), action: () => this.quit() })
 				] })
 			}),
 			new LFMenuItem({ title: await CFLocalizedString('Edit') }),
-			new LFMenuItem({ title: await CFLocalizedString('View'),
-				menu: new LFMenu({ items: [
+			new LFMenuItem({ title: await CFLocalizedString('View'), menu:
+				new LFMenu({ items: [
 					new LFMenuItem({ title: await CFLocalizedString('Update'), action: () => this.update() })
 				] })
 			}),
 			new LFMenuItem({ title: await CFLocalizedString('Window') }),
 			new LFMenuItem({ title: await CFLocalizedString('Help') })
 		]
+		LFApp.quitableBySingleWindow = true;
 
 		new LFWindow({ width: 512, height: 256, title: LFApp.title,
 			toolbar: new LFToolbar({ subviews: [
@@ -67,8 +80,8 @@ return class Main {
 				process = _call('info', application.processIdentifier);
 
 			if(!window) {
-				new LFWindow({ tag: process.ID, width: 384, type: ['titled', 'closable', 'minimizable'], title: application.title,
-					view: new LFView({ type: 'vertical', subviews: [
+				new LFWindow({ tag: process.ID, width: 384, type: ['titled', 'closable', 'minimizable'], title: application.title, view:
+					new LFView({ type: 'vertical', subviews: [
 						new LFView({ subviews: [
 							new LFView({ type: 'vertical', tight: true, subviews: [
 								new LFText({ string: 'Process', size: 'small', weight: 'bold' }),

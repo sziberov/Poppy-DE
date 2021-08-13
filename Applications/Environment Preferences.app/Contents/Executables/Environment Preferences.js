@@ -9,14 +9,26 @@ return class Main {
 	}
 
 	async initialize() {
-		LFApp.quitableBySingleWindow = true;
-
 		LFApp.menuItems = [
+			new LFMenuItem({ menu:
+				new LFMenu({ items: [
+					new LFMenuItem({ title: await CFLocalizedString('About')+' '+LFApp.title, action: () => LFApp.about() }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: await CFLocalizedString('Services') }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: await CFLocalizedString('Hide')+' '+LFApp.title }),
+					new LFMenuItem({ title: await CFLocalizedString('Hide others') }),
+					new LFMenuItem({ title: await CFLocalizedString('Show all') }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: await CFLocalizedString('Quit')+' '+LFApp.title, action: () => LFApp.quit() })
+				] })
+			}),
 			new LFMenuItem({ title: await CFLocalizedString('Edit') }),
 			new LFMenuItem({ title: await CFLocalizedString('View') }),
 			new LFMenuItem({ title: await CFLocalizedString('Window') }),
 			new LFMenuItem({ title: await CFLocalizedString('Help') })
 		]
+		LFApp.quitableBySingleWindow = true;
 
 		new LFWindow({ width: 768, height: 512, type: ['titled', 'closable', 'minimizable', 'unifiedTitlebarAndToolbar'], title: LFApp.title,
 			toolbar: new LFToolbar({ subviews: [

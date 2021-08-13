@@ -93,7 +93,7 @@
 
 				//	this.verbose = true;
 
-					await this.fbWrite(undefined, '');
+				//	await this.fbWrite(undefined, '');
 					await this.bootState(true);
 
 					this.eventCatcherCreate(undefined, 'terminalChanged', async (a) => {
@@ -129,7 +129,6 @@
 							this.fbWrite(undefined, layer);
 						}
 					});
-
 					this.timerCreate(undefined, true, 1000, () => {
 						this.eventThrow(undefined, undefined, 'dateChanged');
 					});
@@ -139,6 +138,9 @@
 						}
 					});
 
+					for(let v of ['nw.gui', 'fs', 'fast-xml-parser', 'child_process', 'pngjs', 'vm', 'recast', 'flow-parser', 'os']) {
+						require(v);
+					}
 					this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Library/Applications/Login.app/Contents/Executables/Login.js').then(v => {
 						this.bootState(false);
 					}, error => {
@@ -266,9 +268,9 @@
 
 				this.__verbose = value;
 				if(value) {
-					$('kdb, boot').attr('verbose', '');
+					$('body').attr('verbose', '');
 				} else {
-					$('kdb, boot').removeAttr('verbose');
+					$('body').removeAttr('verbose');
 				}
 			}
 
@@ -314,6 +316,7 @@
 
 								b.append('<string><text>'+v+'</text></string>');
 								b[0].scrollTop = b[0].scrollHeight;
+							//	this.terminalOutput(undefined, v, 1);
 							}
 							console.log(v);
 						}
@@ -404,7 +407,7 @@
 			async fsExists(path) {
 				try {
 					return await require('fs').promises.access('.'+path) === undefined && (await require('fs').promises.stat('.'+path)).isFile();
-				} catch(error) {
+				} catch {
 					return false;
 				}
 			}
@@ -412,7 +415,7 @@
 			async fsExistsDirectory(path) {
 				try {
 					return await require('fs').promises.access('.'+path) === undefined && (await require('fs').promises.stat('.'+path)).isDirectory();
-				} catch(error) {
+				} catch {
 					return false;
 				}
 			}
@@ -2304,7 +2307,7 @@
 
 			margin: 0;
 
-			background: #000000;
+			background: rgb(0 0 0);
 
 			cursor: none;
 			user-select: none;
@@ -2347,7 +2350,7 @@
 			display: none;
 		}
 
-		kdb[verbose] strings {
+		body[verbose] kdb strings {
 			display: block;
 		}
 
@@ -2386,7 +2389,7 @@
 			100%	{ --kdb_panic_background: 100%; }
 		}
 
-		kdb:not([verbose])[panic] panic {
+		body:not([verbose]) kdb[panic] panic {
 			display: block;
 
 			animation: kdb_panic 1s linear;
@@ -2407,7 +2410,7 @@
 			100%	{ opacity: 1; }
 		}
 
-		kdb:not([verbose])[panic] img {
+		body:not([verbose]) kdb[panic] img {
 			animation: kdb_panic_img 1s steps(1);
 			animation-fill-mode: forwards;
 		}

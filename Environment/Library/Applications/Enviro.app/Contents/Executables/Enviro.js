@@ -10,15 +10,28 @@ return class Main {
 
 	async initialize() {
 		LFApp.menuItems = [
-			new LFMenuItem({ title: await CFLocalizedString('File'),
-				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: await CFLocalizedString('New Window...'), action: () => this.window() })
+			new LFMenuItem({ menu:
+				new LFMenu({ items: [
+					new LFMenuItem({ title: await CFLocalizedString('About')+' '+LFApp.title, action: () => LFApp.about() }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: await CFLocalizedString('Services') }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: await CFLocalizedString('Hide')+' '+LFApp.title }),
+					new LFMenuItem({ title: await CFLocalizedString('Hide others') }),
+					new LFMenuItem({ title: await CFLocalizedString('Show all') }),
+					new LFMenuItem().separator(),
+					new LFMenuItem({ title: await CFLocalizedString('Quit')+' '+LFApp.title, action: () => LFApp.quit() })
+				] })
+			}),
+			new LFMenuItem({ title: await CFLocalizedString('File'), menu:
+				new LFMenu({ items: [
+					new LFMenuItem({ title: await CFLocalizedString('New window...'), action: () => this.window() })
 				] })
 			}),
 			new LFMenuItem({ title: await CFLocalizedString('Edit') }),
-			new LFMenuItem({ title: await CFLocalizedString('View'),
-				menu: new LFMenu({ items: [
-					new LFMenuItem({ title: await CFLocalizedString('Toggle Menubar Transparency'), action: () => {
+			new LFMenuItem({ title: await CFLocalizedString('View'), menu:
+				new LFMenu({ items: [
+					new LFMenuItem({ title: await CFLocalizedString('Toggle Menubar transparency'), action: () => {
 						LFMenubar.shared.transparent = !LFMenubar.shared.transparent;
 					} })
 				] })
@@ -44,7 +57,7 @@ return class Main {
 						new LFMenuItem({ title: await CFLocalizedString('Minimize'), action: () => LFApp.windows.find(v => v.main).minimize() }),
 						new LFMenuItem({ title: await CFLocalizedString('Maximize'), action: () => LFApp.windows.find(v => v.main).maximize() }),
 						new LFMenuItem().separator(),
-						new LFMenuItem({ title: await CFLocalizedString('Align Windows'),
+						new LFMenuItem({ title: await CFLocalizedString('Align windows'),
 							menu: new LFMenu({ items: [
 								new LFMenuItem({ title: await CFLocalizedString('Cascade') }),
 								new LFMenuItem({ title: await CFLocalizedString('Column') })

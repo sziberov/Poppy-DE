@@ -39,4 +39,4 @@ CFProcessInfo.shared.environment.$LFAppearance = await new CGAppearance((await C
 $CFShared.LFMenubar = LFMenubar;
 $CFShared.LFWorkspace = LFWorkspace;
 
-await LFApplication.new();
+new LFApplication();
