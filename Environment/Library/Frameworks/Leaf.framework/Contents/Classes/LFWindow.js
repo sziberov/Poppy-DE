@@ -213,9 +213,9 @@ return class LFWindow extends LFView {
 	}
 
 	set type(value) {
-		if(!Array.isArray(value))																											throw new TypeError(0);
+		if(!Array.isArray(value))																														throw new TypeError(0);
 		for(let v of value) {
-			if(typeof v !== 'string')																										throw new TypeError(1);
+			if(typeof v !== 'string')																													throw new TypeError(1);
 			if(!['titled', 'closable', 'minimizable', 'resizable', 'maximized', 'fullscreen', 'borderless', 'unifiedTitlebarAndToolbar'].includes(v))	throw new RangeError(2);
 		}
 

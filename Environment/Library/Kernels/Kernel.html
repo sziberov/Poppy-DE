@@ -420,7 +420,7 @@
 				let ID = Math.max(...this.files.map(v => v.ID).initialize(0))+1;
 
 				if(!['r', 'r+', 'w', 'w+', 'a', 'a+'].includes(mode)) {
-					throw new TypeError(`fsOpen${ processID ? '@'+processID : '' }: Incorrect mode`);
+					throw new RangeError(`Incorrect mode`);
 				}
 
 				this.files.push({
@@ -430,7 +430,7 @@
 					mode: mode
 				});
 				this.kdbAdd(`
-					fsOpen${ processID ? '@'+processID : '' }: Successfully created object:
+					fsOpen${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    Path: ${ path }
 					    Mode: ${ mode }
@@ -481,7 +481,7 @@
 
 					return true;
 				} catch(error) {
-					throw new Error(`fsWrite: Can't write to file: `+error.message);
+					throw new Error(`Can't write to file: `+error.message);
 				}
 			}
 
@@ -491,19 +491,19 @@
 				type ??= process ? 'user' : 'shared';
 
 				if(!['string', 'number'].includes(typeof identifier)) {
-					throw new RangeError('fsWritePreferences: Incorrect identifier');
+					throw new RangeError('Incorrect identifier');
 				}
 				if(!Object.isObject(properties)) {
-					throw new TypeError('fsWritePreferences: Incorrect properties');
+					throw new TypeError('Incorrect properties');
 				}
 				if(type && !['user', 'shared', 'environment'].includes(type)) {
-					throw new TypeError('fsWritePreferences: Incorrect type');
+					throw new TypeError('Incorrect type');
 				}
 				if(type === 'user' && !process) {
-					throw new Error('fsWritePreferences: Unable to find user without process set');
+					throw new Error('Unable to find user without process set');
 				}
 				if(type === 'environment' && group > 0) {
-					throw new Error(`fsWritePreferences: Groups 1+ aren't allowed to write environment-wide preferences`);
+					throw new Error(`Groups 1+ aren't allowed to write environment-wide preferences`);
 				}
 
 				properties = JSON.stringify(properties);
@@ -522,7 +522,7 @@
 
 						return true;
 					} catch(error) {
-						throw new Error('fsRemove: Unable to remove file: '+error.message);
+						throw new Error('Unable to remove file: '+error.message);
 					}
 				} else {
 					if(this.verbose) {
@@ -533,7 +533,7 @@
 
 			fsType(data, title) {
 				if(!data instanceof Buffer) {
-					throw new TypeError('fsType: Incorrect data');
+					throw new TypeError('Incorrect data');
 				}
 
 				let types = [
@@ -626,10 +626,10 @@
 				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
-					throw new Error(`fbWrite: Groups 1+ aren't allowed to write to framebuffer`);
+					throw new Error(`Groups 1+ aren't allowed to write to framebuffer`);
 				}
 				if(value !== undefined && !value instanceof Buffer && !value instanceof HTMLCanvasElement) {
-					throw new TypeError(`fbWrite: Incorrect value`);
+					throw new TypeError(`Incorrect value`);
 				}
 
 				let layer = this.framebuffer;
@@ -648,7 +648,7 @@
 
 			drCreate(width, height) {
 				if(typeof width !== 'number' || typeof height !== 'number') {
-					throw new TypeError('drCreate: Incorrect dimensions');
+					throw new TypeError('Incorrect dimensions');
 				}
 
 				let layer = document.createElement('canvas');
@@ -663,7 +663,7 @@
 
 			async drCreateAsync(width, height) {
 				if(typeof width !== 'number' || typeof height !== 'number') {
-					throw new TypeError('drCreateAsync: Incorrect dimensions');
+					throw new TypeError('Incorrect dimensions');
 				}
 
 				let layer = new OffscreenCanvas(width, height);
@@ -679,7 +679,7 @@
 					URL = /^([a-z]+:\/\/)?[a-z0-9/?#. -]+$/gi;
 
 				if(!data instanceof Buffer && !base64.test(data) && !URL.test(data)) {
-					throw new TypeError('drOpen: Incorrect data');
+					throw new TypeError('Incorrect data');
 				}
 
 				if(data instanceof Buffer) {
@@ -828,7 +828,7 @@
 					typeof x_,
 					typeof y_
 				].some(v => v !== 'number')) {
-					throw new RangeError('drMove: Incorrect type');
+					throw new RangeError('Incorrect type');
 				}
 
 				let context = layer.context2d,
@@ -942,26 +942,14 @@
 
 			async eventThrow(processID, processID_, title, ...arguments_) {
 				if(processID && this.eventsReserved.includes(title)) {
-					this.kdbAdd(`
-						eventThrow@${ processID }: Processes aren't allowed to throw reserved events:
-						    Process ID: ${ processID_ || 'Not set' }
-						    Title: "${ title }"
-					`);
-
-					console.error(0); return;
+					throw new RangeError(`Processes aren't allowed to throw reserved events`);
 				}
 				if(processID && processID_ && processID !== processID_) {
 					let process = this.processes.find(v => v.ID === processID),
 						group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process.user)?.Group;
 
 					if(group > 0) {
-						this.kdbAdd(`
-							eventThrow@${ processID }: Non-root processes allowed to throw events process-specifically to themselves only:
-							    Process ID: ${ processID_ }
-							    Title: "${ title }"
-						`);
-
-						console.error(1); return;
+						throw new RangeError('Non-root processes allowed to throw events process-specifically to themselves only');
 					}
 				}
 
@@ -972,7 +960,7 @@
 						error.fileName = this.processes.find(v => v.ID === catcher.processID)?.path;
 						this.kdbAdd(`
 							eventThrow@${ catcher.processID }: Catcher failed to execute its function:
-							    Process ID: ${ processID_ || 'Not set' }
+							    Process ID: ${ processID_ ?? 'Not set' }
 							    Title: "${ title }"
 						`, error.stack);
 					}
@@ -986,10 +974,7 @@
 					ID: ID,
 					processID: processID
 				});
-				this.kdbAdd(`
-					eventChannelCreate${ processID ? '@'+processID : '' }: Successfully created object:
-					    ID: ${ ID }
-				`);
+				this.kdbAdd(`eventChannelCreate${ processID ? '@'+processID : '' }: Object ${ ID } created`);
 
 				return ID;
 			}
@@ -1008,14 +993,10 @@
 				let ID = Math.max(...this.catchers.map(v => v.ID).initialize(0))+1;
 
 				if(typeof title !== 'string') {
-					this.kdbAdd(`eventCatcherCreate${ processID ? '@'+processID : '' }: Incorrect title`);
-
-					console.error(0); return;
+					throw new TypeError('Incorrect title');
 				}
 				if(typeof function_ !== 'function') {
-					this.kdbAdd(`eventCatcherCreate${ processID ? '@'+processID : '' }: Incorrect function`);
-
-					console.error(1); return;
+					throw new TypeError('Incorrect function');
 				}
 
 				this.catchers.push({
@@ -1025,7 +1006,7 @@
 					function: function_
 				});
 				this.kdbAdd(`
-					eventCatcherCreate${ processID ? '@'+processID : '' }: Successfully created object:
+					eventCatcherCreate${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    Title: "${ title }"
 				`);
@@ -1043,22 +1024,18 @@
 				let catcher = this.catchers.find(v => v.ID === catcherID);
 
 				if(!catcher) {
-					this.kdbAdd(`eventCatcherDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+					if(this.verbose) {
+						this.kdbAdd(`eventCatcherDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+					}
 
-					console.error(0); return;
+					return;
 				}
 				if(processID && catcher.processID !== processID) {
-					this.kdbAdd(`eventCatcherDestroy@${ processID }: Processes aren't allowed to destroy not owned objects`);
-
-					console.error(1); return;
+					throw new Error(`Processes aren't allowed to destroy not owned objects`);
 				}
 
 				this.catchers = this.catchers.filter(v => v !== catcher);
-				this.kdbAdd(`
-					eventCatcherDestroy${ processID ? '@'+processID : '' }: Successfully destroyed object:
-					    ID: ${ catcher.ID }
-					    Title: "${ catcher.title }"
-				`);
+				this.kdbAdd(`eventCatcherDestroy${ processID ? '@'+processID : '' }: Object ${ catcher.ID } destroyed`);
 			}
 
 			/**
@@ -1073,19 +1050,13 @@
 			 */
 			timerCreate(processID, repeat, delay, function_, ...arguments_) {
 				if(typeof repeat !== 'boolean') {
-					this.kdbAdd(`timerCreate${ processID ? '@'+processID : '' }: Incorrect repeat`);
-
-					console.error(0); return;
+					throw new TypeError('Incorrect repeat');
 				}
 				if(typeof delay !== 'number') {
-					this.kdbAdd(`timerCreate${ processID ? '@'+processID : '' }: Incorrect delay`);
-
-					console.error(1); return;
+					throw new TypeError('Incorrect delay');
 				}
 				if(typeof function_ !== 'function') {
-					this.kdbAdd(`timerCreate${ processID ? '@'+processID : '' }: Incorrect function`);
-
-					console.error(2); return;
+					throw new TypeError('Incorrect function');
 				}
 
 				let ID = Math.max(...this.timers.map(v => v.ID).initialize(0))+1,
@@ -1106,7 +1077,7 @@
 					timer: timer
 				});
 				this.kdbAdd(`
-					timerCreate${ processID ? '@'+processID : '' }: Successfully created object:
+					timerCreate${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    Repeat: ${ repeat ? 'Yes' : 'No' }
 				`);
@@ -1124,14 +1095,14 @@
 				let timer = this.timers.find(v => v.ID === timerID);
 
 				if(!timer) {
-					this.kdbAdd(`timerDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+					if(this.verbose) {
+						this.kdbAdd(`timerDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+					}
 
-					console.error(0); return;
+					return;
 				}
 				if(processID && timer.processID !== processID) {
-					this.kdbAdd(`timerDestroy@${ processID }: Processes aren't allowed to destroy not owned objects`);
-
-					console.error(1); return;
+					throw new Error(`Processes aren't allowed to destroy not owned objects`);
 				}
 
 				if(!timer.repeat) {
@@ -1140,11 +1111,7 @@
 					clearInterval(timer.timer);
 				}
 				this.timers = this.timers.filter(v => v !== timer);
-				this.kdbAdd(`
-					timerDestroy${ processID ? '@'+processID : '' }: Successfully destroyed object:
-					    ID: ${ timer.ID }
-					    Repeat: ${ timer.repeat ? 'Yes' : 'No' }
-				`);
+				this.kdbAdd(`timerDestroy${ processID ? '@'+processID : '' }: Object ${ timer.ID } destroyed`);
 			}
 
 			/**
@@ -1158,14 +1125,10 @@
 				let ID = Math.max(...this.se.map(v => v.ID).initialize(0))+1;
 
 				if(!['read', 'readWrite'].includes(access)) {
-					this.kdbAdd(`seCreate${ processID ? '@'+processID : '' }: Incorrect access`);
-
-					console.error(0); return;
+					throw new RangeError('Incorrect access');
 				}
 				if(title && this.se.find(v => v.title === title)) {
-					this.kdbAdd(`seCreate${ processID ? '@'+processID : '' }: Object with same title already exists`);
-
-					console.error(1); return;
+					throw new RangeError(`Object with same title already exists`);
 				}
 
 				this.se.push({
@@ -1176,10 +1139,10 @@
 					environment: {}
 				});
 				this.kdbAdd(`
-					seCreate${ processID ? '@'+processID : '' }: Successfully created object:
+					seCreate${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    Access: ${ access }
-					    Title: ${ '"'+title+'"' || 'Not set' }
+					    Title: ${ title ? '"'+title+'"' : 'Not set' }
 				`);
 
 				return ID;
@@ -1198,19 +1161,19 @@
 
 			seInfo(processID, seSearch) {
 				let se =
-					typeof seSearch == 'number' ? this.se.find(v => v.ID === seSearch) :
-					typeof seSearch == 'string' ? this.se.find(v => v.title === seSearch) :
-					undefined;
+						typeof seSearch == 'number' ? this.se.find(v => v.ID === seSearch) :
+						typeof seSearch == 'string' ? this.se.find(v => v.title === seSearch) :
+						undefined;
 
 				if(!['number', 'string'].includes(typeof seSearch)) {
-					this.kdbAdd(`seInfo${ processID ? '@'+processID : '' }: Incorrect search`);
-
-					console.error(0); return;
+					throw new TypeError('Incorrect search');
 				}
 				if(!se) {
-					this.kdbAdd(`seInfo${ processID ? '@'+processID : '' }: Unable to find object`);
+					if(this.verbose) {
+						this.kdbAdd(`seInfo${ processID ? '@'+processID : '' }: Unable to find object`);
+					}
 
-					console.error(1); return;
+					return;
 				}
 
 				let validator = {
@@ -1252,42 +1215,38 @@
 						undefined;
 
 				if(!['number', 'string'].includes(typeof seSearch)) {
-					this.kdbAdd(`seInfo${ processID ? '@'+processID : '' }: Incorrect search`);
-
-					console.error(0); return;
+					throw new TypeError('Incorrect search');
 				}
 				if(!se) {
-					this.kdbAdd(`seDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+					if(this.verbose) {
+						this.kdbAdd(`seDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+					}
 
-					console.error(1); return;
+					return;
 				}
 				if(processID && se.processID !== processID) {
-					this.kdbAdd(`seDestroy@${ processID }: Processes aren't allowed to destroy not owned objects`);
-
-					console.error(2); return;
+					throw new Error(`Processes aren't allowed to destroy not owned objects`);
 				}
 
 				this.se = this.se.filter(v => v !== se);
-				this.kdbAdd(`
-					seDestroy${ processID ? '@'+processID : '' }: Successfully destroyed object:
-					    ID: ${ se.ID }
-				`);
+				this.kdbAdd(`seDestroy${ processID ? '@'+processID : '' }: Object ${ se.ID } destroyed`);
 			}
 
 			async dlLoad(processID, path, title) {
 				if(!processID || !path || !title) {
-					throw new Error('drLoad: One or several arguments missing');
+					throw new Error('One or several arguments missing');
 				}
 
-				let dl = this.dl.find(v => v.path === path);
+				let process = this.processes.find(v => v.ID === processID),
+					dl = this.dl.find(v => v.path === path);
 
 				if(dl?.processID.includes(processID)) {
-					throw new Error(`dlLoad@${ processID }: Library already attached to process: ${ path }`);
+					throw new Error(`Library already attached to process`);
 				}
 
 				if(!dl) {
 					if(!await this.fsExists(path)) {
-						throw new Error(`dlLoad@${ processID }: Unable to access requested library: ${ path }`);
+						throw new Error(`Unable to access requested library`);
 					}
 
 					dl = {
@@ -1299,64 +1258,66 @@
 
 					try {
 						dl.code = this.codePrepare(`
-							var ${ title } = (async (_title, _path) => {
+							var ${ title } = async (_title, _path) => {
 								${ await this.fsRead(path) }
-							});
+							}
 						`);
 					} catch(error) {
-						error.message = `dlLoad@${ processID }: Unable to parse requested library: ${ path }`;
+						error.message = `Unable to parse requested library`;
 
 						throw error;
 					}
 
 					this.dl.push(dl);
+					if(this.verbose) {
+						this.kdbAdd(`
+							dlLoad@${ processID }: Object created:
+								ID: ${ dl.ID }
+								Path: ${ path }
+						`);
+					}
 				}
 
 				dl.processID.push(processID);
 
-				let process = this.processes.find(v => v.ID === processID);
-
-				try {
-					this.sbExecute(dl.code, process.environment, title);
-				} catch(error) {
-					error.message = `dlLoad@${ processID }: Unable to execute requested library: ${ path }`;
-					this.dlUnload(processID, dl.ID);
-
-					throw error;
-				}
-
 				return new Promise((resolve, reject) => {
-					process.environment[title](title, path).then(v => {
-						process.environment[title] = v;
-						if(this.verbose) {
-							this.kdbAdd(`
-								dlLoad@${ processID }: Successfully created object:
-								    ID: ${ dl.ID }
-								    Path: ${ path }
-							`);
+					let a = (error) => {
+						if(Object.isObject(error)) {
+							error.fileName = process.path;
 						}
-
-						resolve(dl.ID);
-					}, error => {
+						this.kdbAdd(`dlLoad@${ processID }: Unable to execute requested library: ${ error.message ?? error }`, error.stack);
 						this.dlUnload(processID, dl.ID);
-						this.kdbAdd(`dlLoad@${ processID }: Unable to execute requested library: "${ error.name }: ${ error.message }"@${ path }`, error.stack);
 
 						reject(error);
+					}
+
+					try {
+						this.sbExecute(dl.code, process.environment, title);
+					} catch(error) {
+						a(error);
+					}
+					process.environment[title](title, path).then(v => {
+						process.environment[title] = v;
+						resolve(dl.ID);
+					}, error => {
+						a(error);
 					});
 				});
 			}
 
 			dlUnload(processID, dlID) {
 				if(!processID || !dlID) {
-					console.error(0); return;
+					throw new Error('One or several arguments missing');
 				}
 
 				let dl = this.dl.find(v => v.ID === dlID);
 
 				if(!dl) {
-					this.kdbAdd(`dlUnload${ processID }: Unable to find object`);
+					if(this.verbose) {
+						this.kdbAdd(`dlUnload${ processID }: Unable to find object`);
+					}
 
-					console.error(1); return;
+					return;
 				}
 				if(!dl.processID.includes(processID)) {
 					if(this.verbose) {
@@ -1371,11 +1332,7 @@
 					this.dl = this.dl.filter(v => v !== dl);
 				}
 				if(this.verbose) {
-					this.kdbAdd(`
-						dlUnload@${ processID }: Successfully destroyed object:
-						    ID: ${ dl.ID }
-						    Path: ${ dl.path }
-					`);
+					this.kdbAdd(`dlUnload@${ processID }: Object ${ dl.ID } destroyed`);
 				}
 			}
 
@@ -1384,7 +1341,7 @@
 
 				this.terminals.push({
 					ID: ID,
-					parentID: process?.terminalID || 0,
+					parentID: process?.terminalID ?? 0,
 					mode: 'text',
 					current: !this.terminals.some(v => v.current),
 					strings: []
@@ -1416,15 +1373,14 @@
 				let terminal = this.terminals.find(v => v.ID === terminalID);
 
 				if(!terminal) {
-					this.kdbAdd(`terminalOutput${ process ? '@'+process.ID : '' }: Unable to find terminal`);
+					if(this.verbose) {
+						this.kdbAdd(`terminalOutput${ process ? '@'+process.ID : '' }: Unable to find terminal`);
+					}
 
-					console.error(0); return;
+					return;
 				}
-
 				if(process && process.terminalID !== terminalID && process.terminalID !== terminal.parentID) {
-					this.kdbAdd(`terminalOutput@${ process.ID }: Processes aren't allowed to output into non-parent and not owned terminals`);
-
-					console.error(1); return;
+					throw new Error(`Processes aren't allowed to output into non-parent and not owned terminals`);
 				}
 
 				let ID = terminal.strings.length > 0 ? Math.max(...terminal.strings.map(v => v.ID))+1 : 1,
@@ -1471,51 +1427,44 @@
 				let terminal = this.terminals.find(v => v.ID === terminalID);
 
 				if(!['text', 'graphics'].includes(value)) {
-					this.kdbAdd(`terminalMode${ process ? '@'+process.ID : '' }: Incorrect mode`);
-
-					console.error(0); return;
+					throw new Error('Incorrect mode');
 				}
 				if(!terminal) {
-					this.kdbAdd(`terminalMode${ process ? '@'+process.ID : '' }: Unable to find terminal`);
+					if(this.verbose) {
+						this.kdbAdd(`terminalMode${ process ? '@'+process.ID : '' }: Unable to find terminal`);
+					}
 
-					console.error(1); return;
+					return;
 				}
 				if(terminal.parentID) {
-					this.kdbAdd(`terminalMode${ process ? '@'+process.ID : '' }: Child terminals shouldn't have changeable mode`);
-
-					console.error(2); return;
+					throw new Error(`Child terminals shouldn't have changeable mode`);
 				}
 				if(process && process.terminalID !== terminalID) {
-					this.kdbAdd(`terminalMode@${ process.ID }: Processes aren't allowed to set mode of non-parent terminals`);
-
-					console.error(3); return;
+					throw new Error(`Processes aren't allowed to set mode of non-parent terminals`);
 				}
 
-				this.terminal.mode = value;
+				terminal.mode = value;
 			}
 
 			terminalDestroy(process, terminalID) {
 				let terminal = this.terminals.find(v => v.ID === terminalID);
 
 				if(!terminal) {
-					this.kdbAdd(`terminalDestroy${ process ? '@'+process.ID : '' }: Unable to find terminal`);
+					if(this.verbose) {
+						this.kdbAdd(`terminalDestroy${ process ? '@'+process.ID : '' }: Unable to find terminal`);
+					}
 
-					console.error(0); return;
+					return;
 				}
 				if(process && process.terminalID !== terminal.parentID) {
-					this.kdbAdd(`terminalDestroy@${ process.ID }: Processes aren't allowed to destroy not owned terminals`);
-
-					console.error(1); return;
+					throw new Error(`Processes aren't allowed to destroy not owned terminals`);
 				}
 
-				for(v of this.processes.filter(v => v.terminalID === terminal.ID)) {
+				for(let v of this.processes.filter(v => v.terminalID === terminal.ID)) {
 					this.processKill(v.ID);
 				}
 				this.terminals = this.terminals.filter(v => v !== terminal);
-				this.kdbAdd(`
-					terminalDestroy: Terminal destroyed:
-					    ID: ${ terminal.ID }
-				`);
+				this.kdbAdd(`terminalDestroy: Terminal ${ terminal.ID } destroyed`);
 				this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'removed', value: terminal.ID });
 			}
 
@@ -1608,30 +1557,27 @@
 					executable = await this.fsRead(path);
 
 				if(terminalID && !this.terminals.find(v => v.ID === terminalID)) {
-					throw new Error(`processExecute${ processID ? '@'+processID : '' }: Incorrect terminal`);
+					throw new Error(`Incorrect terminal`);
 				}
 				if(!terminalID) {
 					terminalID = await this.terminalCreate();
 				}
 				if(!user) {
-					throw new Error(`processExecute${ processID ? '@'+processID : '' }: Incorrect authorization`);
+					throw new Error(`Incorrect authorization`);
 				}
 				if(!executable) {
-					throw new Error(`processExecute${ processID ? '@'+processID : '' }: Unable to access executable`);
+					throw new Error(`Unable to access executable`);
 				}
-			//	if(!executable.startsWith('return class {') || !executable.endsWith('}')) {
-			//		throw new Error(`processExecute${ processID ? '@'+processID : '' }: Non-executable format`);
-			//	}
 
 				var process = {
-						ID: Math.max(...this.processes.map(v => v.ID).initialize(0))+1,
-						parentID: processID ?? 0,
-						terminalID: terminalID,
-						user: user.Login,
-						path: path,
-						arguments: arguments_.filter(v => typeof v === 'string'),
-						environment: undefined
-					}
+					ID: Math.max(...this.processes.map(v => v.ID).initialize(0))+1,
+					parentID: processID ?? 0,
+					terminalID: terminalID,
+					user: user.Login,
+					path: path,
+					arguments: arguments_.filter(v => typeof v === 'string'),
+					environment: undefined
+				}
 
 				process.environment = this.sbCreate(new Proxy({
 					_call: (...a) => this.processRequest(process, ...a),
@@ -1639,7 +1585,7 @@
 					_protected: (...a) => this.processRequest(process, 'protected', ...a)
 				}, {
 					get: (target, key) => {
-						if(key === 'path') {
+						if(key === '_path') {
 							return process.path;
 						}
 						if(key === '_arguments') {
@@ -1652,7 +1598,7 @@
 							return;
 						}
 
-						return target[key] || this.environment[key]
+						return target[key] ?? this.environment[key]
 					}
 				}));
 
@@ -1666,42 +1612,38 @@
 					    Path: ${ process.path }
 				`);
 				await this.eventThrow(undefined, undefined, 'processListChanged', { event: 'added', value: process.ID });
-				try {
-					this.sbExecute(this.codePrepare(`
-						var _executable = (async () => {
-							${ executable }
-						});
-					`), process.environment, process.path);
-				} catch(error) {
-					error.fileName = process.path;
-					this.processKill(process.ID, true);
-					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process failed:`, error.stack);
-					throw error;
-				}
 
 				return new Promise((resolve, reject) => {
+					let a = (error) => {
+						if(Object.isObject(error)) {
+							error.fileName = process.path;
+						}
+						this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process ${ process.ID } failed: ${ error.message ?? error }:`, error.stack);
+						this.processKill(process.ID, true);
+						reject(error);
+					}
+
+					try {
+						this.sbExecute(this.codePrepare(`
+							var _executable = async () => {
+								${ executable }
+							}
+						`), process.environment, process.path);
+					} catch(error) {
+						a(error);
+					}
 					process.environment._executable().then(v => {
 						if(v.prototype?.constructor.name !== 'Main') {
-							this.processKill(process.ID, true);
-							this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process stopped: Cannot find entry point`);
-							reject(new Error('Cannot find entry point'));
+							a(new Error('Cannot find entry point'));
 						}
 						try {
 							process.environment._executable = new v(...process.arguments);
 							resolve(this.processInfo(process.ID));
 						} catch(error) {
-							error.fileName = process.path;
-							this.processKill(process.ID, true);
-							this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process failed: "${ error.name }: ${ error.message }":`, error.stack);
-							reject(error);
+							a(error);
 						}
 					}, error => {
-						if(Object.isMemberOf(error, Error)) {
-							error.fileName = process.path;
-						}
-						this.processKill(process.ID, true);
-						this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process failed: "${ error.name }: ${ error.message }":`, error.stack);
-						reject(error);
+						a(error);
 					});
 				});
 			}
@@ -1723,14 +1665,14 @@
 						[]
 
 				if(!['number', 'string'].includes(typeof processSearch)) {
-					this.kdbAdd(`processInfo: Incorrect search`);
-
-					console.error(0); return;
+					throw new TypeError('Incorrect search');
 				}
 				if(processes.length === 0) {
-					this.kdbAdd(`processInfo: Unable to find processes`);
+					if(this.verbose) {
+						this.kdbAdd(`processInfo: Unable to find processes: `+processSearch);
+					}
 
-					console.error(1); return;
+					return;
 				}
 
 				for(let v of processes) {
@@ -1767,24 +1709,13 @@
 					return;
 				}
 
-				for(let v of this.catchers.filter(v => v.processID === processID)) {
-					this.eventCatcherDestroy(processID, v.ID);
-				}
-				for(let v of this.timers.filter(v => v.processID === processID)) {
-					this.timerDestroy(processID, v.ID);
-				}
-				for(let v of this.se.filter(v => v.processID === processID)) {
-					this.seDestroy(processID, v.ID);
-				}
-				for(let v of this.dl.filter(v => v.processID.includes(processID))) {
-					this.dlUnload(processID, v.ID);
-				}
+				for(let v of this.catchers.filter(v => v.processID === processID))	this.eventCatcherDestroy(processID, v.ID);
+				for(let v of this.timers.filter(v => v.processID === processID))	this.timerDestroy(processID, v.ID);
+				for(let v of this.se.filter(v => v.processID === processID))		this.seDestroy(processID, v.ID);
+				for(let v of this.dl.filter(v => v.processID.includes(processID)))	this.dlUnload(processID, v.ID);
 				this.processes = this.processes.filter(v => v !== process);
 				if(!quiet) {
-					this.kdbAdd(`
-						processKill: Process stopped:
-						    ID: ${ processID }
-					`);
+					this.kdbAdd(`processKill: Process ${ processID } stopped`);
 				}
 				this.eventThrow(undefined, undefined, 'processListChanged', { event: 'removed', value: processID });
 			}
@@ -1818,29 +1749,25 @@
 				}
 
 				if(!path) {
-					this.kdbAdd(`classImport: Unable to access requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
-
-					throw new Error(0);
+					throw new Error(`Unable to access requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
 				}
 
 				return new Promise((resolve, reject) => {
 					this.dlLoad(process.ID, path, class_).then(async v => {
 						if(framework === class_) {
-							this.kdbAdd(`classImport: Successfully imported main class of ${ framework } framework into process: ${ process.ID }`);
+							this.kdbAdd(`classImport: Successfully imported main class of ${ framework } framework into process ${ process.ID }`);
 							await this.eventThrow(undefined, process.ID, 'frameworkListChanged', { event: 'added', title: framework, path: path });
-						} else {
-							if(this.verbose) {
-								this.kdbAdd(`classImport: Successfully imported ${ class_ } class of ${ framework } framework into process: ${ process.ID }`);
-							}
+						} else
+						if(this.verbose) {
+							this.kdbAdd(`classImport: Successfully imported ${ class_ } class of ${ framework } framework into process ${ process.ID }`);
 						}
 						resolve();
-					}, e => {
-						if(!e.message?.includes('Library already attached')) {
-							this.kdbAdd(`classImport: Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
-							reject(1);
-						} else {
+					}, error => {
+						if(error.message?.includes('Library already attached')) {
 							resolve();
 						}
+
+						reject(`Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework${ error.message ? ': '+error.message : '' }`);
 					});
 				});
 			}
