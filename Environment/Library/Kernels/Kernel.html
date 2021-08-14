@@ -307,23 +307,19 @@
 			}
 
 			kdbAdd(...a) {
-				let b = (a) => {
-						a = a.replace(/^\t*/gm, '').trim().split(/^/gm);
-
-						for(let v of a) {
-							if(this.verbose) {
-								let b = $('kdb strings');
-
-								b.append('<string><text>'+v+'</text></string>');
-								b[0].scrollTop = b[0].scrollHeight;
-							//	this.terminalOutput(undefined, v, 1);
-							}
-							console.log(v);
-						}
-					}
-
 				for(let v of a) {
-					b(v);
+					let b = v?.replace(/^\t*/gm, '').trim().split(/^/gm) ?? []
+
+					for(let v_ of b) {
+						if(this.verbose) {
+							let c = $('kdb strings');
+
+							c.append('<string><text>'+v_+'</text></string>');
+							c[0].scrollTop = c[0].scrollHeight;
+						//	this.terminalOutput(undefined, v_, 1);
+						}
+						console.log(v_);
+					}
 				}
 			}
 
@@ -495,7 +491,7 @@
 				type ??= process ? 'user' : 'shared';
 
 				if(!['string', 'number'].includes(typeof identifier)) {
-					throw new TypeError('fsWritePreferences: Incorrect identifier');
+					throw new RangeError('fsWritePreferences: Incorrect identifier');
 				}
 				if(!Object.isObject(properties)) {
 					throw new TypeError('fsWritePreferences: Incorrect properties');
@@ -504,10 +500,10 @@
 					throw new TypeError('fsWritePreferences: Incorrect type');
 				}
 				if(type === 'user' && !process) {
-					throw new RangeError('fsWritePreferences: Unable to find user without process set');
+					throw new Error('fsWritePreferences: Unable to find user without process set');
 				}
 				if(type === 'environment' && group > 0) {
-					throw new RangeError(`fsWritePreferences: Groups 1+ aren't allowed to write environment-wide preferences`);
+					throw new Error(`fsWritePreferences: Groups 1+ aren't allowed to write environment-wide preferences`);
 				}
 
 				properties = JSON.stringify(properties);
@@ -659,6 +655,19 @@
 
 				layer.width = width;
 				layer.height = height;
+				layer.context2d = layer.getContext('2d');
+				layer.context2d.imageSmoothingQuality = 'high';
+
+				return layer;
+			}
+
+			async drCreateAsync(width, height) {
+				if(typeof width !== 'number' || typeof height !== 'number') {
+					throw new TypeError('drCreateAsync: Incorrect dimensions');
+				}
+
+				let layer = new OffscreenCanvas(width, height);
+
 				layer.context2d = layer.getContext('2d');
 				layer.context2d.imageSmoothingQuality = 'high';
 
@@ -819,7 +828,7 @@
 					typeof x_,
 					typeof y_
 				].some(v => v !== 'number')) {
-					console.error(0); return;
+					throw new RangeError('drMove: Incorrect type');
 				}
 
 				let context = layer.context2d,
@@ -1267,24 +1276,18 @@
 
 			async dlLoad(processID, path, title) {
 				if(!processID || !path || !title) {
-					throw 0;
+					throw new Error('drLoad: One or several arguments missing');
 				}
 
 				let dl = this.dl.find(v => v.path === path);
 
 				if(dl?.processID.includes(processID)) {
-					if(this.verbose) {
-						this.kdbAdd(`dlLoad@${ processID }: Library already attached to process: ${ path }`);
-					}
-
-					throw 1;
+					throw new Error(`dlLoad@${ processID }: Library already attached to process: ${ path }`);
 				}
 
 				if(!dl) {
 					if(!await this.fsExists(path)) {
-						this.kdbAdd(`dlLoad@${ processID }: Unable to access requested library: ${ path }`);
-
-						throw 2;
+						throw new Error(`dlLoad@${ processID }: Unable to access requested library: ${ path }`);
 					}
 
 					dl = {
@@ -1301,9 +1304,9 @@
 							});
 						`);
 					} catch(error) {
-						this.kdbAdd(`dlLoad@${ processID }: Unable to parse requested library: ${ path }`, error.stack);
+						error.message = `dlLoad@${ processID }: Unable to parse requested library: ${ path }`;
 
-						throw 3;
+						throw error;
 					}
 
 					this.dl.push(dl);
@@ -1316,7 +1319,10 @@
 				try {
 					this.sbExecute(dl.code, process.environment, title);
 				} catch(error) {
-					console.log(error);
+					error.message = `dlLoad@${ processID }: Unable to execute requested library: ${ path }`;
+					this.dlUnload(processID, dl.ID);
+
+					throw error;
 				}
 
 				return new Promise((resolve, reject) => {
@@ -1335,7 +1341,7 @@
 						this.dlUnload(processID, dl.ID);
 						this.kdbAdd(`dlLoad@${ processID }: Unable to execute requested library: "${ error.name }: ${ error.message }"@${ path }`, error.stack);
 
-						reject(4);
+						reject(error);
 					});
 				});
 			}
@@ -1353,7 +1359,11 @@
 					console.error(1); return;
 				}
 				if(!dl.processID.includes(processID)) {
-					this.kdbAdd(`dlUnload@${ processID }: Process aren't attached`); return;
+					if(this.verbose) {
+						this.kdbAdd(`dlUnload@${ processID }: Process isn't attached`);
+					}
+
+					return;
 				}
 
 				dl.processID = dl.processID.filter(v => v !== processID);
@@ -1598,27 +1608,19 @@
 					executable = await this.fsRead(path);
 
 				if(terminalID && !this.terminals.find(v => v.ID === terminalID)) {
-					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Incorrect terminal`);
-
-					throw 0;
+					throw new Error(`processExecute${ processID ? '@'+processID : '' }: Incorrect terminal`);
 				}
 				if(!terminalID) {
 					terminalID = await this.terminalCreate();
 				}
 				if(!user) {
-					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Incorrect authorization`);
-
-					throw 1;
+					throw new Error(`processExecute${ processID ? '@'+processID : '' }: Incorrect authorization`);
 				}
 				if(!executable) {
-					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Unable to access executable`);
-
-					throw 2;
+					throw new Error(`processExecute${ processID ? '@'+processID : '' }: Unable to access executable`);
 				}
 			//	if(!executable.startsWith('return class {') || !executable.endsWith('}')) {
-			//		this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Non-executable format`);
-
-			//		throw 3;
+			//		throw new Error(`processExecute${ processID ? '@'+processID : '' }: Non-executable format`);
 			//	}
 
 				var process = {
@@ -1664,17 +1666,24 @@
 					    Path: ${ process.path }
 				`);
 				await this.eventThrow(undefined, undefined, 'processListChanged', { event: 'added', value: process.ID });
-				this.sbExecute(this.codePrepare(`
-					var _executable = (async () => {
-						${ executable }
-					});
-				`), process.environment, process.path);
+				try {
+					this.sbExecute(this.codePrepare(`
+						var _executable = (async () => {
+							${ executable }
+						});
+					`), process.environment, process.path);
+				} catch(error) {
+					error.fileName = process.path;
+					this.processKill(process.ID, true);
+					this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process failed:`, error.stack);
+					throw error;
+				}
 
 				return new Promise((resolve, reject) => {
 					process.environment._executable().then(v => {
 						if(v.prototype?.constructor.name !== 'Main') {
-							this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process stopped: Cannot find entry point`);
 							this.processKill(process.ID, true);
+							this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process stopped: Cannot find entry point`);
 							reject(new Error('Cannot find entry point'));
 						}
 						try {
@@ -1682,12 +1691,17 @@
 							resolve(this.processInfo(process.ID));
 						} catch(error) {
 							error.fileName = process.path;
-							this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process failed: "${ error.name }: ${ error.message }":`, error.stack);
 							this.processKill(process.ID, true);
+							this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process failed: "${ error.name }: ${ error.message }":`, error.stack);
 							reject(error);
 						}
-					}, e => {
-						reject(4);
+					}, error => {
+						if(Object.isMemberOf(error, Error)) {
+							error.fileName = process.path;
+						}
+						this.processKill(process.ID, true);
+						this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process failed: "${ error.name }: ${ error.message }":`, error.stack);
+						reject(error);
 					});
 				});
 			}
@@ -1746,11 +1760,11 @@
 				let process = this.processes.find(v => v.ID === processID);
 
 				if(!process) {
-					if(!quiet) {
-						this.kdbAdd(`processKill: Unable to find process`);
+					if(this.verbose) {
+						this.kdbAdd('processKill: Unable to find process '+processID);
 					}
 
-					console.error(0); return;
+					return;
 				}
 
 				for(let v of this.catchers.filter(v => v.processID === processID)) {
@@ -1821,7 +1835,7 @@
 						}
 						resolve();
 					}, e => {
-						if(e !== 1) {
+						if(!e.message?.includes('Library already attached')) {
 							this.kdbAdd(`classImport: Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
 							reject(1);
 						} else {
@@ -2202,7 +2216,7 @@
 			//	l.context.drawRectangle('rgba(255,255,255,0.25)', 0, 0, 512, 256);
 			//	l.backgroundFilters = [{ title: 'blur', amount: 4 }]
 				let l = new this.processes[0].environment.CGLayer({ width: this.screen.width, height: this.screen.height });
-				l.context.drawLayer(await this.processes[0].environment.CGImage.new(this.processes[0].environment.LFWorkspace.shared.desktopImage), 0, 0, '100', '100');
+				l.context.drawLayer(await this.processes[0].environment.CGImage.new(this.processes[0].environment.LFWorkspace.shared.desktopImageURL), 0, 0, '100', '100');
 				let menubar = this.processes[0].environment.LFMenubar.shared;
 				menubar.draw();
 				s.__workspaces[0].layer.sublayers = [l, menubar.__layer]

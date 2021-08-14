@@ -71,13 +71,11 @@ return class Main {
 			}
 		});
 
-		new LFWindow({ tag: 'desktop', level: 'desktop', type: ['borderless', 'maximized'], background: 'none', view:
-			new LFView()
-		});
+		new LFWindow({ tag: 'desktop', level: 'desktop', type: ['borderless', 'maximized'], background: 'none' });
 	}
 
 	async window() {
-		let window = new LFWindow({ width: 384, height: 256, title: LFApp.bundle.properties.CFBundleTitle,
+		let window = new LFWindow({ width: 384, height: 256, title: LFApp.title,
 				toolbar: new LFToolbar({ subviews: [
 					new LFButton({ title: await CFLocalizedString('Alert'), action: () => LFAlert.new({ message: 'Clicked.' }) })
 				] }),
@@ -92,11 +90,11 @@ return class Main {
 			table = []
 
 		table.push(new LFTableRow({ title: 'None', action: () => {
-			LFWorkspace.shared.desktopImage = '';
+			LFWorkspace.shared.desktopImageURL = '';
 		} }));
 		for(let v of await _call('readDir', '/Library/Desktop Images')) {
 			table.push(new LFTableRow({ title: v.name, action: () => {
-				LFWorkspace.shared.desktopImage = '/Library/Desktop Images/'+v.name;
+				LFWorkspace.shared.desktopImageURL = '/Library/Desktop Images/'+v.name;
 			} }));
 		}
 		window.view.subviews[1].subviews[0].subviews = table;

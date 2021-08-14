@@ -26,4 +26,7 @@ if(!_call('seInfo', _title)) {
 }
 
 CFProcessInfo.shared.environment.$CFShared = _call('seInfo', _title).environment;
-CFBundle.main = await CFBundle.new(CFProcessInfo.shared.path);
+
+try {
+	CFBundle.main = await CFBundle.new(CFProcessInfo.shared.path);
+} catch {}

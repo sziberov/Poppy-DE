@@ -26,7 +26,7 @@ return class Main {
 
 		new CGCursor();
 		CGFontManager.new('/Environment/Library/Fonts');
-		LFWorkspace.shared.desktopImage = '/Library/Desktop Images/249785.png';
+		LFWorkspace.shared.desktopImageURL = '/Library/Desktop Images/249785.png';
 		LFWorkspace.shared.add();
 
 		LFMenubar.shared.mainMenu.items = [
@@ -101,9 +101,11 @@ return class Main {
 			this.__services.find(v => v.identifier === a.value.identifier && v.status !== 'failed').status = 'stopped';
 		}
 		for(let v of this.__services) {
-			if(!['launching', 'failed'].includes(v.status) && !LFWorkspace.shared.getApplication(v.identifier)) {
+			if(v.status === 'stopped') {
 				v.status = 'launching';
-				LFWorkspace.shared.launchApplication(v.URL).catch(e => {
+				LFWorkspace.shared.launchApplication(v.URL).then(v_ => {
+					v.status = 'launched';
+				}, e => {
 					v.status = 'failed';
 				});
 			}

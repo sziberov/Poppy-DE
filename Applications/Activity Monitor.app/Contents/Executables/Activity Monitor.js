@@ -52,61 +52,81 @@ return class Main {
 
 		this.table = LFApp.windows[0].view.subviews[0]
 		this.update();
+		CFEvent.addHandler('processListChanged', () => this.update());
 		CFArrayOld.addObserver(LFWorkspace.shared.launchedApplications, () => this.update());
 	}
 
 	update() {
 		let update = []
 
-		for(let v of LFWorkspace.shared.launchedApplications) {
-			update.push(new LFTableRow({ title: v.title, data: { application: v }, action: () => v.focus() }));
+		for(let v of _call('list')) {
+			let process = _call('info', v),
+				application = LFWorkspace.shared.launchedApplications.find(v_ => v_.processIdentifier === process.ID),
+				title = application?.title ?? process.path.split('/').pop();
+
+			update.push(new LFTableRow({ title: title, data: { title: title, process: process, application: application }, action: () => application?.focus() }));
 		}
+
 		this.table.subviews = update;
 	}
 
 	quit() {
-		this.table.activeRow?.data.application.quit();
+		let activeRow = this.table.activeRow;
+
+		if(!activeRow) {
+			return;
+		}
+		if(activeRow.data.application) {
+			activeRow.data.application.quit();
+
+			return;
+		}
+
+		_call('kill', activeRow.data.process.ID);
 	}
 
 	switch() {
-		this.table.activeRow?.data.application.focus();
+		this.table.activeRow?.data.application?.focus();
 	}
 
 	async information() {
-		let application = this.table.activeRow?.data.application;
+		let title = this.table.activeRow?.data.title,
+			process = this.table.activeRow?.data.process,
+			application = this.table.activeRow?.data.application;
 
-		if(application) {
-			let window = LFApp.windows.find(v => v.tag === application.processIdentifier),
-				process = _call('info', application.processIdentifier);
+		let window = LFApp.windows.find(v => v.tag === process.ID);
 
-			if(!window) {
-				new LFWindow({ tag: process.ID, width: 384, type: ['titled', 'closable', 'minimizable'], title: application.title, view:
-					new LFView({ type: 'vertical', subviews: [
-						new LFView({ subviews: [
-							new LFView({ type: 'vertical', tight: true, subviews: [
-								new LFText({ string: 'Process', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Terminal', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'User', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Bundle', size: 'small', weight: 'bold' }),
-								new LFText({ string: 'Identifier', size: 'small', weight: 'bold' })
-							] }),
-							new LFView({ type: 'vertical', tight: true, subviews: [
-								new LFText({ string: process.path.split('/').pop()+' ('+process.ID+')', size: 'small' }),
-								new LFText({ string: process.terminalID, size: 'small' }),
-								new LFText({ string: process.user, size: 'small' }),
-								new LFText({ string: application.bundle.URL, size: 'small' }),
-								new LFText({ string: application.identifier, size: 'small' })
-							] })
+		if(!window) {
+			new LFWindow({ tag: process.ID, width: 384, type: ['titled', 'closable', 'minimizable'], title: title, view:
+				new LFView({ type: 'vertical', subviews: [
+					new LFView({ subviews: [
+						new LFView({ type: 'vertical', tight: true, subviews: [
+							new LFText({ string: 'Process', size: 'small', weight: 'bold' }),
+							new LFText({ string: 'Terminal', size: 'small', weight: 'bold' }),
+							new LFText({ string: 'User', size: 'small', weight: 'bold' }),
+							...application?.bundleURL ? [new LFText({ string: 'Bundle', size: 'small', weight: 'bold' })] : [],
+							...application?.identifier ? [new LFText({ string: 'Identifier', size: 'small', weight: 'bold' })] : []
 						] }),
-						new LFButton({ title: await CFLocalizedString('Quit'), action: function() {
-							this.get('Superview', LFWindow).close();
+						new LFView({ type: 'vertical', tight: true, subviews: [
+							new LFText({ string: process.path.split('/').pop()+' ('+process.ID+')', size: 'small' }),
+							new LFText({ string: process.terminalID, size: 'small' }),
+							new LFText({ string: process.user, size: 'small' }),
+							...application?.bundleURL ? [new LFText({ string: application.bundleURL, size: 'small' })] : [],
+							...application?.identifier ? [new LFText({ string: application.identifier, size: 'small' })] : []
+						] })
+					] }),
+					new LFButton({ title: await CFLocalizedString('Quit'), action: function() {
+						this.get('Superview', LFWindow).close();
+						if(application) {
 							application.quit();
-						} })
-					] })
-				});
-			} else {
-				window.focus();
-			}
+						} else {
+							_call('kill', process.ID);
+						}
+					} })
+				] })
+			});
+		} else {
+			window.focus();
 		}
 	}
 }

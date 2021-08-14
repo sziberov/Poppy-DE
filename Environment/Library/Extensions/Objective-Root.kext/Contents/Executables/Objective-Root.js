@@ -175,6 +175,14 @@ window.String.prototype.isInteger = function() {
 	return this.valueOf() === parseInt(this.valueOf(), 10).toString();
 }
 
+window.String.prototype.removeLine = function(last) {
+	if(!last) {
+		return this.substring(this.indexOf('\n')+1);
+	} else {
+		return this.substring(this.lastIndexOf('\n')+1, -1);
+	}
+}
+
 window.Number.isInteger = (value) => {
 	return typeof(value) === 'number' && value === Math.abs(value);
 }

@@ -25,8 +25,8 @@ return class LFLaunchedApplication {
 		return this.__application.process.identifier;
 	}
 
-	get bundle() {
-		return this.__application.bundle;
+	get bundleURL() {
+		return this.__application.bundle?.URL;
 	}
 
 	get identifier() {

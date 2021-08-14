@@ -11,9 +11,9 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 	}
 
 	__launchedApplications = new CFArrayOld();
-	__desktopImage;
+	__desktopImageURL;
 
-	constructor({ desktopImage } = {}) {
+	constructor({ desktopImageURL } = {}) {
 		super(...arguments);
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;
@@ -21,7 +21,7 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 			console.error(0); return;
 		}
 
-		this.desktopImage = desktopImage;
+		this.desktopImageURL = desktopImageURL;
 
 		this.subviews.add(new LFMenubar({ transparent: true }));
 		CFEvent.addHandler('processListChanged', (a) => {
@@ -29,6 +29,10 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 				let application = this.launchedApplications.find(v => v.processIdentifier === a.value),
 					menu = LFMenubar.shared.applicationMenu,
 					focused = menu.application;
+
+				if(!application) {
+					return;
+				}
 
 				this.launchedApplications.remove(application);
 				if(focused === application) {
@@ -39,7 +43,7 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 					v.release();
 				}
 
-				let default_ = this.getApplication('ru.poppy.enviro');
+				let default_ = this.launchedApplications.find(v => v.identifier === 'ru.poppy.enviro');
 
 				if(focused === application && default_) {
 					default_.focus();
@@ -73,16 +77,16 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 		return this.__launchedApplications;
 	}
 
-	get desktopImage() {
-		return this.__desktopImage;
+	get desktopImageURL() {
+		return this.__desktopImageURL;
 	}
 
-	set desktopImage(value) {
+	set desktopImageURL(value) {
 		if(value && typeof value !== 'string') {
 			throw new TypeError();
 		}
 
-		this.__desktopImage = value;
+		this.__desktopImageURL = value;
 
 		CFEvent.dispatch(undefined, _title+'DesktopImageNotification', { event: value ? 'changed' : 'removed', value: value });
 	}
@@ -91,45 +95,46 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 		LFMenu.deactivateAll();
 	}
 
+	async launch(URL, ...arguments_) {
+		let user = (await CFPreferences.new('Global')).get().Users.find(v => v.Group === 1);
+
+		return _call('exec', user.Login, user.Password, URL, ...arguments_);
+	}
+
 	async launchApplication(URL, ...arguments_) {
 		URL = URL.endsWith('.app') ? URL : URL+'.app';
 
+		if(this.getApplication(URL)) {
+			this.getApplication(URL).focus();
+
+			return this.getApplication(URL);
+		}
+
+		let bundle = await CFBundle.new(URL),
+			title = bundle.properties.CFBundleTitle ?? URL.split('/').pop().replace(/\.app$/, ''),
+			user = (await CFPreferences.new('Global')).get().Users.find(v => v.Group === 1);
+
 		try {
-			var bundle = await CFBundle.new(URL),
-				identifier = bundle.properties.CFBundleIdentifier,
-				title = bundle.properties.CFBundleTitle;
+			if(!bundle.properties.CFBundleExecutable) {
+				throw new Error(`Properties list has no executable set`);
+			}
+
+			await _call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
+
+			return this.getApplication(URL);
 		} catch(error) {
+			this.getApplication(URL)?.quit();
 			LFAlert.new({
-				message: 'Application unable to load.',
+				message: `"${ title }" unable to launch.`,
 				information: error.name+': '+error.message
 			});
 
-			throw error;
-		}
-
-		if(!this.getApplication(identifier)) {
-			let user = (await CFPreferences.new('Global')).get().Users.find(v => v.Group === 1);
-
-			try {
-				await _call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
-
-				return this.getApplication(identifier);
-			} catch(error) {
-				this.getApplication(identifier)?.quit();
-				LFAlert.new({
-					message: `"${ title }" unable to launch.`,
-					information: error.name+': '+error.message
-				});
-
-				throw(error);
-			}
-		} else {
-			this.getApplication(identifier).focus();
+			throw(error);
 		}
 	}
 
-	getApplication(identifier) {
-		return this.launchedApplications.find(v => v.identifier === identifier);
+	getApplication(bundleURL) {
+		return this.launchedApplications.find(v => v.bundleURL === bundleURL);
 	}
 
 	release() {

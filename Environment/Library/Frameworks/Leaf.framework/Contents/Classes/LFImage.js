@@ -9,7 +9,7 @@ return class LFImage extends LFView {
 
 		self.width = width;
 		self.height = height;
-		self.url = shared ? (await CFBundle.new('/Environment/Library/Frameworks/CoreTypes.bundle')).resourcesURL+'/'+shared+'.icns' : url;
+		self.url = !url && shared ? (await CFBundle.new('/Environment/Library/Frameworks/CoreTypes.bundle')).resourcesURL+'/'+shared+'.icns' : url;
 
 		return self;
 	}

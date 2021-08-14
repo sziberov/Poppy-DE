@@ -26,6 +26,6 @@ return class Main {
 	}
 
 	updateDesktopImage(a) {
-		this.desktopImageWindow.style['background'] = a ? a.event === 'changed' ? `url('${ a.value }') center / cover` : 'none' : `url('${ LFWorkspace.shared.desktopImage }') center / cover`;
+		this.desktopImageWindow.style['background'] = a ? a.event === 'changed' ? `url('${ a.value }') center / cover` : 'none' : `url('${ LFWorkspace.shared.desktopImageURL }') center / cover`;
 	}
 }

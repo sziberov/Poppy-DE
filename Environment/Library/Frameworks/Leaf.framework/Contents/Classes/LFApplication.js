@@ -26,10 +26,10 @@ return class LFApplication {
 		LFWorkspace.shared.launchedApplications.add(new LFLaunchedApplication(this));
 		CFArrayOld.addObserver(LFWorkspace.shared.subviews, (a) => {
 			if(a.value.application === LFLaunchedApplication.shared && Object.isKindOf(a.value, LFWindow)) {
-				this.update('Windows');
+				this.update(1);
 			}
 		});
-		CFArrayOld.addObserver(this.menuItems, () => this.update('MenuItems'));
+		CFArrayOld.addObserver(this.menuItems, () => this.update(0));
 	}
 
 	get menuItems() {
@@ -61,27 +61,29 @@ return class LFApplication {
 	}
 
 	get identifier() {
-		return this.bundle.properties.CFBundleIdentifier;
+		return this.bundle?.properties.CFBundleIdentifier;
 	}
 
 	get executable() {
-		return this.bundle.properties.CFBundleExecutable;
+		return this.bundle?.properties.CFBundleExecutable ?? this.process.path.split('/').pop();
 	}
 
 	get title() {
-		return this.bundle.properties.CFBundleTitle;
+		return this.bundle?.properties.CFBundleTitle ?? this.process.path.split('/').pop();
 	}
 
 	get version() {
-		return this.bundle.properties.CFBundleVersion;
+		return this.bundle?.properties.CFBundleVersion;
 	}
 
 	get license() {
-		return this.bundle.properties.CFBundleLicense;
+		return this.bundle?.properties.CFBundleLicense;
 	}
 
 	get icon() {
-		return this.bundle.properties.CFBundleIcon && this.bundle.resourcesURL+'/'+this.bundle.properties.CFBundleIcon;
+		if(this.bundle?.properties.CFBundleIcon) {
+			return this.bundle.resourcesURL+'/'+this.bundle.properties.CFBundleIcon;
+		}
 	}
 
 	set menuItems(value) {
@@ -96,8 +98,8 @@ return class LFApplication {
 
 		this.__focusingPolicy = value;
 
-		this.update('MenuItems');
-		this.update('Windows');
+		this.update(0);
+		this.update(1);
 	}
 
 	set quitableBySingleWindow(value) {
@@ -108,22 +110,25 @@ return class LFApplication {
 		this.__quitableBySingleWindow = value;
 	}
 
+	/**
+	 * @param mode 0 - строка меню, 1 - окна.
+	 */
 	update(mode) {
 		return {
-			MenuItems: () => {
-				if(this.focusingPolicy < 1 && this.menuItems.length > 0 && LFWorkspace.shared.getApplication(this.identifier)) {
-					this.menuItems[0].title = this.title ?? 'Application';
-					LFMenubar.shared.applicationMenu.items = this.menuItems;
+			0: () => {
+				if(this.focusingPolicy < 1 && LFWorkspace.shared.launchedApplications.find(v => v.processIdentifier === this.process.identifier)) {
+					this.menuItems[0]?.title = this.title;
+					LFMenubar.shared.applicationMenu.items = this.menuItems.length > 0 ? this.menuItems : [new LFMenuItem({ title: this.title })]
 					LFMenubar.shared.applicationMenu.application = LFLaunchedApplication.shared;
 				} else {
 					let applications = LFWorkspace.shared.launchedApplications;
 
 					if(LFMenubar.shared.applicationMenu.application === LFLaunchedApplication.shared && applications.length > 1) {
-						applications[1].focus('Menu');
+						applications[1].focus(0);
 					}
 				}
 			},
-			Windows: () => {
+			1: () => {
 				if(this.focusingPolicy < 2) {
 					LFWorkspace.shared.addSubviews(this.windows);
 				} else {
@@ -135,13 +140,16 @@ return class LFApplication {
 		}[mode]();
 	}
 
+	/**
+	 * @param mode 0 - строка меню, 1 - окно.
+	 */
 	focus(mode) {
-		if(!mode || mode === 'Menu') {
+		if(mode === undefined || mode === 0) {
 			if(this.focusingPolicy < 1 && LFMenubar.shared.applicationMenu.application !== LFLaunchedApplication.shared) {
-				this.update('MenuItems');
+				this.update(0);
 			}
 		}
-		if(!mode || mode === 'Window') {
+		if(mode === undefined || mode === 1) {
 			let windows = this.windows;
 
 			if(this.focusingPolicy < 2 && windows.length > 0 && !windows.find(v => v.attributes['focused'] === '')) {
@@ -152,7 +160,7 @@ return class LFApplication {
 
 	cautiously(method, ..._arguments) {
 		try {
-			this.application[method](..._arguments);
+			return this.application[method](..._arguments);
 		} catch(error) {
 			LFAlert.new({
 				message: `"${ this.title }"'s method returned exception.`,
@@ -163,16 +171,16 @@ return class LFApplication {
 
 	async about() {
 		if(typeof this.application.about === 'function') {
-			this.application.about();
+			return this.application.about();
 		} else {
 			let window = this.windows.find(v => v.tag === 'about');
 
 			if(!window) {
 				new LFWindow({ tag: 'about', width: 256, type: ['titled', 'closable', 'minimizable'], title: '', view:
 					new LFView({ type: 'vertical', yAlign: 'center', subviews: [
-						...this.icon ? [await LFImage.new({ width: 64, height: 64, url: this.icon })] : [],
+						await LFImage.new({ width: 64, height: 64, url: this.icon, shared: 'Generic Application' }),
 						new LFText({ string: this.title, weight: 'bold' }),
-						...this.version ? [new LFText({ string: await CFLocalizedString('Version', await CFBundle.new(_path))+' '+this.version, size: 'small' })] : [],
+						...this.version ? [new LFText({ string: await CFLocalizedString('Version', $LFBundle)+' '+this.version, size: 'small' })] : [],
 						...this.license ? [new LFText({ string: this.license, size: 'small' })] : []
 					] })
 				}).center();
@@ -183,7 +191,7 @@ return class LFApplication {
 	}
 
 	quit() {
-		if(LFWorkspace.shared.getApplication(this.identifier)) {
+		if(LFWorkspace.shared.launchedApplications.find(v => v.processIdentifier === this.process.identifier)) {
 			try {
 				this.process.executable?.willQuit?.();
 			} catch {}
