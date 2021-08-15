@@ -119,7 +119,7 @@ return $CFShared[_title] ?? class LFWorkspace extends LFView {
 				throw new Error(`Properties list has no executable set`);
 			}
 
-			await _call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable+'.js', ...arguments_);
+			await _call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable, ...arguments_);
 
 			return this.getApplication(URL);
 		} catch(error) {

@@ -1,0 +1,79 @@
+// noinspection JSAnnotator
+return class Main {
+	process = _call('info');
+	user = {
+		login: undefined,
+		password: undefined
+	}
+
+	constructor() {
+		this.listen(0).catch(() => {
+			_call('kill');
+		});
+	}
+
+	async listen(mode) {
+		if(![0, 1].includes(mode)) {
+			throw new RangeError(0);
+		}
+
+		if(mode === 0) {
+			console.log('Login: ');
+		}
+		if(mode === 1) {
+			console.log('Password: ');
+		}
+
+		let input;
+
+		try {
+			input = await this.input();
+		} catch {
+			return this.listen(0);
+		}
+
+		if(mode === 0) {
+			this.user.login = input;
+
+			return this.listen(1);
+		}
+		if(mode === 1) {
+			this.user.password = input;
+		}
+
+		let user = (await _call('readPref', 'Global')).Users.find(v => v.Login === this.user.login && v.Password === this.user.password);
+
+		if(!user) {
+			console.log('Login incorrect');
+
+			return this.listen(0);
+		}
+
+		// Set process user (setuid())
+
+		_call('exec', undefined, undefined, '/bin/sh');
+		_call('kill');
+	}
+
+	async input() {
+		return new Promise((resolve, reject) => {
+			let string = '',
+				catcher = _call('catcherCreate', 'keyboardChanged', (a) => {
+					if(a.event === 'keyup') {
+						if(['Enter', 'Escape'].includes(a.value.key)) {
+							_call('catcherDestroy', catcher);
+						}
+						if(a.value.key === 'Enter') {
+							resolve(string);
+						}
+						if(a.value.key === 'Escape') {
+							reject('');
+						}
+						if(a.value.key.length === 1) {
+							string = string+a.value.key;
+						}
+					}
+				});
+		});
+	}
+}

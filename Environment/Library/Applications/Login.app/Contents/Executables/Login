@@ -103,9 +103,9 @@ return class Main {
 		for(let v of this.__services) {
 			if(v.status === 'stopped') {
 				v.status = 'launching';
-				LFWorkspace.shared.launchApplication(v.URL).then(v_ => {
+				LFWorkspace.shared.launchApplication(v.URL).then(() => {
 					v.status = 'launched';
-				}, e => {
+				}, () => {
 					v.status = 'failed';
 				});
 			}
