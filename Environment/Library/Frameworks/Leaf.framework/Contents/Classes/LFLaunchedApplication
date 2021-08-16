@@ -12,7 +12,7 @@ return class LFLaunchedApplication {
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;
 		} else {
-			console.error(0); return;
+			throw new Error('Only one instance allowed');
 		}
 		if(!Object.isKindOf(application, LFApplication)) {
 			throw new TypeError(0);

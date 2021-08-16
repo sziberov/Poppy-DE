@@ -19,7 +19,7 @@ return $CFShared[_title] ?? class LFMenubar extends LFView {
 		if(!this.constructor.__shared) {
 			this.constructor.__shared = this;
 		} else {
-			console.error(0); return;
+			throw new Error('Only one instance allowed');
 		}
 
 		this.transparent = transparent;

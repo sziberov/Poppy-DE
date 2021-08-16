@@ -2,11 +2,12 @@
 return class CGImage {
 	static __friends__ = [CGContext]
 
-	static async new(URL, type) {
+	static async new(URL, type, asLayer = false) {
 		if(typeof URL !== 'string')				throw new TypeError(0);
 		if(type && typeof type !== 'string')	throw new TypeError(1);
+		if(typeof asLayer !== 'boolean')		throw new TypeError(2);
 
-		let self = new this();
+		let self = !asLayer ? new this() : new CGLayer();
 
 		self.__internalLayer = await _call('drOpen', URL, type);
 
