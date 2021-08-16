@@ -72,9 +72,7 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 			currentPosition = 0,
 			layers = []
 
-		layer.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, layer.width, layer.height);
-		layer.context.drawRectangle(CGColor(0, 0, 0, 0.25), 0, 0, layer.width, layer.height);
-
+		layer.backgroundColor = CGColor('75', '75', '75');
 		for(let v of workspaces) {
 			if(!v.current) {
 				v.layer.hidden = true;
@@ -97,17 +95,16 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 
 			layers.push(cursorLayer);
 		}
-
 		layer.sublayers = layers;
 
-		_call('fbWrite', this.__layer.draw().__layer);
+		_call('fbWrite', this.__layer.draw().__internalLayer);
 	}
 
 	createConnection(processInfo) {
 		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))		throw new TypeError(0);
 		if(this.__connections.contains({ where: v => v.processID === processInfo.identifier }))	throw new RangeError(1);
 
-		let ID = new Number(!this.__connections.empty ? Math.max(...this.__connections.map(v => v.ID))+1 : 1);	// Упаковка примитива в объект даёт безопасность сравнений, передать в качестве аргумента чужой ID просто так не получится
+		let ID = new Number(!this.__connections.empty ? Math.max(...this.__connections.map(v => v.ID))+1 : 1);	// Упаковка примитива в объект обезопасивает сравнения, передать в качестве аргумента чужой ID просто так не получится
 
 		this.__connections.add({
 			ID: ID,
@@ -270,7 +267,7 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 			ID: !this.__cursors.empty ? Math.max(...this.__windows.map(v => v.ID))+1 : 1,
 			layers: layers,
 			hotspot: hotspot,
-			current: this.__cursors.empty ? true : false,
+			current: this.__cursors.empty,
 			global: global,
 			delay: delay
 		}
@@ -278,7 +275,7 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 		if(cursor.layers.empty) {
 			let layer = cursor.layers[0] = new CGLayer({ width: 32, height: 32 });
 
-			layer.context.drawRectangle(CGColor(0, 0, 0), 0, 0, layer.width, layer.height);
+			layer.backgroundColor = CGColor(0, 0, 0);
 		}
 
 		this.__cursors.add(cursor);
@@ -310,4 +307,23 @@ return $CFShared[_title] ?? class CGSWindowServer extends CFObject {
 	}
 
 	destroyCursor() {}
+
+	async __test() {
+	//	let c = CGSConnection.shared;
+
+	//	this.createWorkspace(c);
+	//	this.createWorkspace(c);
+	//	this.__workspaces[1].layer.context.drawRectangle('rgba(255,120,5,1)', 0, 16, 32, 64);
+	//	let l = new CGLayer({ x: 16, y: 32, width: 512, height: 256 });
+	//	l.context.drawRectangle('rgba(255,255,255,0.25)', 0, 0, 512, 256);
+	//	l.backgroundFilters = [{ title: 'blur', amount: 4 }]
+		let l = new CGLayer({ width: CGScreen.size.width, height: CGScreen.size.height });
+		l.context.drawLayer(await CGImage.new(LFWorkspace.shared.desktopImageURL), 0, 0, '100', '100');
+		let l2 = new CGLayer({ width: l.width, height: l.height });
+		l2.backgroundImage = l;
+		let m = LFMenubar.shared;
+		m.draw();
+		this.__workspaces[0].layer.sublayers = [l2, m.__layer]
+	//	this.setCurrentWorkspace(c, 2);
+	}
 }

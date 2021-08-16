@@ -2,12 +2,17 @@
 return $CFShared[_title] ?? class CGLayer {
 	static __friends__ = [CGContext, CGImage, CGSWindowServer]
 
-	__layer = _call('drCreate', 0, 0);
-	__context = new CGContext(this);
+	__superlayer;
 	__sublayers = new CFArray();
+	__internalLayer = _call('drCreate', 0, 0);
+	__context = new CGContext(this);
+	__needsRedraw = true;
 	__x;
 	__y;
 	__z;
+	__backgroundColor;
+	__backgroundImage;
+	__backgroundGradient;
 	__backgroundFilters = new CFArray();
 	__mask;
 	__hidden;
@@ -20,12 +25,20 @@ return $CFShared[_title] ?? class CGLayer {
 		this.height = height;
 	}
 
-	get context() {
-		return this.__context;
+	get superlayer() {
+		return this.__superlayer;
 	}
 
 	get sublayers() {
 		return this.__sublayers;
+	}
+
+	get context() {
+		return this.__context;
+	}
+
+	get needsRedraw() {
+		return this.__needsRedraw;
 	}
 
 	get x() {
@@ -41,11 +54,23 @@ return $CFShared[_title] ?? class CGLayer {
 	}
 
 	get width() {
-		return this.__layer.width;
+		return this.__internalLayer.width;
 	}
 
 	get height() {
-		return this.__layer.height;
+		return this.__internalLayer.height;
+	}
+
+	get backgroundColor() {
+		return this.__backgroundColor;
+	}
+
+	get backgroundImage() {
+		return this.__backgroundImage;
+	}
+
+	get backgroundGradient() {
+		return this.__backgroundGradient;
 	}
 
 	get backgroundFilters() {
@@ -65,9 +90,26 @@ return $CFShared[_title] ?? class CGLayer {
 			throw new TypeError(0);
 		}
 
-		this.__sublayers.removeAll();
-		if(value) {
-			this.__sublayers.add(...value.filter(v => v));
+		value = value?.filter(v => Object.isKindOf(v, this)) ?? []
+
+		let toRemove = this.sublayers.filter(v => !value.includes(v)),
+			toAdd = value.filter(v => !this.sublayers.contains({ element: v }) && v !== this);
+
+		this.__sublayers.remove(...toRemove);
+		this.__sublayers.add(...toAdd);
+
+		for(let v of toRemove)	v.__superlayer = undefined;
+		for(let v of toAdd)		v.__superlayer = this;
+	}
+
+	set needsRedraw(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError(0);
+		}
+
+		this.__needsRedraw = value;
+		if(value && !this.hidden) {
+			this.superlayer?.needsRedraw = true;
 		}
 	}
 
@@ -99,14 +141,33 @@ return $CFShared[_title] ?? class CGLayer {
 		if(typeof value !== 'number')	throw new TypeError(0);
 		if(value < 0)					throw new RangeError(1);
 
-		this.__layer.width = value;
+		this.__internalLayer.width = value;
 	}
 
 	set height(value) {
 		if(typeof value !== 'number')	throw new TypeError(0);
 		if(value < 0)					throw new RangeError(1);
 
-		this.__layer.height = value;
+		this.__internalLayer.height = value;
+	}
+
+	set backgroundColor(value) {
+		if(value && !/^rgba\(.+\)/i.test(value)) {
+			throw new TypeError(0);
+		}
+
+		this.__backgroundColor = value;
+	}
+
+	set backgroundImage(value) {
+		if(value && !Object.isKindOf(value, CGImage) && !Object.isKindOf(value, this))	throw new TypeError(0);
+		if(value === this)																throw new RangeError(1);
+
+		this.__backgroundImage = value;
+	}
+
+	set backgroundGradient(value) {
+		this.__backgroundGradient = value;
 	}
 
 	set backgroundFilters(value) {
@@ -124,6 +185,9 @@ return $CFShared[_title] ?? class CGLayer {
 		if(!Object.isKindOf(value, this)) {
 			throw new TypeError(0);
 		}
+		if(value === this) {
+			throw new RangeError(1);
+		}
 
 		this.__mask = value;
 	}
@@ -136,25 +200,49 @@ return $CFShared[_title] ?? class CGLayer {
 		this.__hidden = value;
 	}
 
-	draw() {
-		let layer = new CGLayer({ x: this.x, y: this.y, z: this.z, width: this.width, height: this.height });
+	[Symbol.set](self, key, value) {
+		if(self[key] !== value) {
+			self[key] = value;
+			if(!['__needsRedraw', 'needsRedraw', '__x', 'x', '__y', 'y', '__z', 'z', '__hidden', 'hidden'].includes(key)) {
+				this.needsRedraw = true;
+			}
+			if(['__x', '__y', '__z', '__hidden'].includes(key)) {
+				this.superlayer?.needsRedraw = true;
+			}
+		}
+	}
 
-		layer.context.drawLayer(this, 0, 0);
+	draw() {
+		if(!this.needsRedraw) {
+			return this;
+		}
+
+		this.context.clear();
+		if(this.backgroundColor) {
+			this.context.drawRectangle(this.backgroundColor, 0, 0, this.width, this.height);
+		}
+		if(this.backgroundImage) {
+			this.context.drawLayer(this.backgroundImage);
+		}
+		if(this.backgroundGradient) {
+			this.context.drawGradient(this.backgroundGradient[0], 0, 0, this.width, this.height, this.backgroundGradient[1], this.backgroundGradient[2], this.backgroundGradient[3], this.backgroundGradient[4]);
+		}
 		for(let v of this.sublayers) {
 			if(v.hidden) {
 				continue;
 			}
 			for(let v_ of v.backgroundFilters) {
 				if(v_.title === 'blur') {
-					layer.context.blur(v_.amount, true, true, v_.mask ?? v, v_.mask ? v.x+v_.mask.x : v.x, v_.mask ? v.y+v_.mask.y : v.y);
+					this.context.blur(v_.amount, true, true, v_.mask ?? v, v_.mask ? v.x+v_.mask.x : v.x, v_.mask ? v.y+v_.mask.y : v.y);
 				}
 			}
-			layer.context.drawLayer(v.draw());
+			this.context.drawLayer(v.draw());
 		}
 		if(this.mask) {
-			layer.context.mask(this.mask, true);
+			this.context.mask(this.mask.draw(), true);
 		}
+		this.needsRedraw = false;
 
-		return layer;
+		return this;
 	}
 }

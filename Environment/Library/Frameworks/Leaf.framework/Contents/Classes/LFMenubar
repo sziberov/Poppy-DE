@@ -1,5 +1,7 @@
 // noinspection JSAnnotator
 return $CFShared[_title] ?? class LFMenubar extends LFView {
+	static __friends__ = [CGSWindowServer]
+
 	static __shared;
 
 	static get shared() {
@@ -64,35 +66,48 @@ return $CFShared[_title] ?? class LFMenubar extends LFView {
 		layer.height = 48;
 
 		let width = layer.width,
-			height = layer.height/2;
+			height = layer.height/2,
+			body = new CGLayer({ width: width, height: height }),
+			pitTop = new CGLayer({ width: width, height: 1 }),
+			pitBottom = new CGLayer({ y: height-1, width: width, height: 1 }),
+			shadow = new CGLayer({ y: height, width: width, height: height });
 
 		if(!this.transparent) {
-			layer.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, height);
-			layer.context.drawGradient([
-				[0, CGColor('100', '100', '100', 0.0625)],
-				[1, CGColor(0, 0, 0, 0.5)]
-			], 0, 0, width, height, 0, 0, 0, height);
-			layer.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, 1);
-			layer.context.drawRectangle(CGColor('25', '25', '25'), 0, height-1, width, 1);
+			body.backgroundGradient = [
+				[
+					[0, CGColor('99.375', '99.375', '99.375')],
+					[1, CGColor('50', '50', '50')]
+				],
+				0, 0, 0, height
+			]
+			pitTop.backgroundColor = CGColor('100', '100', '100');
+			pitBottom.backgroundColor = CGColor('25', '25', '25');
 		} else {
 			let blurMask = new CGLayer({ width: width, height: height });
 
-			blurMask.context.drawRectangle(CGColor('100', '100', '100'), 0, 0, width, height);
+			blurMask.backgroundColor = CGColor('100', '100', '100');
 
-			layer.backgroundFilters = [{ title: 'blur', mask: blurMask, amount: 4 }]
-
-			layer.context.drawGradient([
-				[0, CGColor('100', '100', '100', 0.75)],
-				[1, CGColor('100', '100', '100', 0.25)]
-			], 0, 0, width, height, 0, 0, 0, height);
-			layer.context.drawRectangle(CGColor('100', '100', '100', 0.25), 0, 0, width, 1);
-			layer.context.drawRectangle(CGColor(0, 0, 0, 0.5), 0, height-1, width, 1);
+			body.backgroundFilters = [{ title: 'blur', mask: blurMask, amount: 4 }]
+			body.backgroundGradient = [
+				[
+					[0, CGColor('100', '100', '100', 0.75)],
+					[1, CGColor('100', '100', '100', 0.25)]
+				],
+				0, 0, 0, height
+			]
+			pitTop.backgroundColor = CGColor('100', '100', '100', 0.25);
+			pitBottom.backgroundColor = CGColor(0, 0, 0, 0.5);
 		}
 
-		layer.context.drawGradient([
-			[0, CGColor(0, 0, 0, 0.25)],
-			[1, CGColor(0, 0, 0, 0)]
-		], 0, height, width, height, 0, 0, 0, height);
+		shadow.backgroundGradient = [
+			[
+				[0, CGColor(0, 0, 0, 0.25)],
+				[1, CGColor(0, 0, 0, 0)]
+			],
+			0, 0, 0, height
+		]
+
+		layer.sublayers.add(body, pitTop, pitBottom, shadow);
 	}
 
 	release() {
