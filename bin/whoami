@@ -1,0 +1,7 @@
+// noinspection JSAnnotator
+return class Main {
+	constructor() {
+		console.log(_call('info').user);
+		_call('kill');
+	}
+}

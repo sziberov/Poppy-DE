@@ -70,6 +70,7 @@
 					Promise: Promise,
 					Proxy: Proxy,
 					RangeError: RangeError,
+					RegExp: RegExp,
 					Symbol: Symbol,
 					TypeError: TypeError,
 					WeakRef: WeakRef,
@@ -1559,7 +1560,7 @@
 			 */
 			async processExecute(terminalID, processID, login, password, path, ...arguments_) {
 				let user =
-						login && password ? (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === login && v.Password === password).Login :
+						login != null && password != null ? (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === login && v.Password === password).Login :
 						processID ? this.processes.find(v => v.ID === processID).user : undefined,
 					executable = await this.fsRead(path);
 

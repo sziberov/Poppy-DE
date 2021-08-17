@@ -1,36 +1,70 @@
 // noinspection JSAnnotator
 return class Main {
 	process = _call('info');
-	path;
+	home = '/Users/'+this.process.user;
 
 	constructor() {
-		this.listen().catch(() => {
+		this.initialize().catch((error) => {
+			console.log(error);
 			_call('kill');
 		});
 	}
 
-	async listen() {
-		console.log(this.process.user+'@poppy:~$ ');
+	async initialize() {
+		_environment.$pwd = this.home;
+
+		return this.listen();
 	}
 
-	/*
-	async input() {
-		return new Promise((resolve, reject) => {
-			let string = '';
-
-			_call('catcherCreate', 'keyboardChanged', (a) => {
-				if(a.event === 'keyup') {
-					if(a.value.key === 'Enter') {
-						resolve(string);
+	async listen() {
+		return new Promise((resolve) => {
+			let info = `${ this.process.user }@poppy:${ $pwd.replace(new RegExp('^'+this.home), '~') }${ this.process.user !== 'root' ? '$' : '#' } `,
+				input = '',
+				displayCaret = false,
+				timer = _call('timerCreate', true, 1000, () => {
+					console.log(`${ info }${ input }${ displayCaret ? '█' : '' }`);
+					displayCaret = !displayCaret;
+				}),
+				catcher = _call('catcherCreate', 'keyboardChanged', (a) => {
+					if(a.event === 'keyup') {
+						if(a.value.key === 'Enter') {
+							_call('timerDestroy', timer);
+							_call('catcherDestroy', catcher);
+							resolve(this.exec(...input.split(' ')));
+						}
+						if(a.value.key === 'Backspace') {
+							input = input.length > 0 ? input.substring(0, input.length-1) : input;
+						}
+						if(a.value.key.length === 1) {
+							input = input+a.value.key;
+						}
 					}
-					if(a.value.key === 'Escape') {
-						reject('');
-					}
-
-					string = string+a.value.key;
-				}
-			})
+				});
 		});
 	}
-	*/
+
+	async exec(...arguments_) {
+		return new Promise((resolve) => {
+			if(arguments_.length === 0) {
+				resolve(this.listen());
+			}
+
+			arguments_[0] = '/bin/'+arguments_[0]
+
+			_call('exec', undefined, undefined, ...arguments_).then(value => {
+				if(!value) {
+					resolve(this.listen());
+				}
+				let catcher = _call('catcherCreate', 'processListChanged', (a) => {
+					if(a.event === 'removed' && a.value === value.ID) {
+						_call('catcherDestroy', catcher);
+						resolve(this.listen());
+					}
+				});
+			}, (error) => {
+				console.log(error);
+				resolve(this.listen());
+			});
+		});
+	}
 }
