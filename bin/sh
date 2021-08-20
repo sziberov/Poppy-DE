@@ -21,40 +21,45 @@ return class Main {
 		return new Promise((resolve) => {
 			let info = `${ this.process.user }@${ this.hostTitle }:${ $pwd.replace(new RegExp('^'+this.home), '~') }${ this.process.user !== 'root' ? '$' : '#' } `,
 				input = '',
-				displayCaret = false,
-				timer = _call('timerCreate', true, 1000, () => {
+				displayCaret = true,
+				updateString = () => {
 					console.log(`${ info }${ input }${ displayCaret ? '█' : '' }`);
-					displayCaret = !displayCaret;
-				}),
+				},
 				catcher = _call('catcherCreate', 'keyboardChanged', (a) => {
-					if(a.event === 'keyup') {
+					if(a.event === 'keydown') {
 						if(a.value.key === 'Enter') {
-							_call('timerDestroy', timer);
 							_call('catcherDestroy', catcher);
-							resolve(this.exec(...input.split(' ')));
+							resolve(this.execute(...input.split(' '))); return;
 						}
-						if(a.value.key === 'Backspace') {
-							input = input.length > 0 ? input.substring(0, input.length-1) : input;
+						if(a.value.key === 'Backspace' && input.length > 0) {
+							input = input.substring(0, input.length-1);
+							updateString();
 						}
 						if(a.value.key.length === 1) {
 							input = input+a.value.key;
+							updateString();
 						}
 					}
 				});
+
+			updateString();
 		});
 	}
 
-	async exec(...arguments_) {
+	async execute(...arguments_) {
 		return new Promise((resolve) => {
 			if(arguments_.length === 0) {
-				resolve(this.listen());
+				return resolve(this.listen());
+			}
+			if(arguments_[0] === 'exit') {
+				return resolve(_call('kill'));
 			}
 
 			arguments_[0] = '/bin/'+arguments_[0]
 
 			_call('exec', undefined, undefined, ...arguments_).then(value => {
 				if(!value) {
-					resolve(this.listen());
+					return resolve(this.listen());
 				}
 				let catcher = _call('catcherCreate', 'processListChanged', (a) => {
 					if(a.event === 'removed' && a.value === value.ID) {

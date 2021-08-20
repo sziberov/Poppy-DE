@@ -1642,7 +1642,7 @@
 					}
 					process.environment._executable().then(value => {
 						if(value.prototype?.constructor.name !== 'Main') {
-							a(new Error('Cannot find entry point'));
+							a(new Error('Cannot find entry point')); return;
 						}
 						try {
 							process.environment._executable = new value(...process.arguments);
@@ -1772,7 +1772,7 @@
 						resolve();
 					}, error => {
 						if(error.message?.includes('Library already attached')) {
-							resolve();
+							return resolve();
 						}
 
 						reject(`Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework${ error.message ? ': '+error.message : '' }`);
