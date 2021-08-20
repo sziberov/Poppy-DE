@@ -1,0 +1,63 @@
+/**
+ * https://gist.github.com/ahmadalibaloch/6c7d70244c83b90aa77bb83fa28cd0df
+ */
+
+let setTimeouts = []
+
+window.sbSetTimeout = function(function_, delay) {
+	let ID = setTimeouts.length,
+		now = window.performance.now();
+
+	setTimeouts[ID] = () => {
+		function_();
+	}
+	setTimeouts[ID].active = true;
+
+	let handleMessage = (e) => {
+		if(e.data === ID) {
+			if(window.performance.now()-now >= delay) {
+				window.removeEventListener('message', handleMessage);
+				if(setTimeouts[ID].active) {
+					setTimeouts[ID]();
+				}
+			} else {
+				window.postMessage(ID, '*');
+			}
+		}
+	}
+
+	window.addEventListener('message', handleMessage);
+	window.postMessage(ID, '*');
+
+	return ID;
+}
+
+window.sbClearTimeout = function(timeoutID) {
+	if(setTimeouts[timeoutID]) {
+		setTimeouts[timeoutID].active = false;
+	}
+}
+
+let setIntervals = []
+
+window.sbSetInterval = function(function_, delay) {
+	let ID = setIntervals.length;
+
+	setIntervals[ID] = function() {
+		if(setIntervals[ID].active) {
+			function_();
+			sbSetTimeout(setIntervals[ID], delay);
+		}
+	}
+	setIntervals[ID].active = true;
+
+	sbSetTimeout(setIntervals[ID], delay);
+
+	return ID;
+}
+
+window.sbClearInterval = function(intervalID) {
+	if(setIntervals[intervalID]) {
+		setIntervals[intervalID].active = false;
+	}
+}

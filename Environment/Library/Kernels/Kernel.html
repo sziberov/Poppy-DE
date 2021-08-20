@@ -1069,12 +1069,12 @@
 					timer;
 
 				if(!repeat) {
-					timer = setTimeout(() => {
+					timer = sbSetTimeout(() => {
 						function_(...arguments_);
 						this.timerDestroy(processID, ID);
 					}, delay);
 				} else {
-					timer = setInterval(function_, delay, ...arguments_);
+					timer = sbSetInterval(function_, delay, ...arguments_);
 				}
 				this.timers.push({
 					ID: ID,
@@ -1112,9 +1112,9 @@
 				}
 
 				if(!timer.repeat) {
-					clearTimeout(timer.timer);
+					sbClearTimeout(timer.timer);
 				} else {
-					clearInterval(timer.timer);
+					sbClearInterval(timer.timer);
 				}
 				this.timers = this.timers.filter(v => v !== timer);
 				this.kdbAdd(`timerDestroy${ processID ? '@'+processID : '' }: Object ${ timer.ID } destroyed`);
