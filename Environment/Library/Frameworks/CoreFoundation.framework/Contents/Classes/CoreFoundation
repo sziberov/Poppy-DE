@@ -22,7 +22,7 @@ _import(_title, 'CFLocalizedString');
 _import(_title, 'CFLog');
 
 if(!_call('seInfo', _title)) {
-	_call('seCreate', 'read', _title);
+	_call('seCreate', 'r', _title);
 }
 
 CFProcessInfo.shared.environment.$CFShared = _call('seInfo', _title).environment;

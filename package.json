@@ -8,7 +8,9 @@
 	},
 	"main": "Environment/Library/Kernels/Kernel.html",
 	"window": {
-		"fullscreen": true
+		"fullscreen": false,
+		"width": 800,
+		"height": 600
 	},
 	"dependencies": {
 		"fast-xml-parser": "^3.19.0",

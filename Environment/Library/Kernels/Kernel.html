@@ -5,8 +5,8 @@
 		 * Opium Kernel
 		 *
 		 * Ядро окружения. Содержит базовые функции для создания и управления различными низкоуровневыми объектами
-		 * (такими как файлы, события, счётчики, разделённые окружения, динамические библиотеки, терминалы и процессы),
-		 * а также процедуру запуска окружения.
+		 * (такими как виртуальные файловые системы, файлы, события, счётчики, общие окружения, динамические библиотеки,
+		 * терминалы и процессы), а также процедуру запуска.
 		 *
 		 * @version 0.1
 		 */
@@ -197,11 +197,9 @@
 			}
 
 			get screen() {
-				let a = require('nw.gui').Window.get();
-
 				return {
-					width: a.width,
-					height: a.height
+					width: window.innerWidth,
+					height: window.innerHeight
 				}
 			}
 
@@ -392,9 +390,7 @@
 			}
 
 			async bootState(value) {
-				let layer = this.drCreate(this.screen.width, this.screen.height);
-
-				({
+				return {
 					false: () => {
 						if(this.bootTimerID) {
 							this.timerDestroy(undefined, this.bootTimerID);
@@ -404,7 +400,8 @@
 					},
 					true: async () => {
 						if(!this.bootTimerID) {
-							let logo = await this.drOpen(this.images.logo),
+							let layer = this.drCreate(this.screen.width, this.screen.height),
+								logo = await this.drOpen(this.images.logo),
 								spinner = await this.drOpen(this.images.spinner),
 								spinnerBackground = this.drCreate(spinner.width, spinner.height),
 								spinnerIteration = 0;
@@ -426,12 +423,11 @@
 							});
 						}
 					}
-				})[value]();
+				}[value]();
 			}
 
 			/**
-			 * Создаёт объект виртуальной файловой системы. Взаимодействие с этими объектами производится посредством
-			 * методов для обычных ФС.
+			 * Создаёт виртуальную файловую систему. Взаимодействие с ней производится посредством методов для обычных ФС.
 			 *
 			 * @param {string} path Абсолютный путь.
 			 * @param {Number} type Тип: 0 - файл, 1 - директория.
@@ -485,7 +481,7 @@
 			}
 
 			/**
-			 * Уничтожает объект виртуальной файловой системы, включая исходящие от него.
+			 * Уничтожает виртуальную файловую систему, включая её содержимое.
 			 */
 			vfsDestroy(path) {
 				this.vfs = this.vfs.filter(v => !v.path.startsWith(path));
@@ -513,9 +509,41 @@
 				}
 			}
 
-			fsOpen(processID, path, mode) {
+			/**
+			 * Возвращает размер файла в байтах.
+			 *
+			 * @returns {?Number}
+			 */
+			async fsSize(path) {
+				let file = this.vfs.find(v => v.path === path && v.type === 1);
+
+				if(file) {
+					return file.data.byteLength;
+				}
+				try {
+					return (await require('fs').promises.stat('.'+path)).size;
+				} catch {}
+			}
+
+			/**
+			 * Открывает файл в одном из следующих режимов:
+			 * - `r` - Чтение. При открытии поток располагается в начале.
+			 * - `r+` - Запись и чтение. При открытии поток располагается в начале.
+			 * - `w` - Запись. При открытии файл создаётся или усекается до нуля, а поток располагается в начале.
+			 * - `w+` - Запись и чтение. При открытии файл создаётся или усекается до нуля, а поток располагается в начале.
+			 * - `a` - Запись. При открытии файл создаётся, если его не существует. Поток всегда располагается в конце.
+			 * - `a+` - Запись и чтение. При открытии файл создаётся, если его не существует. Поток всегда располагается в конце.
+			 *
+			 * @param {Number}						processID	Идентификатор процесса.
+			 * @param {string}						path		Абсолютный путь.
+			 * @param {'r'|'r+'|'w'|'w+'|'a'|'a+'}	mode		Режим.
+			 */
+			async fsOpen(processID, path, mode = 'r') {
 				if(!['r', 'r+', 'w', 'w+', 'a', 'a+'].includes(mode)) {
-					throw new RangeError(`Incorrect mode`);
+					throw new RangeError('Incorrect mode');
+				}
+				if(['r', 'r+'].includes(mode) && !await this.fsExists(path)) {
+					throw new RangeError('Unable to find file');
 				}
 
 				let ID = Math.max(...this.files.map(v => v.ID).initialize(0))+1;
@@ -524,7 +552,8 @@
 					ID: ID,
 					processID: processID,
 					path: path,
-					mode: mode
+					mode: mode,
+					position: !['a', 'a+'].includes(mode) ? 0 : (await this.fsSize(path))+1
 				});
 				this.kdbAdd(`
 					fsOpen${ processID ? '@'+processID : '' }: Object created:
@@ -536,11 +565,38 @@
 				return ID;
 			}
 
-			async fsRead(path, a) {
+			/**
+			 * Устанавливает позицию потока, если возможно.
+			 *
+			 * @param {Number}	processID	Идентификатор процесса.
+			 * @param {Number}	fileID		Идентификатор файла.
+			 * @param {Number}	position	Позиция.
+			 * @param {0|1|2}	mode		Режим относительности: 0 - начало, 1 - текущая позиция, 2 - конец.
+			 */
+			async fsSeek(processID, fileID, position, mode = 0) {
+				let file = this.files.find(v => v.ID === fileID);
+
+				if(!file) {
+					throw new RangeError('Unable to find object');
+				}
+				if(processID && processID !== file.processID) {
+					throw new Error(`Processes aren't allowed to modify not owned file streams positions`);
+				}
+				if(position < 0) {
+					throw new RangeError('Incorrect position');
+				}
+				if(![0, 1, 2].includes(mode)) {
+					throw new RangeError(`Incorrect mode`);
+				}
+
+				file.position = mode === 0 ? position : mode === 1 ? file.position+position : mode === 2 ? (await this.fsSize(file.path) ?? 0)+position : undefined;
+			}
+
+			async fsRead(path, raw) {
 				if(await this.fsExists(path)) {
 					let c = await require('fs').promises.readFile('.'+path);
 
-					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || a ? c : c.toString();
+					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || raw ? c : c.toString();
 				} else {
 					if(this.verbose) {
 						this.kdbAdd('fsRead: Unable to access file: '+path);
@@ -689,6 +745,10 @@
 						return v.mime;
 					}
 				}
+			}
+
+			fsClose(processID, fileID) {
+
 			}
 
 			async extensionExecute(...a) {
@@ -1129,7 +1189,7 @@
 
 					return;
 				}
-				if(processID && catcher.processID !== processID) {
+				if(processID && processID !== catcher.processID) {
 					throw new Error(`Processes aren't allowed to destroy not owned objects`);
 				}
 
@@ -1200,7 +1260,7 @@
 
 					return;
 				}
-				if(processID && timer.processID !== processID) {
+				if(processID && processID !== timer.processID) {
 					throw new Error(`Processes aren't allowed to destroy not owned objects`);
 				}
 
@@ -1216,14 +1276,14 @@
 			/**
 			 * Создаёт общее окружение для передачи информации между процессами.
 			 *
-			 * @param {?number}					processID	Идентификатор процесса.
-			 * @param {('read'|'readWrite')}	access		Уровень доступа: чтение и чтение/запись.
-			 * @param {?string}					title		Название общего окружения.
+			 * @param {?number}		processID	Идентификатор процесса.
+			 * @param {('r'|'u')}	access		Уровень доступа: чтение и чтение/запись.
+			 * @param {?string}		title		Название общего окружения.
 			 */
 			seCreate(processID, access, title) {
 				let ID = Math.max(...this.se.map(v => v.ID).initialize(0))+1;
 
-				if(!['read', 'readWrite'].includes(access)) {
+				if(!['r', 'u'].includes(access)) {
 					throw new RangeError('Incorrect access');
 				}
 				if(title && this.se.find(v => v.title === title)) {
@@ -1278,7 +1338,7 @@
 				let validator = {
 					get: (target, key) => {
 						if(this.se.find(v => v === se)) {
-							if(processID && se.processID !== processID && se.access === 'read' && typeof target[key] === 'object') {
+							if(processID && processID !== se.processID && se.access === 'r' && typeof target[key] === 'object') {
 								return new Proxy(target[key], validator);
 							}
 
@@ -1287,7 +1347,7 @@
 					},
 					set: (target, key, value) => {
 						if(this.se.find(v => v === se)) {
-							if(processID && se.processID !== processID && se.access === 'read') {
+							if(processID && processID !== se.processID && se.access === 'r') {
 								return;
 							}
 
@@ -1323,7 +1383,7 @@
 
 					return;
 				}
-				if(processID && se.processID !== processID) {
+				if(processID && processID !== se.processID) {
 					throw new Error(`Processes aren't allowed to destroy not owned objects`);
 				}
 
@@ -1472,11 +1532,7 @@
 				let terminal = this.terminals.find(v => v.ID === terminalID);
 
 				if(!terminal) {
-					if(this.verbose) {
-						this.kdbAdd(`terminalOutput${ process ? '@'+process.ID : '' }: Unable to find terminal`);
-					}
-
-					return;
+					throw new RangeError('Unable to find terminal');
 				}
 				if(process && process.terminalID !== terminalID && process.terminalID !== terminal.parentID) {
 					throw new Error(`Processes aren't allowed to output into non-parent and not owned terminals`);
@@ -1910,12 +1966,12 @@
 			 *
 			 * _Этот метод является частью Objective-Root._
 			 *
-			 * @param {?number}							processID	Идентификатор процесса.
-			 * @param {Object}							caller		Обращающийся контекст.
-			 * @param {Object}							class_		Класс или объект.
-			 * @param {?(string|number|Symbol)}			field		Поле.
-			 * @param {?('get'|'set'|'call'|'delete')}	type		Тип обращения: получение (по умолчанию), присваивание, вызов и удаление.
-			 * @param {?*}								arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
+			 * @param {?number}						processID	Идентификатор процесса.
+			 * @param {Object}						caller		Обращающийся контекст.
+			 * @param {Object}						class_		Класс или объект.
+			 * @param {?(string|number|Symbol)}		field		Поле.
+			 * @param {'get'|'set'|'call'|'delete'}	type		Тип обращения: получение (по умолчанию), присваивание, вызов и удаление.
+			 * @param {?*}							arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
 			 */
 			classProtected(processID, caller, class_, field, type = 'get', ...arguments_) {
 				if(this.verbose && (!caller || !class_)) {
@@ -1952,8 +2008,6 @@
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected field: ${ field }`); return;
 				}
 				if(mutating && !global && !equals && !befriends && !mutable) {
-					console.log(caller);
-					console.log(class_);
 					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't mutate field: ${ field }`); return;
 				}
 
@@ -2299,8 +2353,8 @@
 		@font-face {
 			src: url('/Environment/Library/Fonts/Debug.ttf') format('truetype');
 			font-family: 'Debug';
-			font-style: 'normal';
-			font-weight: 'normal';
+			font-style: normal;
+			font-weight: normal;
 		}
 
 		body {
