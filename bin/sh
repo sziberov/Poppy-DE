@@ -19,7 +19,7 @@ return class Main {
 
 	async listen() {
 		return new Promise((resolve) => {
-			let info = `${ this.process.user }@${ this.hostTitle }:${ $pwd.replace(new RegExp('^'+this.home), '~') }${ this.process.user !== 'root' ? '$' : '#' } `,
+			let info = `${ this.process.user }@${ this.hostTitle }:${ $pwd.replace(/^\/(?=.)/, '').replace(new RegExp('^'+this.home), '~') }${ this.process.user !== 'root' ? '$' : '#' } `,
 				input = '',
 				displayCaret = true,
 				updateString = () => {

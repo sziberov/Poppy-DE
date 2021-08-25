@@ -5,8 +5,8 @@
 		 * Opium Kernel
 		 *
 		 * Ядро окружения. Содержит базовые функции для создания и управления различными низкоуровневыми объектами
-		 * (такими как виртуальные файловые системы, файлы, события, счётчики, общие окружения, динамические библиотеки,
-		 * терминалы и процессы), а также процедуру запуска.
+		 * (такими как виртуальные файловые системы, файлы, устройства, события, счётчики, общие окружения,
+		 * динамические библиотеки, терминалы и процессы), а также процедуру запуска.
 		 *
 		 * @version 0.1
 		 */
@@ -43,6 +43,7 @@
 			objects = {
 				vfs: [],
 				files: [],
+				devices: [],
 				channels: [],
 				catchers: [],
 				timers: [],
@@ -196,6 +197,9 @@
 				return new Date(Date.now()-this.uptimeStart).getTime();
 			}
 
+			/**
+			 * Разрешение экрана.
+			 */
 			get screen() {
 				return {
 					width: window.innerWidth,
@@ -219,6 +223,15 @@
 			 */
 			get files() {
 				return this.objects.files;
+			}
+
+			/**
+			 * Объекты устройств.
+			 *
+			 * @returns {Object[]}
+			 */
+			get devices() {
+				return this.objects.devices;
 			}
 
 			/**
@@ -303,6 +316,10 @@
 
 			set files(value) {
 				this.objects.files = value;
+			}
+
+			set devices(value) {
+				this.objects.devices = value;
 			}
 
 			set channels(value) {
@@ -427,12 +444,31 @@
 			}
 
 			/**
-			 * Создаёт виртуальную файловую систему. Взаимодействие с ней производится посредством методов для обычных ФС.
+			 * Создаёт виртуальную файловую систему.
+			 *
+			 * После монтирования взаимодействие с файлами в ней производится посредством методов для обычных ФС.
+			 *
+			 * Вместо методов по умолчанию должны предусмотрены аналоги, хотя некоторые из них подменять необязательно (*):
+			 * - `exists(path)`
+			 * - `existsDirectory(path)`
+			 * - `size(path)`
+			 * - `open(...)*`
+			 * - `seek(...)*`
+			 * - `read(path, raw)`
+			 * - `readDirectory(path)`
+			 * - `write(path, content)`
+			 * - `remove(path)`
+			 * - `type(...)`
+			 * - `close(...)*`
+			 *
+			 * Стоит отметить, что несмотря на то что типичное расположение виртуальных ФС - ОЗУ, ничего не мешает
+			 * вышеперечисленным функциям иметь влияние на обычную ФС, а так как они выполняются на уровне ядра,
+			 * категорически рекомендуется соблюдать дополнительную осторожность при их написании.
 			 *
 			 * @param {string} path Абсолютный путь.
 			 * @param {Number} type Тип: 0 - файл, 1 - директория.
 			 */
-			async vfsCreate(path, type = 0) {
+			async vfsCreate(path, type = 0, functions) {
 				if(typeof path !== 'string')	throw new TypeError('Incorrect path');
 				if(typeof type !== 'number')	throw new TypeError('Incorrect type');
 				if(!path.startsWith('/'))		throw new RangeError('Incorrect path');
@@ -486,6 +522,10 @@
 			vfsDestroy(path) {
 				this.vfs = this.vfs.filter(v => !v.path.startsWith(path));
 			}
+
+			fsMount(processID, vfsID, path) {}
+
+			fsUnmount(processID, path) {}
 
 			async fsExists(path) {
 				if(this.vfs.find(v => v.path === path && v.type === 0)) {
@@ -747,9 +787,11 @@
 				}
 			}
 
-			fsClose(processID, fileID) {
+			fsClose(processID, fileID) {}
 
-			}
+			devicesFsCreate() {}
+
+			devicesFsDestroy() {}
 
 			async extensionExecute(...a) {
 				a = Array.isArray(a) ? a : []
@@ -1627,6 +1669,7 @@
 			 * Подготавливает окружение, (частично) изолируя его от остальной среды.
 			 *
 			 * @param {Object} environment Сырое окружение.
+			 * @returns {Context}
 			 */
 			sbCreate(environment) {
 				return require('vm').createContext(environment);
@@ -1636,7 +1679,7 @@
 			 * Запускает код в окружении.
 			 *
 			 * @param {string}	code		Код.
-			 * @param {Object}	environment	Окружение.
+			 * @param {Context}	environment	Окружение.
 			 * @param {?string}	title		Название окружения, видимое при отладке.
 			 */
 			sbExecute(code, environment, title) {
@@ -1650,7 +1693,7 @@
 				return {
 					version: (a) => this.version[a],
 					uptime: () => this.uptime,
-					screen: () => Object.assign({}, this.screen),
+					screen: () => this.screen,
 					log: (...a) => this.kdbAdd(process.path.split('/').pop()+': ', ...a),
 					exists: (a) => this.fsExists(a),
 					existsDir: (a) => this.fsExistsDirectory(a),
@@ -2270,7 +2313,8 @@
 					console.error(0); return;
 				}
 
-				chrome.runtime.reload();
+			//	chrome.runtime.reload();
+				window.location.reload();
 			}
 
 			/**
@@ -2300,6 +2344,7 @@
 			 *
 			 * Трекер задач:
 			 * - [!] Перевести DOM-интерфейс на Canvas.
+			 * - [~] Дописать VFS, а на его базе написать DevicesFS.
 			 * - [~] Дописать поддержку нескольких курсоров в CGSWindowServer.
 			 * - [~] Везде заменить CFArrayOld на CFArray.
 			 * - [~] Добавить CFObject в качестве прототипа всем нестатичным классам framework'ов.
