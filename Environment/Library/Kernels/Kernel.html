@@ -2037,7 +2037,7 @@
 					global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
 					equals = Object.isMemberOf(caller, class_) || caller === class_,
 					inherits = Object.isKindOf(caller, class_),
-					friends = (class_.constructor ?? class_).__friends__ || [],
+					friends = (class_.constructor ?? class_).__friends__ ?? [],
 					befriends = !!friends.find(v => Object.isMemberOf(caller, v)),
 					mutable = Object.isObject(class_) && (Object.isMemberOf(class_, Object) || Object.isMemberOf(class_, Array) || class_[Symbol.collection] === true);
 
@@ -2142,7 +2142,7 @@
 									esproposal_export_star_as: true,
 									esproposal_nullish_coalescing: true,
 									esproposal_optional_chaining: true
-								})
+								});
 							}
 						}
 					});
@@ -2345,6 +2345,8 @@
 			 * Трекер задач:
 			 * - [!] Перевести DOM-интерфейс на Canvas.
 			 * - [~] Дописать VFS, а на его базе написать DevicesFS.
+			 * - [~] Добавить возможность импорта обычных библиотек. Желательно с динамическим путём поиска.
+			 * - [~] Дописать функции асинхронного ввода/вывода.
 			 * - [~] Дописать поддержку нескольких курсоров в CGSWindowServer.
 			 * - [~] Везде заменить CFArrayOld на CFArray.
 			 * - [~] Добавить CFObject в качестве прототипа всем нестатичным классам framework'ов.

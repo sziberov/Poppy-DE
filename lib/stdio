@@ -1,0 +1,69 @@
+let catchers = [],
+	event = 1;
+
+/**
+ * STandarD Input Output get/set Current
+ *
+ * Переключает или возвращает текущее ожидаемое событие.
+ *
+ * @param value 0 - ввод, 1 - вывод.
+ */
+_environment.stdioc = (value) => {
+	if(![0, 1].includes(value)) {
+		throw new RangeError();
+	}
+
+	if(value) {
+		event = value;
+	} else {
+		return event;
+	}
+}
+
+/**
+ * STandarD INput Catcher Create
+ *
+ * Создаёт отловщик событий ввода в стандартное устройство ввода и возвращает его идентификатор. Поддерживает асинхронный ввод и вывод.
+ *
+ * @param {Function}	function_
+ * @param {string}		delimiter Разделитель, после ввода которого должен сработать отловщик. По умолчанию - перенос строки.
+ */
+_environment.stdincc = (function_, delimiter = '\\n') => {
+	if(typeof delimiter !== 'string')	throw new TypeError();
+	if(event === 1)						return;
+
+
+}
+
+/**
+ * STandarD INput Catcher Destroy
+ *
+ * Уничтожает отловщик событий ввода в стандартное устройство ввода.
+ *
+ * @param {number} stdincID Идентификатор отловщика.
+ */
+_environment.stdincd = (stdincID) => {
+
+}
+
+/**
+ * PRINT
+ *
+ * Выводит текст на устройство стандартного вывода.
+ *
+ * @param {string|number} value
+ */
+_environment.print = (value) => {
+
+}
+
+/**
+ * PRINT on New Line
+ *
+ * Выводит текст на устройство стандартного вывода на новой строке.
+ *
+ * @param {string|number} value
+ */
+_environment.printnl = (value) => {
+
+}
