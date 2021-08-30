@@ -101,8 +101,8 @@
 					await this.bootState(true);
 
 					this.fsCreate('ufs', {
-						mount: this.universalFsMount,
-						unmount: this.universalFsUnmount,
+						mount: this.fsMount,
+						unmount: this.fsUnmount,
 						exists: this.universalFsExists,
 						existsDirectory: this.universalFsExistsDirectory,
 						type: this.universalFsType,
@@ -115,6 +115,18 @@
 						write: this.universalFsWrite,
 						remove: this.universalFsRemove
 					});
+					this.fsCreate('devfs', {
+						exists: this.devicesFsExists,
+						type: this.devicesFsType,
+						size: this.devicesFsSize,
+						open: this.universalFsOpen,
+						close: this.universalFsClose,
+						seek: this.universalFsSeek,
+						read: this.devicesFsRead,
+						write: this.devicesFsWrite
+					});
+					this.fsMount(undefined, 'ufs', undefined, '/');
+					this.fsMount(undefined, 'devfs', undefined, '/dev');
 
 					$(document).on('keydown keyup keypress', 'body', (e) => {
 						this.eventThrow(undefined, undefined, 'keyboardChanged', { event: e.type, value: e.originalEvent });
@@ -507,7 +519,7 @@
 				}
 				if(this.fs.find(v => v.title === title))	throw new RangeError(`Object with same title already exists`);
 
-				let ID = Math.max(...this.fs.map(v => v.ID).initialize(0))+1;
+				let ID = Math.max(...this.fs.map(v => v.ID).initialize(-1))+1;
 
 				this.fs.push({
 					ID: ID,
@@ -526,10 +538,32 @@
 			/**
 			 * Уничтожает файловую систему.
 			 *
-			 * @param {string|number} fsSearch
+			 * @param {string|number}	fsSearch
 			 */
 			fsDestroy(fsSearch) {
-				this.fs = this.fs.filter(v => v.ID !== fsSearch && v.title !== fsSearch);
+				let fs = this.fs.find(v => v.ID === fsSearch || v.title === fsSearch);
+
+				if(!fs) {
+					if(this.verbose) {
+						this.kdbAdd(`fsDestroy: Unable to find object`);
+					}
+
+					return;
+				}
+
+				this.fs = this.fs.filter(v => v !== fs);
+				this.kdbAdd(`fsDestroy: Object ${ fs.ID } destroyed`);
+			}
+
+			fsInfo(path) {
+				for(let v of this.mp.sort((a, b) => b.targetPath.length-a.targetPath.length)) {
+					if(path.startsWith(v.targetPath)) {
+						return {
+							fs: this.fs.find(v_ => v_.ID === v.fsID),
+							mp: v
+						}
+					}
+				}
 			}
 
 			/**
@@ -540,9 +574,15 @@
 			 * @param {?string}			sourcePath	Абсолютный путь устройства-источника. Может не указываться, если ФС это поддерживает (например, располагается в ОЗУ).
 			 * @param {string}			targetPath	Абсолютный путь цели.
 			 */
-			fsMount(processID, fsSearch, sourcePath, targetPath) {
+			fsMount(/*mpID,*/ processID, fsSearch, sourcePath, targetPath) {
 				if(!['string', 'number'].includes(typeof fsSearch)) {
 					throw new TypeError('Incorrect search');
+				}
+				if(sourcePath && typeof sourcePath !== 'string') {
+					throw new TypeError('Incorrect source');
+				}
+				if(typeof targetPath !== 'string') {
+					throw new TypeError('Incorrect target');
 				}
 
 				let fs = this.fs.filter(v => v.ID === fsSearch || v.title === fsSearch);
@@ -551,7 +591,7 @@
 					throw new RangeError(`Unable to find FS ${ typeof fsSearch === 'number' ? fsSearch : '"'+fsSearch+'"' }`);
 				}
 
-				let ID = Math.max(...this.mp.map(v => v.ID).initialize(0))+1;
+				let ID = Math.max(...this.mp.map(v => v.ID).initialize(-1))+1;
 
 				this.mp.push({
 					ID: ID,
@@ -737,7 +777,7 @@
 					throw new RangeError('Unable to find file');
 				}
 
-				let ID = Math.max(...this.files.map(v => v.ID).initialize(0))+1;
+				let ID = Math.max(...this.files.map(v => v.ID).initialize(-1))+1;
 
 				this.files.push({
 					ID: ID,
@@ -837,6 +877,65 @@
 			}
 
 			universalFsClose(processID, fileID) {}
+
+			/**
+			 * Создаёт устройство и возвращает его идентификатор.
+			 *
+			 * @param {'c'|'b'}	type		Тип: символьный или блочный.
+			 * @param {string}	title		Название. Зачастую сокращённое, например "fb" (FrameBuffer) или "hd" (Hard Disk). Может состоять только из символов [a-z0-9].
+			 * @param {?string}	description	Описание. Зачастую - реальное, полное название.
+			 */
+			deviceCreate(type, title, description, functions) {
+				if(typeof type !== 'string')						throw new TypeError('Incorrect type');
+				if(typeof title !== 'string')						throw new TypeError('Incorrect title');
+				if(description && typeof description !== 'string')	throw new TypeError('Incorrect description');
+				if(!Object.isObject(functions))						throw new TypeError('Incorrect functions');
+				if(!['c', 'b'].includes(type))						throw new RangeError('Incorrect type');
+				if(!/^[a-z0-9]+$/.test(title))						throw new RangeError('Incorrect title');
+
+				let ID = Math.max(...this.devices.map(v => v.ID).initialize(-1))+1;
+
+				this.devices.push({
+					ID: ID,
+					type: type,
+					title: title,
+					description: description,
+					functions: functions
+				});
+				this.kdbAdd(`
+					deviceCreate: Object created:
+					    ID: ${ ID }
+					    Type: ${ type === 'c' ? 'Character' : 'Block' }
+					    Title: ${ title }
+					    Description: ${ description ? '"'+description+'"' : 'Not set' }
+				`);
+
+				return ID;
+			}
+
+			/**
+			 * Уничтожает устройство.
+			 *
+			 * @param {number} deviceID Идентификатор устройства.
+			 */
+			deviceDestroy(deviceID) {
+				let device = this.devices.find(v => v.ID === deviceID);
+
+				if(!device) {
+					if(this.verbose) {
+						this.kdbAdd(`deviceDestroy: Unable to find object`);
+					}
+
+					return;
+				}
+
+				this.devices = this.devices.filter(v => v !== device);
+				this.kdbAdd(`deviceDestroy: Object ${ device.ID } destroyed`);
+			}
+
+			deviceList() {
+
+			}
 
 			devicesFsType() {}
 
@@ -1080,7 +1179,7 @@
 			 * Переносит часть слоя в другое место.
 			 *
 			 * @param {HTMLCanvasElement}	layer	Исходный слой.
-			 * @param {('cut'|'copy')}		type	Тип переноса: вырезка или копирование.
+			 * @param {'cut'|'copy'}		type	Тип переноса: вырезка или копирование.
 			 * @param {number}				x		Исходное положение X.
 			 * @param {number}				y		Исходное положение Y.
 			 * @param {number}				width	Ширина области.
@@ -1224,7 +1323,7 @@
 			}
 
 			eventChannelCreate(processID) {
-				let ID = Math.max(...this.channels.map(v => v.ID).initialize(0))+1;
+				let ID = Math.max(...this.channels.map(v => v.ID).initialize(-1))+1;
 
 				this.catchers.push({
 					ID: ID,
@@ -1246,7 +1345,7 @@
 			 * @returns	{number}
 			 */
 			eventCatcherCreate(processID, title, function_) {
-				let ID = Math.max(...this.catchers.map(v => v.ID).initialize(0))+1;
+				let ID = Math.max(...this.catchers.map(v => v.ID).initialize(-1))+1;
 
 				if(typeof title !== 'string') {
 					throw new TypeError('Incorrect title');
@@ -1315,7 +1414,7 @@
 					throw new TypeError('Incorrect function');
 				}
 
-				let ID = Math.max(...this.timers.map(v => v.ID).initialize(0))+1,
+				let ID = Math.max(...this.timers.map(v => v.ID).initialize(-1))+1,
 					timer;
 
 				if(!repeat) {
@@ -1386,7 +1485,7 @@
 					throw new RangeError(`Object with same title already exists`);
 				}
 
-				let ID = Math.max(...this.se.map(v => v.ID).initialize(0))+1;
+				let ID = Math.max(...this.se.map(v => v.ID).initialize(-1))+1;
 
 				this.se.push({
 					ID: ID,
@@ -1503,7 +1602,7 @@
 					}
 
 					dl = {
-						ID: Math.max(...this.dl.map(v => v.ID).initialize(0))+1,
+						ID: Math.max(...this.dl.map(v => v.ID).initialize(-1))+1,
 						processID: [],
 						path: path,
 						code: undefined
@@ -1741,8 +1840,8 @@
 				});
 			}
 
-			processRequest(process, method, ...arguments_) {
-				return {
+			processCall(process, title, ...arguments_) {
+				let methods = {
 					version: (a) => this.version[a],
 					uptime: () => this.uptime,
 					screen: () => this.screen,
@@ -1788,7 +1887,13 @@
 					system: () => this.system(),
 					relaunch: () => this.environmentRelaunch(process),
 					quit: () => this.environmentQuit(process)
-				}[method](...arguments_);
+				}
+
+				if(!methods[title]) {
+					throw new RangeError('Incorrect title');
+				}
+
+				return methods[title](...arguments_);
 			}
 
 			/**
@@ -1832,9 +1937,9 @@
 				}
 
 				process.environment = this.sbCreate(new Proxy({
-					_call: (...a) => this.processRequest(process, ...a),
-					_import: (...a) => this.processRequest(process, 'import', ...a),
-					_protected: (...a) => this.processRequest(process, 'protected', ...a)
+					_call: (...a) => this.processCall(process, ...a),
+					_import: (...a) => this.processCall(process, 'import', ...a),
+					_protected: (...a) => this.processCall(process, 'protected', ...a)
 				}, {
 					get: (target, key) => {
 						if(key === '_path') {
