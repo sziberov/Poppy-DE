@@ -598,7 +598,7 @@
 			}
 
 			/**
-			 * Демонтирует файловую систему.
+			 * Размонтирует файловую систему.
 			 */
 			fsUnmount(processID, targetPath) {}
 
@@ -717,11 +717,19 @@
 				file.position = mode === 0 ? position : mode === 1 ? file.position+position : mode === 2 ? ((await this.fsStatistics(file.path))?.size ?? 0)+position : undefined;
 			}
 
-			async fsRead(path, raw) {
+			async fsRead(path, raw = false) {
 				if(typeof path !== 'string') throw new TypeError('Incorrect path');
 				if(typeof raw !== 'boolean') throw new TypeError('Incorrect raw');
 
 				return this.fsInfo(path)?.fs.functions.read?.(...arguments);
+			}
+
+			async fsReadBasic(path, raw) {
+				try {
+					let c = await require('fs').promises.readFile('.'+path);
+
+					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || raw ? c : c.toString();
+				} catch {}
 			}
 
 			async fsReadDirectory(path) {
@@ -730,6 +738,14 @@
 				}
 
 				return this.fsInfo(path)?.fs.functions.readDirectory?.(...arguments);
+			}
+
+			async fsReadDirectoryBasic(path) {
+				try {
+					return require('fs').promises.readdir('.'+path, { withFileTypes: true });
+				} catch {
+					return []
+				}
 			}
 
 			async fsReadPreferences(process, identifier) {
@@ -783,14 +799,16 @@
 			 * @param	{'c'|'b'}	type		Тип: символьный или блочный.
 			 * @param	{string}	title		Название. Зачастую сокращённое, например "fb" (FrameBuffer) или "hd" (Hard Disk). Может состоять только из символов [a-z0-9].
 			 * @param	{?string}	description	Описание. Зачастую - реальное, полное название.
-			 * @param	{Object}	functions	Функции чтения и записи на устройство: `read(file, ...)` и `write(file, ...)`.
+			 * @param	{Object}	functions	Функции взаимодействия через ФС: `exists()`, `read()` и т.д.
+			 * @param	{Object}	data		Дополнительные данные для функций, например физический адрес устройства.
 			 * @returns	{number}
 			 */
-			deviceCreate(type, title, description, functions) {
+			deviceCreate(type, title, description, functions, data) {
 				if(typeof type !== 'string')						throw new TypeError('Incorrect type');
 				if(typeof title !== 'string')						throw new TypeError('Incorrect title');
 				if(description && typeof description !== 'string')	throw new TypeError('Incorrect description');
 				if(!Object.isObject(functions))						throw new TypeError('Incorrect functions');
+				if(data && !Object.isObject(data))					throw new TypeError('Incorrect data');
 				if(!['c', 'b'].includes(type))						throw new RangeError('Incorrect type');
 				if(!/^[a-z0-9]+$/.test(title))						throw new RangeError('Incorrect title');
 
@@ -801,7 +819,8 @@
 					type: type,
 					title: title,
 					description: description,
-					functions: functions
+					functions: functions,
+					data: data
 				});
 				this.kdbAdd(`
 					deviceCreate: Object created:
@@ -873,6 +892,12 @@
 				}
 			}
 
+			hdPhysicalPath(path) {
+				let info = this.fsInfo(path);
+
+				return info.device.data.physicalPath+path.replace(new RegExp('^'+info.mp.targetPath), '');
+			}
+
 			/**
 			 * Возвращает логическое значение, указывающее, существует ли файл.
 			 *
@@ -880,7 +905,9 @@
 			 */
 			async universalFsExists(path) {
 				try {
-					return await require('fs').promises.access('.'+path) === undefined && (await require('fs').promises.stat('.'+path)).isFile();
+					path = this.fsInfo(path).device?.functions.physicalPath(path) ?? '.'+path;
+
+					return await require('fs').promises.access(path) === undefined && (await require('fs').promises.stat(path)).isFile();
 				} catch {
 					return false;
 				}
@@ -893,7 +920,9 @@
 			 */
 			async universalFsExistsDirectory(path) {
 				try {
-					return await require('fs').promises.access('.'+path) === undefined && (await require('fs').promises.stat('.'+path)).isDirectory();
+					path = this.fsInfo(path).device?.functions.physicalPath(path) ?? '.'+path;
+
+					return await require('fs').promises.access(path) === undefined && (await require('fs').promises.stat(path)).isDirectory();
 				} catch {
 					return false;
 				}
@@ -992,8 +1021,10 @@
 			}
 
 			async universalFsRead(path, raw) {
+				let physicalPath = this.fsInfo(path).device?.functions.physicalPath(path);
+
 				if(await this.universalFsExists(path)) {
-					let c = await require('fs').promises.readFile('.'+path);
+					let c = await require('fs').promises.readFile(physicalPath ?? '.'+path);
 
 					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || raw ? c : c.toString();
 				} else {
@@ -1004,8 +1035,10 @@
 			}
 
 			async universalFsReadDirectory(path) {
+				let physicalPath = this.fsInfo(path).device?.functions.physicalPath(path);
+
 				if(await this.universalFsExistsDirectory(path)) {
-					return require('fs').promises.readdir('.'+path, { withFileTypes: true });
+					return require('fs').promises.readdir(physicalPath ?? '.'+path, { withFileTypes: true });
 				} else {
 					if(this.verbose) {
 						this.kdbAdd('fsReadDirectory: Unable to access directory: '+path);
@@ -1016,10 +1049,11 @@
 			}
 
 			async universalFsWrite(path, content) {
-				let event = await this.universalFsExists(path) ? 'written' : 'created';
+				let physicalPath = this.fsInfo(path).device?.functions.physicalPath(path),
+					event = await this.universalFsExists(path) ? 'written' : 'created';
 
 				try {
-					await require('fs').promises.writeFile('.'+path, content, { flag: 'w' });
+					await require('fs').promises.writeFile(physicalPath ?? '.'+path, content, { flag: 'w' });
 					await this.eventThrow(undefined, undefined, 'fsChanged', { event: event, value: path });
 
 					return true;
@@ -1029,9 +1063,11 @@
 			}
 
 			async universalFsRemove(path) {
+				let physicalPath = this.fsInfo(path).device?.functions.physicalPath(path);
+
 				if(await this.universalFsExists(path)) {
 					try {
-						await require('fs').promises.unlink('.'+path);
+						await require('fs').promises.unlink(physicalPath ?? '.'+path);
 
 						return true;
 					} catch(error) {
@@ -1078,14 +1114,14 @@
 				a = Array.isArray(a) ? a : []
 
 				if(a.length === 0) {
-					for(let v of await this.fsReadDirectory('/Environment/Library/Extensions')) {
+					for(let v of await this.fsReadDirectoryBasic('/Environment/Library/Extensions')) {
 						a.push(v.name.replace('.kext', ''));
 					}
 				}
 
 				for(let v of a) {
 					let b = `/Environment/Library/Extensions/${ v }.kext/Contents/Executables/${ v }`,
-						c = await this.fsRead(b);
+						c = await this.fsReadBasic(b);
 
 					if(c) {
 						this.kdbAdd('extensionExecute: Loading: '+b);
