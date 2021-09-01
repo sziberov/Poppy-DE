@@ -25,8 +25,9 @@ _environment.stdioc = (value) => {
  *
  * Создаёт отловщик событий ввода в стандартное устройство ввода и возвращает его идентификатор. Поддерживает асинхронный ввод и вывод.
  *
- * @param {Function}	function_
- * @param {string}		delimiter Разделитель, после ввода которого должен сработать отловщик. По умолчанию - перенос строки.
+ * @param	{Function}	function_
+ * @param	{string}	delimiter Разделитель, после ввода которого должен сработать отловщик. По умолчанию - перенос строки.
+ * @returns	{number}
  */
 _environment.stdincc = (function_, delimiter = '\\n') => {
 	if(typeof delimiter !== 'string')	throw new TypeError();

@@ -42,9 +42,9 @@
 			}
 			objects = {
 				fs: [],
-				mp: [],
 				files: [],
 				devices: [],
+				mp: [],
 				channels: [],
 				catchers: [],
 				timers: [],
@@ -101,6 +101,7 @@
 					await this.bootState(true);
 
 					this.fsCreate('ufs', {
+						createDirectory: this.universalFsCreateDirectory,
 						exists: this.universalFsExists,
 						existsDirectory: this.universalFsExistsDirectory,
 						statistics: this.universalFsStatistics,
@@ -111,13 +112,22 @@
 					}, 1);
 					this.fsCreate('devfs', {
 						exists: this.devicesFsExists,
+						existsDirectory: this.devicesFsExistsDirectory,
 						statistics: this.devicesFsStatistics,
 						read: this.devicesFsRead,
 						readDirectory: this.devicesFsReadDirectory,
 						write: this.devicesFsWrite
 					}, 1);
-					await this.fsMount(undefined, 'ufs', undefined, '/', 'u');
-					await this.fsMount(undefined, 'devfs', undefined, '/dev', 'r');
+					await this.mpCreate(undefined, 'ufs', undefined, '/', 'u');
+					await this.fsCreateDirectory(undefined, '/dev');
+					await this.mpCreate(undefined, 'devfs', undefined, '/dev', 'r');
+
+					/*
+					await this.deviceCreate('b', 'disk0s1', undefined, undefined, { physicalPath: 'G:\\' });
+					await this.fsCreateDirectory(undefined, '/Volumes/HD');
+					await this.mpCreate(undefined, 'ufs', '/dev/disk0s1', '/Volumes/HD', 'u');
+					console.log(await this.fsReadDirectory('/Volumes/HD'));
+					*/
 
 					$(document).on('keydown keyup keypress', 'body', (e) => {
 						this.eventThrow(undefined, undefined, 'keyboardChanged', { event: e.type, value: e.originalEvent });
@@ -477,11 +487,19 @@
 			}
 
 			/**
+			 * Заменяет лишние и обратные `/` в пути на одинарные.
+			 */
+			urlPathNormalize(path) {
+				return path.replace(/[\\/]+/gm, '/');
+			}
+
+			/**
 			 * Создаёт файловую систему и возвращает её идентификатор.
 			 *
 			 * После монтирования взаимодействие с файлами в ней производится посредством развилочных методов ФС.
 			 *
 			 * Полноценная ФС должна обладать реализацией всех нижеперечисленных методов:
+			 * - `createDirectory(path)`
 			 * - `exists(path)`
 			 * - `existsDirectory(path)`
 			 * - `statistics(path)`
@@ -489,8 +507,6 @@
 			 * - `readDirectory(path)`
 			 * - `write(path, content)`
 			 * - `remove(path)`
-			 *
-			 * При этом, в большинстве случаев некоторые из них (*) могут быть ссылками на методы UniversalFS.
 			 *
 			 * @param	{string}	title		Название.
 			 * @param	{Object}	functions	Функции.
@@ -501,14 +517,17 @@
 				if(typeof title !== 'string')				throw new TypeError('Incorrect title');
 				if(!Object.isObject(functions))				throw new TypeError('Incorrect functions');
 				for(let k in functions) {
-					if(typeof k !== 'function')				throw new TypeError('Incorrect function: '+k);
+					if(typeof functions[k] !== 'function')	throw new TypeError('Incorrect function: '+k);
 				}
 				if(typeof type !== 'number')				throw new TypeError('Incorrect type');
-				if(this.fs.find(v => v.title === title))	throw new RangeError(`Object with same title already exists`);
+				if(this.fs.find(v => v.title === title))	throw new RangeError('Object with same title already exists');
 				if(![0, 1].includes(type))					throw new RangeError('Incorrect type');
 
 				let ID = Math.max(...this.fs.map(v => v.ID).initialize(-1))+1;
 
+				for(let k in functions) {
+					functions[k] = functions[k].bind(this);
+				}
 				this.fs.push({
 					ID: ID,
 					title: title,
@@ -523,6 +542,14 @@
 				`);
 
 				return ID;
+			}
+
+			fsCreateDirectory(processID, path) {
+				if(typeof path !== 'string') {
+					throw new TypeError('Incorrect path');
+				}
+
+				return this.mpInfo(path)?.fs.functions.createDirectory?.(...arguments);
 			}
 
 			/**
@@ -545,85 +572,12 @@
 				this.kdbAdd(`fsDestroy: Object ${ fs.ID } destroyed`);
 			}
 
-			/**
-			 * Монтирует файловую систему блочного устройства.
-			 *
-			 * @param {processID}		processID	Идентификатор процесса.
-			 * @param {string|number}	fsSearch	Название или идентификатор ФС.
-			 * @param {?string}			sourcePath	Абсолютный путь устройства-источника. Может не указываться, если ФС это поддерживает (например, располагается в ОЗУ).
-			 * @param {string}			targetPath	Абсолютный путь цели.
-			 * @param {'r'|'u'}			access		Уровень доступа: чтение или чтение/запись.
-			 */
-			async fsMount(processID, fsSearch, sourcePath, targetPath, access) {
-				if(!['string', 'number'].includes(typeof fsSearch))	throw new TypeError('Incorrect search');
-				if(sourcePath && typeof sourcePath !== 'string')	throw new TypeError('Incorrect source');
-				if(typeof targetPath !== 'string')					throw new TypeError('Incorrect target');
-				if(typeof access !== 'string')						throw new TypeError('Incorrect access');
-				if(!['r', 'u'].includes(access))					throw new RangeError('Incorrect access');
-
-				let fs = this.fs.filter(v => v.ID === fsSearch || v.title === fsSearch);
-
-				if(!fs) {
-					throw new RangeError(`Unable to find FS ${ typeof fsSearch === 'number' ? fsSearch : '"'+fsSearch+'"' }`);
-				}
-				if(fs.type === 0 && (await this.fsStatistics(sourcePath))?.type !== 'inode/blockdevice') {
-					throw new Error(`"${ sourcePath }" is not a block device`);
-				}
-				if(this.mp.find(v => v.sourcePath === sourcePath)) {
-					throw new Error(`"${ sourcePath }" already mounted`);
-				}
-
-				let ID = Math.max(...this.mp.map(v => v.ID).initialize(-1))+1,
-					deviceID = fs.type === 0 ? (await this.fsStatistics(sourcePath)).internalDeviceID : undefined;
-
-				this.mp.push({
-					ID: ID,
-					fsID: fs.ID,
-					deviceID: deviceID,
-					sourcePath: sourcePath,
-					targetPath: targetPath,
-					access: access
-				});
-				this.kdbAdd(`
-					fsMount${ processID ? '@'+processID : '' }: Object created:
-					    ID: ${ ID }
-					    FS ID: ${ fs.ID }
-					    Device ID: ${ deviceID ?? 'Not set' }
-					    Source Path: ${ sourcePath ? '"'+sourcePath+'"' : 'Not set' }
-					    Target Path: "${ targetPath }"
-					    Access: ${ access === 'r' ? 'Read' : 'Read-Write' }
-				`);
-
-				return ID;
-			}
-
-			/**
-			 * Размонтирует файловую систему.
-			 */
-			fsUnmount(processID, targetPath) {}
-
-			fsInfo(path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				for(let v of this.mp.sort((a, b) => b.targetPath.length-a.targetPath.length)) {
-					if(path.startsWith(v.targetPath)) {
-						return {
-							fs: this.fs.find(v_ => v_.ID === v.fsID),
-							mp: v,
-							device: this.devices.find(v_ => v_.ID === v.deviceID)
-						}
-					}
-				}
-			}
-
 			async fsExists(path) {
 				if(typeof path !== 'string') {
 					throw new TypeError('Incorrect path');
 				}
 
-				return this.fsInfo(path)?.fs.functions.exists?.(...arguments);
+				return this.mpInfo(path)?.fs.functions.exists?.(...arguments);
 			}
 
 			async fsExistsDirectory(path) {
@@ -631,7 +585,7 @@
 					throw new TypeError('Incorrect path');
 				}
 
-				return this.fsInfo(path)?.fs.functions.existsDirectory?.(...arguments);
+				return this.mpInfo(path)?.fs.functions.existsDirectory?.(...arguments);
 			}
 
 			async fsStatistics(path) {
@@ -639,7 +593,7 @@
 					throw new TypeError('Incorrect path');
 				}
 
-				return this.fsInfo(path)?.fs.functions.statistics?.(...arguments);
+				return this.mpInfo(path)?.fs.functions.statistics?.(...arguments);
 			}
 
 			/**
@@ -721,7 +675,7 @@
 				if(typeof path !== 'string') throw new TypeError('Incorrect path');
 				if(typeof raw !== 'boolean') throw new TypeError('Incorrect raw');
 
-				return this.fsInfo(path)?.fs.functions.read?.(...arguments);
+				return this.mpInfo(path)?.fs.functions.read?.(...arguments);
 			}
 
 			async fsReadBasic(path, raw) {
@@ -737,7 +691,7 @@
 					throw new TypeError('Incorrect path');
 				}
 
-				return this.fsInfo(path)?.fs.functions.readDirectory?.(...arguments);
+				return this.mpInfo(path)?.fs.functions.readDirectory?.(...arguments);
 			}
 
 			async fsReadDirectoryBasic(path) {
@@ -762,7 +716,7 @@
 					throw new TypeError('Incorrect path');
 				}
 
-				return this.fsInfo(path)?.fs.functions.write?.(...arguments);
+				return this.mpInfo(path)?.fs.functions.write?.(...arguments);
 			}
 
 			async fsWritePreferences(process, identifier, properties, type) {
@@ -790,7 +744,7 @@
 					throw new TypeError('Incorrect path');
 				}
 
-				return this.fsInfo(path)?.fs.functions.remove?.(...arguments);
+				return this.mpInfo(path)?.fs.functions.remove?.(...arguments);
 			}
 
 			/**
@@ -799,15 +753,15 @@
 			 * @param	{'c'|'b'}	type		Тип: символьный или блочный.
 			 * @param	{string}	title		Название. Зачастую сокращённое, например "fb" (FrameBuffer) или "hd" (Hard Disk). Может состоять только из символов [a-z0-9].
 			 * @param	{?string}	description	Описание. Зачастую - реальное, полное название.
-			 * @param	{Object}	functions	Функции взаимодействия через ФС: `exists()`, `read()` и т.д.
-			 * @param	{Object}	data		Дополнительные данные для функций, например физический адрес устройства.
+			 * @param	{Object}	functions	Функции.
+			 * @param	{Object}	data		Дополнительные данные.
 			 * @returns	{number}
 			 */
 			deviceCreate(type, title, description, functions, data) {
 				if(typeof type !== 'string')						throw new TypeError('Incorrect type');
 				if(typeof title !== 'string')						throw new TypeError('Incorrect title');
 				if(description && typeof description !== 'string')	throw new TypeError('Incorrect description');
-				if(!Object.isObject(functions))						throw new TypeError('Incorrect functions');
+				if(functions && !Object.isObject(functions))		throw new TypeError('Incorrect functions');
 				if(data && !Object.isObject(data))					throw new TypeError('Incorrect data');
 				if(!['c', 'b'].includes(type))						throw new RangeError('Incorrect type');
 				if(!/^[a-z0-9]+$/.test(title))						throw new RangeError('Incorrect title');
@@ -892,10 +846,36 @@
 				}
 			}
 
-			hdPhysicalPath(path) {
-				let info = this.fsInfo(path);
+			/**
+			 * Возвращает конечный физический путь: абсолютный (если точке монтирования назначено устройство,
+			 * обладающее этой информацией) или относительный.
+			 *
+			 * @param	{string} path
+			 * @returns	{string}
+			 */
+			universalFsDestination(path) {
+				if(typeof path !== 'string') {
+					throw new TypeError('Incorrect path');
+				}
 
-				return info.device.data.physicalPath+path.replace(new RegExp('^'+info.mp.targetPath), '');
+				let info = this.mpInfo(path),
+					physicalPath = info.device?.data.physicalPath;
+
+				return this.urlPathNormalize(physicalPath ? physicalPath+'/'+path.replace(new RegExp('^'+info.mp.targetPath), '') : /^[\\/]+/g.test(path) ? '.'+path : path);
+			}
+
+			/**
+			 * Создаёт директорию.
+			 */
+			async universalFsCreateDirectory(processID, path) {
+				if(await this.fsExistsDirectory(path)) {
+					return;
+				}
+				try {
+					await require('fs').promises.mkdir(this.universalFsDestination(path), { recursive: true });
+				} catch(error) {
+					throw 'Unable to create directory: '+error.message;
+				}
 			}
 
 			/**
@@ -904,10 +884,10 @@
 			 * @returns {Promise<boolean>}
 			 */
 			async universalFsExists(path) {
-				try {
-					path = this.fsInfo(path).device?.functions.physicalPath(path) ?? '.'+path;
+				let finalPath = this.universalFsDestination(path);
 
-					return await require('fs').promises.access(path) === undefined && (await require('fs').promises.stat(path)).isFile();
+				try {
+					return await require('fs').promises.access(finalPath) === undefined && (await require('fs').promises.stat(finalPath)).isFile();
 				} catch {
 					return false;
 				}
@@ -919,10 +899,10 @@
 			 * @returns {Promise<boolean>}
 			 */
 			async universalFsExistsDirectory(path) {
-				try {
-					path = this.fsInfo(path).device?.functions.physicalPath(path) ?? '.'+path;
+				let finalPath = this.universalFsDestination(path);
 
-					return await require('fs').promises.access(path) === undefined && (await require('fs').promises.stat(path)).isDirectory();
+				try {
+					return await require('fs').promises.access(finalPath) === undefined && (await require('fs').promises.stat(finalPath)).isDirectory();
 				} catch {
 					return false;
 				}
@@ -1009,22 +989,26 @@
 					}
 				}
 
-				try {
-					size = (await require('fs').promises.stat('.'+path)).size;
-				} catch {}
+				if(!this.mp.find(v => v.targetPath === path)) {
+					try {
+						size = (await require('fs').promises.stat('.'+path)).size;
+					} catch {}
+				} else {
+					size = 0;
+				}
 
 				return {
-					deviceID: this.fsInfo(path).deviceID,
+					deviceID: this.mpInfo(path).device?.ID,
 					type: type,
 					size: size
 				}
 			}
 
 			async universalFsRead(path, raw) {
-				let physicalPath = this.fsInfo(path).device?.functions.physicalPath(path);
+				let finalPath = this.universalFsDestination(path);
 
 				if(await this.universalFsExists(path)) {
-					let c = await require('fs').promises.readFile(physicalPath ?? '.'+path);
+					let c = await require('fs').promises.readFile(finalPath);
 
 					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || raw ? c : c.toString();
 				} else {
@@ -1035,10 +1019,10 @@
 			}
 
 			async universalFsReadDirectory(path) {
-				let physicalPath = this.fsInfo(path).device?.functions.physicalPath(path);
+				let finalPath = this.universalFsDestination(path);;
 
 				if(await this.universalFsExistsDirectory(path)) {
-					return require('fs').promises.readdir(physicalPath ?? '.'+path, { withFileTypes: true });
+					return require('fs').promises.readdir(finalPath, { withFileTypes: true });
 				} else {
 					if(this.verbose) {
 						this.kdbAdd('fsReadDirectory: Unable to access directory: '+path);
@@ -1049,11 +1033,11 @@
 			}
 
 			async universalFsWrite(path, content) {
-				let physicalPath = this.fsInfo(path).device?.functions.physicalPath(path),
+				let finalPath = this.universalFsDestination(path),
 					event = await this.universalFsExists(path) ? 'written' : 'created';
 
 				try {
-					await require('fs').promises.writeFile(physicalPath ?? '.'+path, content, { flag: 'w' });
+					await require('fs').promises.writeFile(finalPath, content, { flag: 'w' });
 					await this.eventThrow(undefined, undefined, 'fsChanged', { event: event, value: path });
 
 					return true;
@@ -1063,11 +1047,11 @@
 			}
 
 			async universalFsRemove(path) {
-				let physicalPath = this.fsInfo(path).device?.functions.physicalPath(path);
+				let finalPath = this.universalFsDestination(path);
 
 				if(await this.universalFsExists(path)) {
 					try {
-						await require('fs').promises.unlink(physicalPath ?? '.'+path);
+						await require('fs').promises.unlink(finalPath);
 
 						return true;
 					} catch(error) {
@@ -1084,12 +1068,26 @@
 				return !!this.devices.find(v => v.title === path.split('/').at(-1));
 			}
 
+			devicesFsExistsDirectory(path) {
+				return path === this.mpInfo(path).mp.targetPath;
+			}
+
 			devicesFsStatistics(path) {
+				let info = this.mpInfo(path);
+
+				if(path === info.mp.targetPath) {
+					return {
+						deviceID: info.device?.ID,
+						type: 'inode/directory',
+						size: 0
+					}
+				}
+
 				let device = this.devices.find(v => v.title === path.split('/').at(-1));
 
 				if(device) {
 					return {
-						deviceID: this.fsInfo(path).device.ID,
+						deviceID: info.device?.ID,
 						internalDeviceID: device.ID,
 						type: device.type === 'c' ? 'inode/chardevice' : device.type === 'b' ? 'inode/blockdevice' : undefined,
 						size: 0
@@ -1099,16 +1097,102 @@
 
 			devicesFsRead(path) {}
 
-			devicesFsReadDirectory() {
-				return this.devices.map(v => {
-					return {
-						name: v.title,
-						isFile: () => true
-					}
-				});
+			devicesFsReadDirectory(path) {
+				let mp = this.mpInfo(path).mp;
+
+				if(path === mp.targetPath) {
+					return this.devices.map(v => new (require('fs')).Dirent(v.title, 1));
+				}
 			}
 
 			devicesFsWrite(path, content) {}
+
+			/**
+			 * Создаёт точку монтирования.
+			 *
+			 * Применяется к блочным устройствам и ФС, для доступа к ним.
+			 *
+			 * @param {processID}		processID	Идентификатор процесса.
+			 * @param {string|number}	fsSearch	Название или идентификатор ФС.
+			 * @param {?string}			sourcePath	Абсолютный путь блочного устройства-источника. Может не указываться, если ФС это поддерживает.
+			 * @param {string}			targetPath	Абсолютный путь директории-цели.
+			 * @param {'r'|'u'}			access		Уровень доступа: чтение или чтение/запись.
+			 */
+			async mpCreate(processID, fsSearch, sourcePath, targetPath, access) {
+				if(!['string', 'number'].includes(typeof fsSearch))	throw new TypeError('Incorrect search');
+				if(sourcePath && typeof sourcePath !== 'string')	throw new TypeError('Incorrect source');
+				if(typeof targetPath !== 'string')					throw new TypeError('Incorrect target');
+				if(typeof access !== 'string')						throw new TypeError('Incorrect access');
+				if(!['r', 'u'].includes(access))					throw new RangeError('Incorrect access');
+
+				let fs = this.fs.find(v => v.ID === fsSearch || v.title === fsSearch);
+
+				if(!fs) {
+					throw new RangeError(`Unable to find FS ${ typeof fsSearch === 'number' ? fsSearch : '"'+fsSearch+'"' }`);
+				}
+				if(fs.type === 0 && (await this.fsStatistics(sourcePath))?.type !== 'inode/blockdevice') {
+					throw new Error(`"${ sourcePath }" is not a block device`);
+				}
+				if(sourcePath && this.mp.find(v => v.sourcePath === sourcePath)) {
+					throw new Error(`"${ sourcePath }" already mounted`);
+				}
+				if(targetPath !== '/' && !await this.fsExistsDirectory(targetPath)) {
+					throw new Error(`"${ targetPath }" is not a directory`);
+				}
+
+				let ID = Math.max(...this.mp.map(v => v.ID).initialize(-1))+1,
+					deviceID = sourcePath !== undefined ? (await this.fsStatistics(sourcePath)).internalDeviceID : undefined;
+
+				this.mp.push({
+					ID: ID,
+					fsID: fs.ID,
+					deviceID: deviceID,
+					sourcePath: sourcePath,
+					targetPath: targetPath,
+					access: access
+				});
+				this.kdbAdd(`
+					mpCreate${ processID ? '@'+processID : '' }: Object created:
+					    ID: ${ ID }
+					    FS ID: ${ fs.ID }
+					    Device ID: ${ deviceID ?? 'Not set' }
+					    Source Path: ${ sourcePath ? '"'+sourcePath+'"' : 'Not set' }
+					    Target Path: "${ targetPath }"
+					    Access: ${ access === 'r' ? 'Read' : 'Read-Write' }
+				`);
+
+				return ID;
+			}
+
+			/**
+			 * Уничтожает точку монтирования.
+			 */
+			mpDestroy(processID, targetPath) {}
+
+			/**
+			 * Возвращает информацию о последней точке монтирования в пути, включающую в себя оригинальные объекты:
+			 * - Файловая система.
+			 * - Устройство.
+			 * - Сама точка монтирования.
+			 *
+			 * @param	{string} path Абсолютный путь к файлу или директории.
+			 * @returns	{?Object}
+			 */
+			mpInfo(path) {
+				if(typeof path !== 'string') {
+					throw new TypeError('Incorrect path');
+				}
+
+				for(let v of this.mp.sort((a, b) => b.targetPath.length-a.targetPath.length)) {
+					if(path.startsWith(v.targetPath)) {
+						return {
+							fs: this.fs.find(v_ => v_.ID === v.fsID),
+							device: this.devices.find(v_ => v_.ID === v.deviceID),
+							mp: v
+						}
+					}
+				}
+			}
 
 			async extensionExecute(...a) {
 				a = Array.isArray(a) ? a : []
