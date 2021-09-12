@@ -2,21 +2,21 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="64"
    height="64"
    viewBox="0 0 64 64"
    version="1.1"
    id="svg8"
-   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
-   sodipodi:docname="System Preferences.svg">
+   inkscape:version="1.1 (c68e22c387, 2021-05-23)"
+   sodipodi:docname="Environment Preferences.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <defs
      id="defs2">
     <linearGradient
@@ -29,7 +29,7 @@
       <stop
          id="stop1437"
          offset="1"
-         style="stop-color:#666666;stop-opacity:1" />
+         style="stop-color:#5f5f5f;stop-opacity:1" />
     </linearGradient>
     <linearGradient
        inkscape:collect="always"
@@ -47,11 +47,11 @@
        inkscape:collect="always"
        id="linearGradient889">
       <stop
-         style="stop-color:#e5e5e5;stop-opacity:1"
+         style="stop-color:#dfdfdf;stop-opacity:1"
          offset="0"
          id="stop885" />
       <stop
-         style="stop-color:#999999;stop-opacity:1"
+         style="stop-color:#9f9f9f;stop-opacity:1"
          offset="1"
          id="stop887" />
     </linearGradient>
@@ -732,12 +732,23 @@
     <linearGradient
        inkscape:collect="always"
        xlink:href="#linearGradient988"
-       id="linearGradient2256"
-       x1="32"
-       y1="12"
+       id="linearGradient3656"
+       x1="31.999998"
+       y1="1304"
        x2="32"
-       y2="32"
+       y2="1324"
        gradientUnits="userSpaceOnUse" />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3997">
+      <rect
+         style="opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+         id="rect3999"
+         width="48"
+         height="40"
+         x="8"
+         y="1304" />
+    </clipPath>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -747,14 +758,14 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="4"
-     inkscape:cx="9.90415"
-     inkscape:cy="35.336224"
+     inkscape:cx="34.75"
+     inkscape:cy="33.25"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      units="px"
      inkscape:window-width="1366"
-     inkscape:window-height="706"
+     inkscape:window-height="716"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
@@ -796,7 +807,7 @@
      id="layer1"
      transform="translate(0,-1292)">
     <g
-       id="g2334">
+       id="g4193">
       <ellipse
          ry="4"
          rx="28"
@@ -812,7 +823,7 @@
          height="48"
          width="56"
          id="rect883"
-         style="opacity:1;fill:url(#linearGradient891);fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:stroke fill markers" />
+         style="fill:url(#linearGradient891);fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:stroke fill markers" />
       <rect
          clip-path="url(#clipPath897)"
          style="opacity:0.125;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
@@ -829,7 +840,7 @@
          height="40"
          width="48"
          id="rect901"
-         style="opacity:1;fill:#666666;fill-opacity:1;stroke:#ffffff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:stroke fill markers" />
+         style="fill:#5f5f5f;fill-opacity:1;stroke:#ffffff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:stroke fill markers" />
       <g
          id="g1248">
         <circle
@@ -1169,7 +1180,7 @@
              id="path1386"
              inkscape:connector-curvature="0" />
           <circle
-             style="opacity:1;fill:#666666;fill-opacity:1;stroke:#ffffff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:stroke fill markers"
+             style="opacity:1;fill:#5f5f5f;fill-opacity:1;stroke:#ffffff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:stroke fill markers"
              id="path1201-2"
              cx="32"
              cy="1256"
@@ -1193,7 +1204,7 @@
              transform="translate(0,1292)"
              id="path1394" />
           <circle
-             style="opacity:1;fill:#666666;fill-opacity:1;stroke:#ffffff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:stroke fill markers"
+             style="opacity:1;fill:#5f5f5f;fill-opacity:1;stroke:#ffffff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:stroke fill markers"
              id="circle1396"
              cx="72"
              cy="1360"
@@ -1227,7 +1238,7 @@
              cy="1360"
              cx="72"
              id="path1201"
-             style="opacity:1;fill:#666666;fill-opacity:1;stroke:#ffffff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:stroke fill markers" />
+             style="opacity:1;fill:#5f5f5f;fill-opacity:1;stroke:#ffffff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.25;paint-order:stroke fill markers" />
           <circle
              clip-path="url(#clipPath1217)"
              style="opacity:0.25;fill:none;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
@@ -1244,13 +1255,13 @@
              inkscape:connector-curvature="0" />
         </g>
       </g>
-      <path
-         sodipodi:nodetypes="cccccc"
-         inkscape:connector-curvature="0"
-         id="rect2241"
-         transform="translate(0,1292)"
-         d="M 8,12 C 8,18.213542 8,24.427083 8,30.640625 14.067151,31.50353 22.80952,31.998703 32,32 41.192945,31.998209 49.935712,31.502302 56,30.638672 56,24.425781 56,18.212891 56,12 Z"
-         style="opacity:0.5;fill:url(#linearGradient2256);fill-opacity:1;stroke:none;stroke-width:0.89442718;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:normal" />
+      <circle
+         style="opacity:0.5;fill:url(#linearGradient3656);fill-opacity:1;stroke:none;stroke-width:13.0639;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+         id="path3318"
+         cx="32"
+         cy="1132"
+         r="192"
+         clip-path="url(#clipPath3997)" />
       <rect
          clip-path="url(#clipPath1254)"
          style="opacity:0.25;fill:none;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
