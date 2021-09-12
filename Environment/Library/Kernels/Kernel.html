@@ -100,7 +100,7 @@
 				//	await this.fbWrite();
 					await this.bootState(true);
 
-					this.fsCreate('ufs', {
+					this.fsRegister('ufs', {
 						createDirectory: this.universalFsCreateDirectory,
 						exists: this.universalFsExists,
 						existsDirectory: this.universalFsExistsDirectory,
@@ -110,7 +110,7 @@
 						write: this.universalFsWrite,
 						remove: this.universalFsRemove
 					}, 1);
-					this.fsCreate('devfs', {
+					this.fsRegister('devfs', {
 						exists: this.devicesFsExists,
 						existsDirectory: this.devicesFsExistsDirectory,
 						statistics: this.devicesFsStatistics,
@@ -123,7 +123,7 @@
 					await this.mpCreate(undefined, 'devfs', undefined, '/dev', 'r');
 
 					/*
-					await this.deviceCreate('b', 'disk0s1', undefined, undefined, { physicalPath: 'G:\\' });
+					await this.deviceRegister('b', 'disk0s1', undefined, undefined, { physicalPath: 'G:\\' });
 					await this.fsCreateDirectory(undefined, '/Volumes/HD');
 					await this.mpCreate(undefined, 'ufs', '/dev/disk0s1', '/Volumes/HD', 'u');
 					console.log(await this.fsReadDirectory('/Volumes/HD'));
@@ -494,26 +494,29 @@
 			}
 
 			/**
-			 * Создаёт файловую систему и возвращает её идентификатор.
+			 * Регистрирует файловую систему и возвращает её идентификатор.
 			 *
 			 * После монтирования взаимодействие с файлами в ней производится посредством развилочных методов ФС.
 			 *
-			 * Полноценная ФС должна обладать реализацией всех нижеперечисленных методов:
-			 * - `createDirectory(path)`
+			 * Любая полноценная ФС должна обладать реализацией всех нижеперечисленных методов:
 			 * - `exists(path)`
 			 * - `existsDirectory(path)`
 			 * - `statistics(path)`
 			 * - `read(path, raw)`
 			 * - `readDirectory(path)`
 			 * - `write(path, content)`
+			 * - `createDirectory(path)`
 			 * - `remove(path)`
+			 *
+			 * ФС, работающая с файлами устройств, также должна иметь метод вида:
+			 * - `control(path, ...arguments_)`
 			 *
 			 * @param	{string}	title		Название.
 			 * @param	{Object}	functions	Функции.
 			 * @param	{0|1}		type		Тип: физический или виртуальный. Указывает на то, может ли ФС использоваться без устройства-источника.
 			 * @returns	{number}
 			 */
-			async fsCreate(title, functions = {}, type = 0) {
+			async fsRegister(title, functions = {}, type = 0) {
 				if(typeof title !== 'string')				throw new TypeError('Incorrect title');
 				if(!Object.isObject(functions))				throw new TypeError('Incorrect functions');
 				for(let k in functions) {
@@ -535,7 +538,7 @@
 					type: type
 				});
 				this.kdbAdd(`
-					fsCreate: Object created:
+					fsRegister: Object created:
 					    ID: ${ ID }
 					    Title: ${ title ? '"'+title+'"' : 'Not set' }
 					    Type: ${ type === 0 ? 'Physical' : 'Virtual' }
@@ -544,32 +547,24 @@
 				return ID;
 			}
 
-			fsCreateDirectory(processID, path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				return this.mpInfo(path)?.fs.functions.createDirectory?.(...arguments);
-			}
-
 			/**
-			 * Уничтожает файловую систему.
+			 * Разрегистрирует файловую систему.
 			 *
-			 * @param {string|number}	fsSearch
+			 * @param {string|number} fsSearch
 			 */
-			fsDestroy(fsSearch) {
+			fsUnregister(fsSearch) {
 				let fs = this.fs.find(v => v.ID === fsSearch || v.title === fsSearch);
 
 				if(!fs) {
 					if(this.verbose) {
-						this.kdbAdd(`fsDestroy: Unable to find object`);
+						this.kdbAdd(`fsUnregister: Unable to find object`);
 					}
 
 					return;
 				}
 
 				this.fs = this.fs.filter(v => v !== fs);
-				this.kdbAdd(`fsDestroy: Object ${ fs.ID } destroyed`);
+				this.kdbAdd(`fsUnregister: Object ${ fs.ID } destroyed`);
 			}
 
 			async fsExists(path) {
@@ -739,6 +734,22 @@
 				}[type]();
 			}
 
+			async fsCreateDirectory(processID, path) {
+				if(typeof path !== 'string') {
+					throw new TypeError('Incorrect path');
+				}
+
+				return this.mpInfo(path)?.fs.functions.createDirectory?.(...arguments);
+			}
+
+			async fsControl(path, ...arguments_) {
+				if(typeof path !== 'string') {
+					throw new TypeError('Incorrect path');
+				}
+
+				return this.mpInfo(path)?.fs.functions.control?.(...arguments);
+			}
+
 			async fsRemove(path) {
 				if(typeof path !== 'string') {
 					throw new TypeError('Incorrect path');
@@ -748,16 +759,16 @@
 			}
 
 			/**
-			 * Создаёт устройство и возвращает его идентификатор.
+			 * Регистрирует устройство и возвращает его идентификатор.
 			 *
 			 * @param	{'c'|'b'}	type		Тип: символьный или блочный.
-			 * @param	{string}	title		Название. Зачастую сокращённое, например "fb" (FrameBuffer) или "hd" (Hard Disk). Может состоять только из символов [a-z0-9].
+			 * @param	{string}	title		Название. Зачастую сокращённое или просто короткое, например "fb" (FrameBuffer) и "disk". Может состоять только из символов [a-z0-9].
 			 * @param	{?string}	description	Описание. Зачастую - реальное, полное название.
-			 * @param	{Object}	functions	Функции.
-			 * @param	{Object}	data		Дополнительные данные.
+			 * @param	{?Object}	functions	Функции: `read(path, raw)`, `write(path, content)` и `control(...arguments_)`.
+			 * @param	{?Object}	data		Данные.
 			 * @returns	{number}
 			 */
-			deviceCreate(type, title, description, functions, data) {
+			deviceRegister(type, title, description, functions, data) {
 				if(typeof type !== 'string')						throw new TypeError('Incorrect type');
 				if(typeof title !== 'string')						throw new TypeError('Incorrect title');
 				if(description && typeof description !== 'string')	throw new TypeError('Incorrect description');
@@ -777,7 +788,7 @@
 					data: data
 				});
 				this.kdbAdd(`
-					deviceCreate: Object created:
+					deviceRegister: Object created:
 					    ID: ${ ID }
 					    Type: ${ type === 'c' ? 'Character' : 'Block' }
 					    Title: ${ title }
@@ -788,23 +799,23 @@
 			}
 
 			/**
-			 * Уничтожает устройство.
+			 * Резрегистрирует устройство.
 			 *
 			 * @param {number} deviceID Идентификатор устройства.
 			 */
-			deviceDestroy(deviceID) {
+			deviceUnregister(deviceID) {
 				let device = this.devices.find(v => v.ID === deviceID);
 
 				if(!device) {
 					if(this.verbose) {
-						this.kdbAdd(`deviceDestroy: Unable to find object`);
+						this.kdbAdd(`deviceUnregister: Unable to find object`);
 					}
 
 					return;
 				}
 
 				this.devices = this.devices.filter(v => v !== device);
-				this.kdbAdd(`deviceDestroy: Object ${ device.ID } destroyed`);
+				this.kdbAdd(`deviceUnregister: Object ${ device.ID } destroyed`);
 			}
 
 			/**
