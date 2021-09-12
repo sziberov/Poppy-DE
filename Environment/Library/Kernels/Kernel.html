@@ -101,13 +101,13 @@
 					await this.bootState(true);
 
 					this.fsRegister('ufs', {
-						createDirectory: this.universalFsCreateDirectory,
 						exists: this.universalFsExists,
 						existsDirectory: this.universalFsExistsDirectory,
 						statistics: this.universalFsStatistics,
 						read: this.universalFsRead,
 						readDirectory: this.universalFsReadDirectory,
 						write: this.universalFsWrite,
+						createDirectory: this.universalFsCreateDirectory,
 						remove: this.universalFsRemove
 					}, 1);
 					this.fsRegister('devfs', {
@@ -116,7 +116,8 @@
 						statistics: this.devicesFsStatistics,
 						read: this.devicesFsRead,
 						readDirectory: this.devicesFsReadDirectory,
-						write: this.devicesFsWrite
+						write: this.devicesFsWrite,
+						control: this.devicesFsControl
 					}, 1);
 					await this.mpCreate(undefined, 'ufs', undefined, '/', 'u');
 					await this.fsCreateDirectory(undefined, '/dev');
@@ -592,7 +593,7 @@
 			}
 
 			/**
-			 * Открывает файл в одном из следующих режимов и возвращает его идентификатор:
+			 * Открывает файл в одном из следующих режимов и возвращает его идентификатор (относительный процессу):
 			 * - `r` - Чтение. При открытии поток располагается в начале.
 			 * - `r+` - Запись и чтение. При открытии поток располагается в начале.
 			 * - `w` - Запись. При открытии файл создаётся или усекается до нуля, а поток располагается в начале.
@@ -612,7 +613,7 @@
 				if(!['r', 'r+', 'w', 'w+', 'a', 'a+'].includes(mode))			throw new RangeError('Incorrect mode');
 				if(['r', 'r+'].includes(mode) && !await this.fsExists(path))	throw new RangeError('Unable to find file');
 
-				let ID = Math.max(...this.files.map(v => v.ID).initialize(-1))+1;
+				let ID = Math.max(...this.files.filter(v => v.processID === processID).map(v => v.ID).initialize(-1))+1;
 
 				this.files.push({
 					ID: ID,
@@ -635,7 +636,7 @@
 				if(processID && typeof processID !== 'number')	throw new TypeError('Incorrect process ID');
 				if(typeof fileID !== 'number')					throw new TypeError('Incorrect file ID');
 
-				let file = this.files.find(v => v.ID === fileID);
+				let file = this.files.find(v => v.ID === fileID && v.processID === processID);
 
 				if(!file) {
 					throw new RangeError('Unable to find object');
@@ -656,7 +657,7 @@
 				if(typeof position !== 'number')				throw new TypeError('Incorrect position');
 				if(typeof mode !== 'number')					throw new TypeError('Incorrect mode');
 
-				let file = this.files.find(v => v.ID === fileID);
+				let file = this.files.find(v => v.ID === fileID && v.processID === processID);
 
 				if(!file)										throw new RangeError('Unable to find object');
 				if(processID && processID !== file.processID)	throw new Error(`Processes aren't allowed to modify not owned file streams positions`);
@@ -762,7 +763,7 @@
 			 * Регистрирует устройство и возвращает его идентификатор.
 			 *
 			 * @param	{'c'|'b'}	type		Тип: символьный или блочный.
-			 * @param	{string}	title		Название. Зачастую сокращённое или просто короткое, например "fb" (FrameBuffer) и "disk". Может состоять только из символов [a-z0-9].
+			 * @param	{string}	title		Название. Зачастую сокращённое, например "fb0" (FrameBuffer 0) или "disk0s1" (Disk 0 Sector 1). Может состоять только из символов a-z, A-Z и 0-9.
 			 * @param	{?string}	description	Описание. Зачастую - реальное, полное название.
 			 * @param	{?Object}	functions	Функции: `read(path, raw)`, `write(path, content)` и `control(...arguments_)`.
 			 * @param	{?Object}	data		Данные.
@@ -775,7 +776,7 @@
 				if(functions && !Object.isObject(functions))		throw new TypeError('Incorrect functions');
 				if(data && !Object.isObject(data))					throw new TypeError('Incorrect data');
 				if(!['c', 'b'].includes(type))						throw new RangeError('Incorrect type');
-				if(!/^[a-z0-9]+$/.test(title))						throw new RangeError('Incorrect title');
+				if(!/^[a-z0-9]+$/i.test(title))						throw new RangeError('Incorrect title');
 
 				let ID = Math.max(...this.devices.map(v => v.ID).initialize(-1))+1;
 
@@ -799,7 +800,7 @@
 			}
 
 			/**
-			 * Резрегистрирует устройство.
+			 * Разрегистрирует устройство.
 			 *
 			 * @param {number} deviceID Идентификатор устройства.
 			 */
@@ -1106,7 +1107,11 @@
 				}
 			}
 
-			devicesFsRead(path) {}
+			devicesFsRead(path) {
+				let device = this.devices.find(v => v.title === path.split('/').at(-1));
+
+				return device?.functions?.read?.(...arguments);
+			}
 
 			devicesFsReadDirectory(path) {
 				let mp = this.mpInfo(path).mp;
@@ -1116,7 +1121,17 @@
 				}
 			}
 
-			devicesFsWrite(path, content) {}
+			devicesFsWrite(path, content) {
+				let device = this.devices.find(v => v.title === path.split('/').at(-1));
+
+				return device?.functions?.write?.(...arguments);
+			}
+
+			devicesFsControl(path, ...arguments_) {
+				let device = this.devices.find(v => v.title === path.split('/').at(-1));
+
+				return device?.functions?.control?.(...arguments);
+			}
 
 			/**
 			 * Создаёт точку монтирования.
@@ -1838,8 +1853,8 @@
 				let process = this.processes.find(v => v.ID === processID),
 					dl = this.dl.find(v => v.path === path);
 
-				if(dl?.processID.includes(processID)) {
-					throw new Error(`Library already attached to process`);
+				if(dl?.processIDs.includes(processID)) {
+					throw new Error('Library already attached to process');
 				}
 
 				if(!dl) {
@@ -1849,7 +1864,7 @@
 
 					dl = {
 						ID: Math.max(...this.dl.map(v => v.ID).initialize(-1))+1,
-						processID: [],
+						processIDs: [],
 						path: path,
 						code: undefined
 					}
@@ -1876,7 +1891,7 @@
 					}
 				}
 
-				dl.processID.push(processID);
+				dl.processIDs.push(processID);
 
 				return new Promise((resolve, reject) => {
 					let a = (error) => {
@@ -1904,7 +1919,7 @@
 			}
 
 			dlUnload(processID, dlID) {
-				if(!processID || !dlID) {
+				if(!processID || dlID == null) {
 					throw new Error('One or several arguments missing');
 				}
 
@@ -1917,7 +1932,7 @@
 
 					return;
 				}
-				if(!dl.processID.includes(processID)) {
+				if(!dl.processIDs.includes(processID)) {
 					if(this.verbose) {
 						this.kdbAdd(`dlUnload@${ processID }: Process isn't attached`);
 					}
@@ -1925,13 +1940,32 @@
 					return;
 				}
 
-				dl.processID = dl.processID.filter(v => v !== processID);
-				if(dl.processID.length === 0) {
+				dl.processIDs = dl.processIDs.filter(v => v !== processID);
+				if(dl.processIDs.length === 0) {
 					this.dl = this.dl.filter(v => v !== dl);
 				}
 				if(this.verbose) {
 					this.kdbAdd(`dlUnload@${ processID }: Object ${ dl.ID } destroyed`);
 				}
+			}
+
+			async terminalDeviceCreate(processID) {
+				let process = this.processes.find(v => v.ID === processID),
+					terminals = this.devices.filter(v => /^term[0-9]+$/.test(v.title)),
+					ID = terminals.length;
+
+				await this.deviceRegister('c', 'term'+ID, undefined, {
+					read: this.terminalRead,
+					write: this.terminalWrite,
+					control: this.terminalControl
+				}, {
+					parentID: process?.terminalID ?? 0,
+					mode: 'text',
+					current: !terminals.some(v => v.data.current),
+				});
+				await this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'added', value: ID });
+
+				return ID;
 			}
 
 			async terminalCreate(process) {
@@ -2159,10 +2193,10 @@
 						processID ? this.processes.find(v => v.ID === processID).user : undefined,
 					executable = await this.fsRead(path);
 
-				if(terminalID && !this.terminals.find(v => v.ID === terminalID)) {
+				if(terminalID != null && !this.terminals.find(v => v.ID === terminalID)) {
 					throw new Error(`Incorrect terminal`);
 				}
-				if(!terminalID) {
+				if(terminalID == null) {
 					terminalID = await this.terminalCreate();
 				}
 				if(!user) {
@@ -2319,7 +2353,7 @@
 				for(let v of this.catchers.filter(v => v.processID === processID))	this.eventCatcherDestroy(processID, v.ID);
 				for(let v of this.timers.filter(v => v.processID === processID))	this.timerDestroy(processID, v.ID);
 				for(let v of this.se.filter(v => v.processID === processID))		this.seDestroy(processID, v.ID);
-				for(let v of this.dl.filter(v => v.processID.includes(processID)))	this.dlUnload(processID, v.ID);
+				for(let v of this.dl.filter(v => v.processIDs.includes(processID)))	this.dlUnload(processID, v.ID);
 				this.processes = this.processes.filter(v => v !== process);
 				if(!quiet) {
 					this.kdbAdd(`processKill: Process ${ processID } stopped`);
