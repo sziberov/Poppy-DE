@@ -500,17 +500,23 @@
 			 * После монтирования взаимодействие с файлами в ней производится посредством развилочных методов ФС.
 			 *
 			 * Любая полноценная ФС должна обладать реализацией всех нижеперечисленных методов:
-			 * - `exists(path)`
-			 * - `existsDirectory(path)`
-			 * - `statistics(path)`
-			 * - `read(path, raw)`
-			 * - `readDirectory(path)`
-			 * - `write(path, content)`
-			 * - `createDirectory(path)`
-			 * - `remove(path)`
+			 * - `createDirectory(path)` - Создание директории.
+			 * - `exists(path)` - Возврат логического значения, указывающего, существует ли файл.
+			 * - `existsDirectory(path)` - Возврат логического значения, указывающего, существует ли директория.
+			 * - `statistics(path)` - Возврат статистики файла или директории, такой как:
+			 *     - `deviceID` - Идентификатор устройства хранения.
+			 *     - `type` - Тип в формате MIME.
+			 *     - `size`- Размер в байтах.
+			 * - `read(path, raw)` - Чтение файла.
+			 * - `readDirectory(path)` - Возврат массива `Dirent`'ов.
+			 * - `write(path, content)` - Запись данных в файл.
+			 * - `remove(path)` - Удаление файла.
 			 *
-			 * ФС, работающая с файлами устройств, также должна иметь метод вида:
-			 * - `control(path, ...arguments_)`
+			 * ФС, работающая с файлами устройств, также должна иметь методы вида:
+			 * - `createNode(path, type, majorDeviceID, minorDeviceID)` - Создание файла устройства.
+			 * - `statistics(path)` - Дополнительное свойство:
+			 *     - `internalDeviceID` - Идентификатор устройства, отражённый в файле.
+			 * - `control(path, ...arguments_)` - Управление устройством: отправка команд, изменение его свойств и т.д.
 			 *
 			 * @param	{string}	title		Название.
 			 * @param	{Object}	functions	Функции.
@@ -760,7 +766,7 @@
 			}
 
 			/**
-			 * Регистрирует устройство и возвращает его идентификатор.
+			 * Регистрирует устройство и возвращает его мажорный идентификатор.
 			 *
 			 * @param	{'c'|'b'}	type		Тип: символьный или блочный.
 			 * @param	{string}	title		Название. Зачастую сокращённое, например "fb0" (FrameBuffer 0) или "disk0s1" (Disk 0 Sector 1). Может состоять только из символов a-z, A-Z и 0-9.
@@ -782,6 +788,8 @@
 
 				this.devices.push({
 					ID: ID,
+				//	majorDeviceID: ID,
+				//	minorDeviceIDs: [0],
 					type: type,
 					title: title,
 					description: description,
@@ -820,6 +828,16 @@
 			}
 
 			/**
+			 * Регистрирует диапазон минорных идентификаторов устройства.
+			 */
+			deviceRegisterRange(majorDeviceID, start, end) {}
+
+			/**
+			 * Разрегистрирует диапазон минорных идентификаторов устройства, если возможно (должен оставаться как минимум 1).
+			 */
+			deviceUnregisterRange(majorDeviceID, start, end) {}
+
+			/**
 			 * Возвращает список идентификаторов устройств.
 			 *
 			 * @returns {number[]}
@@ -852,6 +870,8 @@
 
 				return {
 					ID: device.ID,
+				//	majorDeviceID: device.majorDeviceID,
+				//	minorDeviceIDs: device.minorDeviceIDs,
 					type: device.type,
 					title: device.title,
 					description: device.description
@@ -876,9 +896,6 @@
 				return this.urlPathNormalize(physicalPath ? physicalPath+'/'+path.replace(new RegExp('^'+info.mp.targetPath), '') : /^[\\/]+/g.test(path) ? '.'+path : path);
 			}
 
-			/**
-			 * Создаёт директорию.
-			 */
 			async universalFsCreateDirectory(processID, path) {
 				if(await this.fsExistsDirectory(path)) {
 					return;
@@ -890,11 +907,6 @@
 				}
 			}
 
-			/**
-			 * Возвращает логическое значение, указывающее, существует ли файл.
-			 *
-			 * @returns {Promise<boolean>}
-			 */
 			async universalFsExists(path) {
 				let finalPath = this.universalFsDestination(path);
 
@@ -905,11 +917,6 @@
 				}
 			}
 
-			/**
-			 * Возвращает логическое значение, указывающее, существует ли директория.
-			 *
-			 * @returns {Promise<boolean>}
-			 */
 			async universalFsExistsDirectory(path) {
 				let finalPath = this.universalFsDestination(path);
 
@@ -920,14 +927,6 @@
 				}
 			}
 
-			/**
-			 * Возвращает статистику файла или директории, такую как:
-			 * - `deviceID` - Идентификатор устройства хранения.
-			 * - `type` - Тип в формате MIME.
-			 * - `size`- Размер в байтах.
-			 *
-			 * @returns {Promise<Object>}
-			 */
 			async universalFsStatistics(path) {
 				let title = path.split('/').at(-1),
 					data,
@@ -1099,6 +1098,10 @@
 
 				if(device) {
 					return {
+					//	majorDeviceID: undefined,
+					//	minorDeviceID: undefined,
+					//	internalMajorDeviceID: undefined,
+					//	internalMinorDeviceID: undefined,
 						deviceID: info.device?.ID,
 						internalDeviceID: device.ID,
 						type: device.type === 'c' ? 'inode/chardevice' : device.type === 'b' ? 'inode/blockdevice' : undefined,
@@ -1949,7 +1952,13 @@
 				}
 			}
 
-			async terminalDeviceCreate(processID) {
+			/**
+			 * Регистрирует устройство-терминал с названием вида `term*`.
+			 *
+			 * @param	{Number} processID Идентификатор процесса.
+			 * @returns	{Number}
+			 */
+			async terminalRegister(processID) {
 				let process = this.processes.find(v => v.ID === processID),
 					terminals = this.devices.filter(v => /^term[0-9]+$/.test(v.title)),
 					ID = terminals.length;
@@ -2785,7 +2794,8 @@
 			 *
 			 * Трекер задач:
 			 * - [!] Перевести DOM-интерфейс на Canvas.
-			 * - [~] Дописать методы управления файлами FS, UniversalFS и DevicesFS.
+			 * - [~] Дописать методы FS, UniversalFS и DevicesFS. Разделить deviceID на major- и minorDeviceID, использующихся для указания
+			 *       идентификатора драйвера (.devices) и его конкретных устройств соответственно.
 			 * - [~] Добавить возможность импорта обычных библиотек. Желательно с динамическим путём поиска.
 			 * - [~] Дописать функции асинхронного ввода/вывода.
 			 * - [~] Дописать поддержку нескольких курсоров в CGSWindowServer.
