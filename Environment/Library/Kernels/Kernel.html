@@ -766,13 +766,14 @@
 			}
 
 			/**
-			 * Регистрирует устройство и возвращает его мажорный идентификатор.
+			 * Регистрирует устройство и возвращает его старший идентификатор.
 			 *
-			 * @param	{'c'|'b'}	type		Тип: символьный или блочный.
-			 * @param	{string}	title		Название. Зачастую сокращённое, например "fb0" (FrameBuffer 0) или "disk0s1" (Disk 0 Sector 1). Может состоять только из символов a-z, A-Z и 0-9.
-			 * @param	{?string}	description	Описание. Зачастую - реальное, полное название.
-			 * @param	{?Object}	functions	Функции: `read(path, raw)`, `write(path, content)` и `control(...arguments_)`.
-			 * @param	{?Object}	data		Данные.
+			 * @param	{?number}	deviceMajorID	Старший идентификатор, обозначающий группу устройства.
+			 * @param	{'c'|'b'}	type			Тип: символьный или блочный.
+			 * @param	{string}	title			Название. Зачастую сокращённое, например "fb0" (FrameBuffer 0) или "disk0s1" (Disk 0 Sector 1). Может состоять только из символов a-z, A-Z и 0-9.
+			 * @param	{?string}	description		Описание. Зачастую - реальное, полное название.
+			 * @param	{?Object}	functions		Функции: `read(path, raw)`, `write(path, content)` и `control(...arguments_)`.
+			 * @param	{?Object}	data			Данные.
 			 * @returns	{number}
 			 */
 			deviceRegister(type, title, description, functions, data) {
@@ -788,8 +789,7 @@
 
 				this.devices.push({
 					ID: ID,
-				//	majorDeviceID: ID,
-				//	minorDeviceIDs: [0],
+				//	instances: [],
 					type: type,
 					title: title,
 					description: description,
@@ -827,13 +827,51 @@
 				this.kdbAdd(`deviceUnregister: Object ${ device.ID } destroyed`);
 			}
 
-			/**
-			 * Регистрирует диапазон минорных идентификаторов устройства.
-			 */
-			deviceRegisterRange(majorDeviceID, start, end) {}
+			deviceInstanceCreate(deviceMajorID, deviceMinorID, title, data = {}) {
+
+			}
+
+			deviceInstanceDestroy(deviceMajorID, deviceMinorID) {
+
+			}
 
 			/**
-			 * Разрегистрирует диапазон минорных идентификаторов устройства, если возможно (должен оставаться как минимум 1).
+			 * Регистрирует диапазон младших идентификаторов устройства.
+			 *
+			 * @param {number} majorDeviceID
+			 * @param {number} start
+			 * @param {number} end
+			 */
+			deviceRegisterRange(majorDeviceID, start = 0, end = 0) {
+				if(typeof majorDeviceID !== 'number')	throw new TypeError('Incorrect major device ID');
+				if(typeof start !== 'number')			throw new TypeError('Incorrect start');
+				if(typeof end !== 'number')				throw new TypeError('Incorrect end');
+				if(start < 0)							throw new RangeError('Incorrect start');
+				if(end < start)							throw new RangeError('Incorrect end');
+
+				let device = this.devices.find(v => v.ID === majorDeviceID);
+
+				if(!device) {
+					throw new RangeError('Unable to find object');
+				}
+
+				let range = []
+
+				for(let i = start; i <= end; i++) {
+					if(!device.minorDeviceIDs.includes(i)) {
+						range.push(i);
+					}
+				}
+				if(range.length > 0) {
+					device.minorDeviceIDs.push(...range);
+
+					this.kdbAdd(`deviceRegister: Range added for ${ majorDeviceID }: ${ range[0] }${ range.length > 1 ? ' -> '+range.at(-1) : '' }`);
+					await this.eventThrow(undefined, undefined, 'deviceRangeChanged', { event: 'added', device: majorDeviceID, value: range });
+				}
+			}
+
+			/**
+			 * Разрегистрирует диапазон младших идентификаторов устройства.
 			 */
 			deviceUnregisterRange(majorDeviceID, start, end) {}
 
@@ -1955,8 +1993,8 @@
 			/**
 			 * Регистрирует устройство-терминал с названием вида `term*`.
 			 *
-			 * @param	{Number} processID Идентификатор процесса.
-			 * @returns	{Number}
+			 * @param	{number} processID Идентификатор процесса.
+			 * @returns	{number}
 			 */
 			async terminalRegister(processID) {
 				let process = this.processes.find(v => v.ID === processID),
