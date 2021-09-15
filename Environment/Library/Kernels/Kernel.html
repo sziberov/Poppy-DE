@@ -101,16 +101,18 @@
 					await this.bootState(true);
 
 					this.fsRegister('ufs', {
+						createDirectory: this.universalFsCreateDirectory,
+						destroy: this.universalFsDestroy,
 						exists: this.universalFsExists,
 						existsDirectory: this.universalFsExistsDirectory,
 						statistics: this.universalFsStatistics,
 						read: this.universalFsRead,
 						readDirectory: this.universalFsReadDirectory,
-						write: this.universalFsWrite,
-						createDirectory: this.universalFsCreateDirectory,
-						remove: this.universalFsRemove
+						write: this.universalFsWrite
 					}, 1);
 					this.fsRegister('devfs', {
+						createNode: this.devicesFsCreateNode,
+						destroy: this.devicesFsDestroy,
 						exists: this.devicesFsExists,
 						existsDirectory: this.devicesFsExistsDirectory,
 						statistics: this.devicesFsStatistics,
@@ -501,6 +503,7 @@
 			 *
 			 * Любая полноценная ФС должна обладать реализацией всех нижеперечисленных методов:
 			 * - `createDirectory(path)` - Создание директории.
+			 * - `destroy(path)` - Удаление файла.
 			 * - `exists(path)` - Возврат логического значения, указывающего, существует ли файл.
 			 * - `existsDirectory(path)` - Возврат логического значения, указывающего, существует ли директория.
 			 * - `statistics(path)` - Возврат статистики файла или директории, такой как:
@@ -510,7 +513,6 @@
 			 * - `read(path, raw)` - Чтение файла.
 			 * - `readDirectory(path)` - Возврат массива `Dirent`'ов.
 			 * - `write(path, content)` - Запись данных в файл.
-			 * - `remove(path)` - Удаление файла.
 			 *
 			 * ФС, работающая с файлами устройств, также должна иметь методы вида:
 			 * - `createNode(path, type, majorDeviceID, minorDeviceID)` - Создание файла устройства.
@@ -572,6 +574,22 @@
 
 				this.fs = this.fs.filter(v => v !== fs);
 				this.kdbAdd(`fsUnregister: Object ${ fs.ID } destroyed`);
+			}
+
+			async fsCreateDirectory(processID, path) {
+				if(typeof path !== 'string') {
+					throw new TypeError('Incorrect path');
+				}
+
+				return this.mpInfo(path)?.fs.functions.createDirectory?.(...arguments);
+			}
+
+			async fsCreateNode(processID, path, deviceMajorID, deviceMinorID) {
+				if(typeof path !== 'string') {
+					throw new TypeError('Incorrect path');
+				}
+
+				return this.mpInfo(path)?.fs.functions.createNode?.(...arguments);
 			}
 
 			async fsExists(path) {
@@ -741,14 +759,6 @@
 				}[type]();
 			}
 
-			async fsCreateDirectory(processID, path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				return this.mpInfo(path)?.fs.functions.createDirectory?.(...arguments);
-			}
-
 			async fsControl(path, ...arguments_) {
 				if(typeof path !== 'string') {
 					throw new TypeError('Incorrect path');
@@ -757,20 +767,19 @@
 				return this.mpInfo(path)?.fs.functions.control?.(...arguments);
 			}
 
-			async fsRemove(path) {
+			async fsDestroy(path) {
 				if(typeof path !== 'string') {
 					throw new TypeError('Incorrect path');
 				}
 
-				return this.mpInfo(path)?.fs.functions.remove?.(...arguments);
+				return this.mpInfo(path)?.fs.functions.destroy?.(...arguments);
 			}
 
 			/**
 			 * Регистрирует устройство и возвращает его старший идентификатор.
 			 *
-			 * @param	{?number}	deviceMajorID	Старший идентификатор, обозначающий группу устройства.
 			 * @param	{'c'|'b'}	type			Тип: символьный или блочный.
-			 * @param	{string}	title			Название. Зачастую сокращённое, например "fb0" (FrameBuffer 0) или "disk0s1" (Disk 0 Sector 1). Может состоять только из символов a-z, A-Z и 0-9.
+			 * @param	{string}	title			Название. Зачастую сокращённое, например "fb" (FrameBuffer) или "disk". Может состоять только из символов [a-zA-Z0-9-/].
 			 * @param	{?string}	description		Описание. Зачастую - реальное, полное название.
 			 * @param	{?Object}	functions		Функции: `read(path, raw)`, `write(path, content)` и `control(...arguments_)`.
 			 * @param	{?Object}	data			Данные.
@@ -783,7 +792,7 @@
 				if(functions && !Object.isObject(functions))		throw new TypeError('Incorrect functions');
 				if(data && !Object.isObject(data))					throw new TypeError('Incorrect data');
 				if(!['c', 'b'].includes(type))						throw new RangeError('Incorrect type');
-				if(!/^[a-z0-9]+$/i.test(title))						throw new RangeError('Incorrect title');
+				if(!/^[a-z0-9-/]+$/i.test(title))					throw new RangeError('Incorrect title');
 
 				let ID = Math.max(...this.devices.map(v => v.ID).initialize(-1))+1;
 
@@ -810,10 +819,10 @@
 			/**
 			 * Разрегистрирует устройство.
 			 *
-			 * @param {number} deviceID Идентификатор устройства.
+			 * @param {number} deviceMajorID Старший идентификатор устройства.
 			 */
-			deviceUnregister(deviceID) {
-				let device = this.devices.find(v => v.ID === deviceID);
+			deviceUnregister(deviceMajorID) {
+				let device = this.devices.find(v => v.ID === deviceMajorID);
 
 				if(!device) {
 					if(this.verbose) {
@@ -827,53 +836,31 @@
 				this.kdbAdd(`deviceUnregister: Object ${ device.ID } destroyed`);
 			}
 
+			/**
+			 * Создаёт экземпляр устройства и возвращает его младший идентификатор.
+			 *
+			 * @param {number}	deviceMajorID	Старший идентификатор устройства.
+			 * @param {?number}	deviceMinorID	Младший идентификатор устройства.
+			 * @param {string}	title			Название. Зачастую сокращённое и включающее идентификатор, например "fb0" (FrameBuffer 0) или "disk0s1" (Disk 0 Sector 1). Может состоять только из символов [a-zA-Z0-9-/].
+			 * @param {Object}	data			Данные.
+			 */
 			deviceInstanceCreate(deviceMajorID, deviceMinorID, title, data = {}) {
+				let device = this.devices.find(v => v.ID === deviceMajorID),
+					ID = deviceMinorID ?? Math.max(...device.instances.map(v => v.ID).initialize(-1))+1;
 
+				device.instances.push({
+					ID: ID,
+					title: title,
+					data: data
+				});
+			//	this.fsCreateNode(undefined, '/dev/'+title, deviceMajorID, deviceMinorID);
+
+				return ID;
 			}
 
 			deviceInstanceDestroy(deviceMajorID, deviceMinorID) {
 
 			}
-
-			/**
-			 * Регистрирует диапазон младших идентификаторов устройства.
-			 *
-			 * @param {number} majorDeviceID
-			 * @param {number} start
-			 * @param {number} end
-			 */
-			deviceRegisterRange(majorDeviceID, start = 0, end = 0) {
-				if(typeof majorDeviceID !== 'number')	throw new TypeError('Incorrect major device ID');
-				if(typeof start !== 'number')			throw new TypeError('Incorrect start');
-				if(typeof end !== 'number')				throw new TypeError('Incorrect end');
-				if(start < 0)							throw new RangeError('Incorrect start');
-				if(end < start)							throw new RangeError('Incorrect end');
-
-				let device = this.devices.find(v => v.ID === majorDeviceID);
-
-				if(!device) {
-					throw new RangeError('Unable to find object');
-				}
-
-				let range = []
-
-				for(let i = start; i <= end; i++) {
-					if(!device.minorDeviceIDs.includes(i)) {
-						range.push(i);
-					}
-				}
-				if(range.length > 0) {
-					device.minorDeviceIDs.push(...range);
-
-					this.kdbAdd(`deviceRegister: Range added for ${ majorDeviceID }: ${ range[0] }${ range.length > 1 ? ' -> '+range.at(-1) : '' }`);
-					await this.eventThrow(undefined, undefined, 'deviceRangeChanged', { event: 'added', device: majorDeviceID, value: range });
-				}
-			}
-
-			/**
-			 * Разрегистрирует диапазон младших идентификаторов устройства.
-			 */
-			deviceUnregisterRange(majorDeviceID, start, end) {}
 
 			/**
 			 * Возвращает список идентификаторов устройств.
@@ -1095,7 +1082,7 @@
 				}
 			}
 
-			async universalFsRemove(path) {
+			async universalFsDestroy(path) {
 				let finalPath = this.universalFsDestination(path);
 
 				if(await this.universalFsExists(path)) {
@@ -1108,10 +1095,14 @@
 					}
 				} else {
 					if(this.verbose) {
-						this.kdbAdd('fsRemove: Unable to access file: '+path);
+						this.kdbAdd('fsDestroy: Unable to access file: '+path);
 					}
 				}
 			}
+
+			devicesFsCreateNode(processID, path, deviceMajorID, deviceMinorID) {}
+
+			devicesFsDestroy(path) {}
 
 			devicesFsExists(path) {
 				return !!this.devices.find(v => v.title === path.split('/').at(-1));
@@ -1136,10 +1127,10 @@
 
 				if(device) {
 					return {
-					//	majorDeviceID: undefined,
-					//	minorDeviceID: undefined,
-					//	internalMajorDeviceID: undefined,
-					//	internalMinorDeviceID: undefined,
+					//	deviceMajorID: undefined,
+					//	deviceMinorID: undefined,
+					//	internalDeviceMajorID: undefined,
+					//	internalDeviceMinorID: undefined,
 						deviceID: info.device?.ID,
 						internalDeviceID: device.ID,
 						type: device.type === 'c' ? 'inode/chardevice' : device.type === 'b' ? 'inode/blockdevice' : undefined,
@@ -1173,6 +1164,8 @@
 
 				return device?.functions?.control?.(...arguments);
 			}
+
+			devicesFsRemove(path) {}
 
 			/**
 			 * Создаёт точку монтирования.
@@ -2173,16 +2166,16 @@
 					uptime: () => this.uptime,
 					screen: () => this.screen,
 					log: (...a) => this.kdbAdd(process.path.split('/').pop()+': ', ...a),
+					createDir: (a) => this.fsCreateDirectory(a),
+					createNode: (...a) => this.fsCreateNode(...a),
+					remove: (a) => this.fsDestroy(a),
 					exists: (a) => this.fsExists(a),
 					existsDir: (a) => this.fsExistsDirectory(a),
 					read: (a) => this.fsRead(a),
+					readDir: (a) => this.fsReadDirectory(a),
 					readPref: (a) => this.fsReadPreferences(process, a),
 					write: (...a) => this.fsWrite(...a),
 					writePref: (...a) => this.fsWritePreferences(process, ...a),
-					remove: (a) => this.fsRemove(a),
-					createDir: () => {},
-					readDir: (a) => this.fsReadDirectory(a),
-					removeDir: () => {},
 					fbWrite: (a) => this.fbWrite(process, a),
 					drCreate: (...a) => this.drCreate(...a),
 					drOpen: (...a) => this.drOpen(...a),
@@ -2832,8 +2825,8 @@
 			 *
 			 * Трекер задач:
 			 * - [!] Перевести DOM-интерфейс на Canvas.
-			 * - [~] Дописать методы FS, UniversalFS и DevicesFS. Разделить deviceID на major- и minorDeviceID, использующихся для указания
-			 *       идентификатора драйвера (.devices) и его конкретных устройств соответственно.
+			 * - [~] Дописать методы FS, UniversalFS и DevicesFS. Разделить deviceID на deviceMajorID и deviceMinorID, использующихся для указания
+			 *       идентификатора устройства и его экземпляров соответственно.
 			 * - [~] Добавить возможность импорта обычных библиотек. Желательно с динамическим путём поиска.
 			 * - [~] Дописать функции асинхронного ввода/вывода.
 			 * - [~] Дописать поддержку нескольких курсоров в CGSWindowServer.
