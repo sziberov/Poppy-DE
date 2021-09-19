@@ -1,0 +1,1211 @@
+/**
+ * CoreGraphics Framework
+ *
+ * Contains appearance|elements|font management tools.
+ */
+
+_import('<CoreFoundation>');
+
+/**
+ * Тип, обозначающий точку в двумерной системе координат.
+ */
+_environment.CGPoint = class CGPoint extends CFObject {
+	__x;
+	__y;
+
+	constructor({ x = 0, y = 0 } = {}) {
+		super();
+
+		this.x = x;
+		this.y = y;
+	}
+
+	get x() {
+		return this.__x;
+	}
+
+	get y() {
+		return this.__y;
+	}
+
+	get standardized() {
+		return this.x < 0 || this.y < 0 ? new this.constructor({ x: Math.abs(this.x), y: Math.abs(this.y) }) : this;
+	}
+
+	set x(value) {
+		if(typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__x = value;
+	}
+
+	set y(value) {
+		if(typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__y = value;
+	}
+}
+
+/**
+ * Тип, обозначающий размеры.
+ */
+_environment.CGSize = class CGSize extends CFObject {
+	__width;
+	__height;
+
+	constructor({ width = 0, height = 0 } = {}) {
+		super();
+
+		this.width = width;
+		this.height = height;
+	}
+
+	get width() {
+		return this.__width;
+	}
+
+	get height() {
+		return this.__height;
+	}
+
+	get standardized() {
+		return this.width < 0 || this.height < 0 ? new this.constructor({ width: Math.abs(this.width), height: Math.abs(this.height) }) : this;
+	}
+
+	set width(value) {
+		if(typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__width = value;
+	}
+
+	set height(value) {
+		if(typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__height = value;
+	}
+}
+
+/**
+ * Тип, обозначающий положение и размеры прямоугольника.
+ */
+_environment.CGRectangle = class CGRectangle extends CFObject {
+	__origin;
+	__size;
+
+	constructor({
+		origin = new CGPoint(),
+		size = new CGSize(),
+		x = 0,
+		y = 0,
+		width = 0,
+		height = 0
+	} = {}) {
+		super();
+
+		this.origin = origin ?? new CGPoint(...arguments);
+		this.size = size ?? new CGSize(...arguments);
+	}
+
+	get origin() {
+		return this.__origin;
+	}
+
+	get size() {
+		return this.__size;
+	}
+
+	get standardized() {
+		return this.origin.x < 0 || this.origin.y < 0 || this.size.width < 0 || this.size.height < 0 ? new this.constructor({ origin: this.origin.standardized, size: this.size.standardized }) : this;
+	}
+
+	set origin(value) {
+		if(!Object.isKindOf(value, CGPoint)) {
+			throw new TypeError(0);
+		}
+
+		this.__origin = value;
+	}
+
+	set size(value) {
+		if(!Object.isKindOf(value, CGSize)) {
+			throw new TypeError(0);
+		}
+
+		this.__size = value;
+	}
+}
+
+_environment.CGScreen = class CGScreen {
+	static size = new CGSize(_call('screen'));
+}
+
+_environment.CGColor = (red, green, blue, alpha) => {
+	return _call('drColor', red, green, blue, alpha);
+}
+/*
+_environment.CGColor = class CGColor {
+	constructor(red, green, blue, alpha) {
+		if(typeof red !== 'string') {
+			console.error(0); return;
+		}
+		if(typeof green !== 'string') {
+			console.error(1); return;
+		}
+		if(typeof blue !== 'string') {
+			console.error(2); return;
+		}
+		if(typeof red !== 'number') {
+			console.error(3); return;
+		}
+		if(typeof green !== 'number') {
+			console.error(4); return;
+		}
+		if(typeof blue !== 'number') {
+			console.error(5); return;
+		}
+
+		this.red = red;
+		this.green = green;
+		this.blue = blue;
+		this.alpha = alpha;
+	}
+
+	get color() {
+		return _call('drColor', red, green, blue, alpha);
+	}
+}
+*/
+
+_environment.CGContext = class CGContext {
+	__layer;
+	__internalLayer;
+
+	constructor(layer) {
+		if(!Object.isKindOf(layer, CGLayer)) {
+			throw new TypeError();
+		}
+
+		this.__layer = layer;
+		this.__internalLayer = layer.__internalLayer;
+	}
+
+	[Symbol.call](self, key, ...arguments_) {
+		let value = self[key](...arguments_);
+
+		this.__layer.needsRedraw = true;
+
+		return value;
+	}
+
+	drawRectangle(color, x, y, width, height) {
+		_call('drDraw', this.__internalLayer, 'rectangle', color, x, y, width, height);
+	}
+
+	drawGradient(colors, x, y, width, height, fromX, fromY, toX, toY) {
+		_call('drDraw', this.__internalLayer, 'gradient', colors, x, y, width, height, fromX, fromY, toX, toY);
+	}
+
+	drawLayer(layer, x, y, width, height) {
+		_call('drDraw', this.__internalLayer, 'layer', layer.__internalLayer, x ?? layer.x, y ?? layer.y, width, height);
+	}
+
+	clip(x, y, width, height) {
+		_call('drClip', this.__internalLayer, x, y, width, height);
+	}
+
+	blur(amount, sharp, apply, layer, x, y, ...arguments_) {
+		_call('drBlur', this.__internalLayer, amount, sharp, apply, layer.__internalLayer, x ?? layer.x, y ?? layer.y, ...arguments_);
+	}
+
+	move(type, x, y, width, height, layer, x_, y_) {
+		_call('drMove', this.__internalLayer, type, x, y, width, height, layer.__internalLayer, x_, y_);
+	}
+
+	mask(layer, apply, x, y, ...arguments_) {
+		_call('drMask', this.__internalLayer, layer.__internalLayer, apply, x ?? layer.x, y ?? layer.y, ...arguments_);
+	}
+
+	clear(x, y, width, height) {
+		_call('drClear', this.__internalLayer, x, y, width, height);
+	}
+
+	iterate(function_) {
+		_call('drIterate', this.__internalLayer, function_);
+	}
+}
+
+_environment.CGImage = class CGImage {
+	static __friends__ = [CGContext]
+
+	static async new(URL, type, asLayer = false) {
+		if(typeof URL !== 'string')             throw new TypeError(0);
+		if(type && typeof type !== 'string')    throw new TypeError(1);
+		if(typeof asLayer !== 'boolean')        throw new TypeError(2);
+
+		let self = !asLayer ? new this() : new CGLayer();
+
+		self.__internalLayer = await _call('drOpen', URL, type);
+
+		return self;
+	}
+
+	__internalLayer;
+}
+
+/**
+ * Оконный сервер. Отвечает за композицию и вывод на экран слоёв рабочих пространств, окон и курсора.
+ * Также в его обязанности входит отправка некоторых событий в процессы.
+ *
+ * Каждый процесс может иметь по одному подключению к серверу.
+ * Процесс, успевший обозначить себя (своё подключение) универсальным владельцем, имеет права администратора сервера.
+ * Администратор владеет всеми окнами и курсорами наравне с процессами, их создавшими.
+ *
+ * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
+ */
+_environment.CGSWindowServer = $CFShared.CGSWindowServer ?? class CGSWindowServer extends CFObject {
+	static __shared;
+
+	static get shared() {
+		return this.__shared;
+	}
+
+	static async new() {
+		let self = this.__shared ?? new this();
+
+		if(!this.__shared) {
+			this.__shared = self;
+		} else {
+			throw new Error('Only one instance allowed');
+		}
+
+		CFEvent.addHandler('workspaceListChanged', (a) => {
+			if(a.event === 'added' && !self.__workspaces.contains({ where: v => v.current })) {
+				self.setCurrentWorkspace(CGSConnection.shared, a.value);
+			}
+		});
+		CFEvent.addHandler('workspaceChanged', (a) => {
+			if(a.event === 'current') {
+				self.__draw();
+			}
+		});
+
+		let x, y;
+
+		CFEvent.addHandler('mouseChanged', (a) => {
+			if(a.event === 'mousemove' && (x !== a.value.x || y !== a.value.y)) {
+				x = a.value.x;
+				y = a.value.y;
+
+				self.setCursorOrigin(a.value.x, a.value.y);
+			}
+		});
+
+		self.setConnectionUniversalOwner(CGSConnection.shared, CGSConnection.shared, true);
+		self.createWorkspace(CGSConnection.shared);
+		self.createCursor(CGSConnection.shared, new CFArray([await CGImage.new('/Environment/Library/Frameworks/CoreGraphics.framework/Contents/Resources/CursorDefault.svg', undefined, true)]), new CGPoint({ x: 16, y: 16 }));
+
+		return self;
+	}
+
+	__connections = new CFArray();
+	__workspaces = new CFArray();
+	__windows = new CFArray();
+	__cursors = new CFArray();
+	__cursor = new CFObject({
+		origin: new CGPoint(),
+		obscured: false,
+		scale: 1
+	});
+	__layer = new CGLayer({ width: CGScreen.size.width, height: CGScreen.size.height });
+
+	__draw() {
+		let layer = this.__layer,
+			workspaces = this.__workspaces,
+			currentPosition = 0,
+			layers = []
+
+		layer.backgroundColor = CGColor('75', '75', '75');
+		for(let v of workspaces) {
+			if(!v.current) {
+				v.layer.hidden = true;
+			} else {
+				v.layer.hidden = false;
+				currentPosition = workspaces.firstIndex({ of: v });
+			}
+			layers.push(v.layer);
+		}
+		for(let v of layers) {
+			v.x = v.width*layers.indexOf(v)-v.width*currentPosition;
+		}
+
+		if(!this.__cursors.empty) {
+			let cursor = this.__cursors.first({ where: v => v.current }),
+				cursorLayer = cursor.layers[0]
+
+			cursorLayer.x = this.__cursor.origin.x-cursor.hotspot.x;
+			cursorLayer.y = this.__cursor.origin.y-cursor.hotspot.y;
+
+			layers.push(cursorLayer);
+		}
+		layer.sublayers = layers;
+
+		_call('fbWrite', this.__layer.draw().__internalLayer);
+	}
+
+	createConnection(processInfo) {
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))     throw new TypeError(0);
+		if(this.__connections.contains({ where: v => v.processID === processInfo.identifier })) throw new RangeError(1);
+
+		let ID = new Number(!this.__connections.empty ? Math.max(...this.__connections.map(v => v.ID))+1 : 1);  // Упаковка примитива в объект обезопасивает сравнения, передать в качестве аргумента чужой ID просто так не получится
+
+		this.__connections.add({
+			ID: ID,
+			processID: processInfo.identifier,
+			universalOwner: false
+		});
+		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'connectionsListChanged', { event: 'added', value: ID });
+
+		return ID;
+	}
+
+	getConnectionID(connectionID, processID) {
+		if(!Object.isKindOf(connectionID, Number))                                                  throw new TypeError(0);
+		if(typeof processID !== 'number')                                                           throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner })) throw new RangeError(2);
+
+		return this.__connections.first({ where: v => v.processID === processID })?.ID;
+	}
+
+	getConnectionProcessID(connectionID, connectionID_) {
+		if(!Object.isKindOf(connectionID, Number))                                                  throw new TypeError(0);
+		if(!Object.isKindOf(connectionID_, Number))                                                 throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner })) throw new RangeError(2);
+
+		return this.__connections.first({ where: v => v.ID === connectionID_ })?.processID;
+	}
+
+	getConnectionUniversalOwner(connectionID, connectionID_) {
+		if(!Object.isKindOf(connectionID, Number))                                                  throw new TypeError(0);
+		if(!Object.isKindOf(connectionID_, Number))                                                 throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner })) throw new RangeError(2);
+
+		return this.__connections.first({ where: v => v.ID === connectionID_ })?.universalOwner;
+	}
+
+	setConnectionUniversalOwner(connectionID, connectionID_, value) {
+		if(!Object.isKindOf(connectionID, Number))                                                  throw new TypeError(0);
+		if(!Object.isKindOf(connectionID_, Number))                                                 throw new TypeError(1);
+		if(typeof value !== 'boolean')                                                              throw new TypeError(2);
+		if(
+			this.__connections.contains({ where: v => v.universalOwner }) &&
+			this.__connections.contains({ where: v => v.ID === connectionID && !v.universalOwner })
+		)                                                                                           throw new RangeError(3);
+
+		this.__connections.first({ where: v => v.ID === connectionID_ })?.universalOwner = value;
+	}
+
+	destroyConnection(connectionID, connectionID_) {
+		if(!Object.isKindOf(connectionID, Number))                                                      throw new TypeError(0);
+		if(!Object.isKindOf(connectionID_, Number))                                                     throw new TypeError(1);
+		if(
+			connectionID !== connectionID_ &&
+			!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner })
+		)                                                                                               throw new RangeError(2);
+
+		this.__connections.removeAll({ where: v => v.ID === connectionID_ });
+		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'connectionsListChanged', { event: 'removed', value: connectionID_ });
+	}
+
+	createWorkspace(connectionID) {
+		if(!Object.isKindOf(connectionID, Number))                                                  throw new TypeError(0);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner })) throw new RangeError(1);
+
+		let ID = !this.__workspaces.empty ? Math.max(...this.__workspaces.map(v => v.ID))+1 : 1;
+
+		this.__workspaces.add({
+			ID: ID,
+			current: false,
+			layer: new CGLayer({ width: this.__layer.width, height: this.__layer.height })
+		});
+		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'workspaceListChanged', { event: 'added', value: ID });
+
+		return ID;
+	}
+
+	getCurrentWorkspace() {
+		return this.__workspaces.first({ where: v => v.current })?.ID;
+	}
+
+	setCurrentWorkspace(connectionID, workspaceID) {
+		if(!Object.isKindOf(connectionID, Number))                                                  throw new TypeError(0);
+		if(typeof workspaceID !== 'number')                                                         throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner })) throw new RangeError(2);
+		if(!this.__workspaces.contains({ where: v => v.ID === workspaceID }))                       throw new RangeError(3);
+		if(this.__workspaces.contains({ where: v => v.ID === workspaceID && v.current }))           return;
+
+		for(let v of this.__workspaces) {
+			v.current = v.ID === workspaceID;
+		}
+		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'workspaceChanged', { event: 'current', value: workspaceID });
+	}
+
+	destroyWorkspace(connectionID, workspaceID) {
+		if(!Object.isKindOf(connectionID, Number))                                                  throw new TypeError(0);
+		if(typeof workspaceID !== 'number')                                                         throw new TypeError(1);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID && v.universalOwner })) throw new RangeError(2);
+		if(!this.__workspaces.contains({ where: v => v.ID === workspaceID }))                       throw new RangeError(3);
+
+		this.__workspaces.removeAll({ where: v => v.ID === workspaceID });
+		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'workspaceListChanged', { event: 'removed', value: workspaceID });
+	}
+
+	createWindow(connectionID, workspaceID, x, y, width, height) {
+		if(!Object.isKindOf(connectionID, Number))                                  throw new TypeError(0);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID }))     throw new RangeError(1);
+		if(workspaceID) {
+			if(typeof workspaceID !== 'number')                                     throw new TypeError(2);
+			if(!this.__workspaces.contains({ where: v => v.ID === workspaceID }))   throw new RangeError(3);
+		}
+
+		let window = {
+			ID: !this.__windows.empty ? Math.max(...this.__windows.map(v => v.ID))+1 : 1,
+			connectionID: connectionID,
+			workspaceID: workspaceID ?? this.getCurrentWorkspace(),
+			layer: new CGLayer({ x: x, y: y, width: width, height: height })
+		}
+
+		window.layer.context.drawRectangle(CGColor(0, 0, 0), 0, 0, width, height);
+
+		this.__windows.add(window);
+		CFEvent.dispatch(CFProcessInfo.shared.identifier, 'windowsListChanged', { event: 'added', value: window.ID });
+
+		return window.ID;
+	}
+
+	getWindowWorkspace() {}
+
+	getWindowOrigin() {}
+
+	getWindowFrame() {}
+
+	getWindowLevel() {}
+
+	getWindowDepth() {}
+
+	getWindowContext() {}
+
+	setWindowWorkspace() {}
+
+	setWindowOrigin() {}
+
+	setWindowFrame() {}
+
+	setWindowLevel() {}
+
+	setWindowDepth() {}
+
+	destroyWindow() {}
+
+	createCursor(connectionID, layers = new CFArray(), hotspot = new CGPoint(), current = false, global = false, delay = 33.3) {
+		if(!Object.isKindOf(connectionID, Number))                              throw new TypeError(0);
+		if(!Object.isKindOf(layers, CFArray))                                   throw new TypeError(1);
+		if(!Object.isKindOf(hotspot, CGPoint))                                  throw new TypeError(2);
+		if(typeof current !== 'boolean')                                        throw new TypeError(3);
+		if(typeof global !== 'boolean')                                         throw new TypeError(4);
+		if(typeof delay !== 'number')                                           throw new TypeError(5);
+		if(!this.__connections.contains({ where: v => v.ID === connectionID })) throw new RangeError(6);
+
+		let cursor = {
+			ID: !this.__cursors.empty ? Math.max(...this.__windows.map(v => v.ID))+1 : 1,
+			layers: layers,
+			hotspot: hotspot,
+			current: this.__cursors.empty,
+			global: global,
+			delay: delay
+		}
+
+		if(cursor.layers.empty) {
+			let layer =
+				cursor.layers[0] = new CGLayer({ width: 32, height: 32 });
+
+			layer.backgroundColor = CGColor(0, 0, 0);
+		}
+
+		this.__cursors.add(cursor);
+		this.setCurrentCursor(CGSConnection.shared, cursor.ID);
+
+		return cursor.ID;
+	}
+
+	getCurrentCursor(connectionID) {}
+
+	getCursorOrigin() {
+		return {
+			x: this.__cursor.origin.x,
+			y: this.__cursor.origin.y
+		}
+	}
+
+	setCurrentCursor(connectionID, cursorID) {
+		for(let v of this.__cursors) {
+			v.current = v.ID === cursorID;
+		}
+	}
+
+	setCursorOrigin(x, y) {
+		if(this.__cursors.empty) {
+			return;
+		}
+
+		this.__cursor.origin.x = x;
+		this.__cursor.origin.y = y;
+
+		this.__draw();
+	}
+
+	destroyCursor() {}
+
+	async __test() {
+	//  let c = CGSConnection.shared;
+
+	//  this.createWorkspace(c);
+	//  this.createWorkspace(c);
+	//  this.__workspaces[1].layer.context.drawRectangle('rgba(255,120,5,1)', 0, 16, 32, 64);
+	//  let l = new CGLayer({ x: 16, y: 32, width: 512, height: 256 });
+	//  l.context.drawRectangle('rgba(255,255,255,0.25)', 0, 0, 512, 256);
+	//  l.backgroundFilters = [{ title: 'blur', amount: 4 }]
+		let l = new CGLayer({ width: CGScreen.size.width, height: CGScreen.size.height });
+		l.context.drawLayer(await CGImage.new(LFWorkspace.shared.desktopImageURL), 0, 0, '100', '100');
+		let l2 = new CGLayer({ width: l.width, height: l.height });
+		l2.backgroundImage = l;
+		let m = LFMenubar.shared;
+		m.draw();
+		this.__workspaces[0].layer.sublayers = [l2, m.__layer]
+	//  this.setCurrentWorkspace(c, 2);
+	}
+}
+
+/**
+ * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
+ */
+_environment.CGSConnection = class CGSConnection {
+	static __shared;
+
+	static get shared() {
+		if(!this.__shared) {
+			this.__shared = this.create();
+		}
+
+		return this.__shared;
+	}
+
+	static create() {
+		return CGSWindowServer.shared.createConnection(CFProcessInfo.shared);
+	}
+
+	static getID(processID) {
+		return CGSWindowServer.shared.getConnectionID(this.shared, processID);
+	}
+
+	static getProcessID(connectionID) {
+		return CGSWindowServer.shared.getConnectionProcessID(this.shared, connectionID);
+	}
+
+	static getUniversalOwner(connectionID) {
+		return CGSWindowServer.shared.getConnectionUniversalOwner(this.shared, connectionID);
+	}
+
+	static setUniversalOwner(connectionID, value) {
+		return CGSWindowServer.shared.setConnectionUniversalOwner(this.shared, connectionID, value);
+	}
+
+	static destroy(connectionID) {
+		return CGSWindowServer.shared.destroyConnection(this.shared, connectionID);
+	}
+}
+
+/**
+ * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
+ */
+_environment.CGSWorkspace = class CGSWorkspace {}
+
+/**
+ * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
+ */
+_environment.CGSWindow = class CGSWindow {
+	// Теги со звёздочкой означают, что (мне так кажется) на них должен реагировать не оконный сервер, а вышестоящий фреймфорк
+	static style = {
+		allowedBeforeLogin:         0,
+		attached:                   1,
+		attachedToMenubar:          2,  // *
+		awaitsDrop:                 3,  // *
+		cantHide:                   4,  // *
+		desktopBackground:          5,  // *
+		draggableByServer:          6,
+		followsCurrentWorkspace:    7,
+		hidden:                     8,  // *
+		hidesOnDeactivation:        9,  // *
+		ignoresActivation:          10, // *
+		ignoresCycle:               11, // *
+		ignoresMouseEvents:         12,
+		ignoresOrderingToFront:     13,
+		inCycle:                    14, // *
+		maximizable:                15,
+		maximized:                  16,
+		mergedWithMenubar:          17, // *
+		mirror:                     18,
+		modal:                      19, // *
+		onAllWorkspaces:            20,
+		setsCursorInBackground:     21,
+		shadowless:                 22,
+		worksWhenModal:             23  // *
+	}
+
+	static create() {}
+
+	static getWorkspace() {}
+
+	static getOrigin() {}
+
+	static getFrame() {}
+
+	static getLevel() {}
+
+	static getDepth() {}
+
+	static setWorkspace() {}
+
+	static setOrigin() {}
+
+	static setFrame() {}
+
+	static setLevel() {}
+
+	static setDepth() {}
+
+	static destroy() {}
+}
+
+/**
+ * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
+ */
+_environment.CGSCursor = class CGSCursor {}
+
+_environment.CGLayer = class CGLayer {
+	static __friends__ = [CGContext, CGImage, CGSWindowServer]
+
+	__superlayer;
+	__sublayers = new CFArray();
+	__internalLayer = _call('drCreate', 0, 0);
+	__context = new CGContext(this);
+	__needsRedraw = true;
+	__x;
+	__y;
+	__z;
+	__backgroundColor;
+	__backgroundImage;
+	__backgroundGradient;
+	__backgroundFilters = new CFArray();
+	__mask;
+	__hidden;
+
+	constructor({ x = 0, y = 0, z = 0, width = 0, height = 0 } = {}) {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.width = width;
+		this.height = height;
+	}
+
+	get superlayer() {
+		return this.__superlayer;
+	}
+
+	get sublayers() {
+		return this.__sublayers;
+	}
+
+	get context() {
+		return this.__context;
+	}
+
+	get needsRedraw() {
+		return this.__needsRedraw;
+	}
+
+	get x() {
+		return this.__x;
+	}
+
+	get y() {
+		return this.__y;
+	}
+
+	get z() {
+		return this.__z;
+	}
+
+	get width() {
+		return this.__internalLayer.width;
+	}
+
+	get height() {
+		return this.__internalLayer.height;
+	}
+
+	get backgroundColor() {
+		return this.__backgroundColor;
+	}
+
+	get backgroundImage() {
+		return this.__backgroundImage;
+	}
+
+	get backgroundGradient() {
+		return this.__backgroundGradient;
+	}
+
+	get backgroundFilters() {
+		return this.__backgroundFilters;
+	}
+
+	get mask() {
+		return this.__mask;
+	}
+
+	get hidden() {
+		return this.__hidden;
+	}
+
+	set sublayers(value) {
+		if(value && !Array.isArray(value)) {
+			throw new TypeError(0);
+		}
+
+		value = value?.filter(v => Object.isKindOf(v, this)) ?? []
+
+		let toRemove = this.sublayers.filter(v => !value.includes(v)),
+			toAdd = value.filter(v => !this.sublayers.contains({ element: v }) && v !== this);
+
+		this.__sublayers.remove(...toRemove);
+		this.__sublayers.add(...toAdd);
+
+		for(let v of toRemove)  v.__superlayer = undefined;
+		for(let v of toAdd)     v.__superlayer = this;
+	}
+
+	set needsRedraw(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError(0);
+		}
+
+		this.__needsRedraw = value;
+		if(value && !this.hidden) {
+			this.superlayer?.needsRedraw = true;
+		}
+	}
+
+	set x(value) {
+		if(typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__x = value;
+	}
+
+	set y(value) {
+		if(typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__y = value;
+	}
+
+	set z(value) {
+		if(typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__z = value;
+	}
+
+	set width(value) {
+		if(typeof value !== 'number')   throw new TypeError(0);
+		if(value < 0)                   throw new RangeError(1);
+
+		this.__internalLayer.width = value;
+	}
+
+	set height(value) {
+		if(typeof value !== 'number')   throw new TypeError(0);
+		if(value < 0)                   throw new RangeError(1);
+
+		this.__internalLayer.height = value;
+	}
+
+	set backgroundColor(value) {
+		if(value && !/^rgba\(.+\)/i.test(value)) {
+			throw new TypeError(0);
+		}
+
+		this.__backgroundColor = value;
+	}
+
+	set backgroundImage(value) {
+		if(value && !Object.isKindOf(value, CGImage) && !Object.isKindOf(value, this))  throw new TypeError(0);
+		if(value === this)                                                              throw new RangeError(1);
+
+		this.__backgroundImage = value;
+	}
+
+	set backgroundGradient(value) {
+		this.__backgroundGradient = value;
+	}
+
+	set backgroundFilters(value) {
+		if(value && !Array.isArray(value)) {
+			throw new TypeError(0);
+		}
+
+		this.__backgroundFilters.removeAll();
+		if(value) {
+			this.__backgroundFilters.add(...value.filter(v => v));
+		}
+	}
+
+	set mask(value) {
+		if(!Object.isKindOf(value, this)) {
+			throw new TypeError(0);
+		}
+		if(value === this) {
+			throw new RangeError(1);
+		}
+
+		this.__mask = value;
+	}
+
+	set hidden(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError(0);
+		}
+
+		this.__hidden = value;
+	}
+
+	[Symbol.set](self, key, value) {
+		if(self[key] !== value) {
+			self[key] = value;
+			if(!['__needsRedraw', 'needsRedraw', '__x', 'x', '__y', 'y', '__z', 'z', '__hidden', 'hidden'].includes(key)) {
+				this.needsRedraw = true;
+			}
+			if(['__x', '__y', '__z', '__hidden'].includes(key)) {
+				this.superlayer?.needsRedraw = true;
+			}
+		}
+	}
+
+	draw() {
+		if(!this.needsRedraw) {
+			return this;
+		}
+
+		this.context.clear();
+		if(this.backgroundColor) {
+			this.context.drawRectangle(this.backgroundColor, 0, 0, this.width, this.height);
+		}
+		if(this.backgroundImage) {
+			this.context.drawLayer(this.backgroundImage);
+		}
+		if(this.backgroundGradient) {
+			this.context.drawGradient(this.backgroundGradient[0], 0, 0, this.width, this.height, this.backgroundGradient[1], this.backgroundGradient[2], this.backgroundGradient[3], this.backgroundGradient[4]);
+		}
+		for(let v of this.sublayers) {
+			if(v.hidden) {
+				continue;
+			}
+			for(let v_ of v.backgroundFilters) {
+				if(v_.title === 'blur') {
+					this.context.blur(v_.amount, true, true, v_.mask ?? v, v_.mask ? v.x+v_.mask.x : v.x, v_.mask ? v.y+v_.mask.y : v.y);
+				}
+			}
+			this.context.drawLayer(v.draw());
+		}
+		if(this.mask) {
+			this.context.mask(this.mask.draw(), true);
+		}
+		this.needsRedraw = false;
+
+		return this;
+	}
+}
+
+_environment.CGAppearance = $CFShared.CGAppearance ?? class CGAppearance {
+	static __URLSs = []
+
+	constructor(URL) {
+		this.URL = URL;
+		this.element;
+	}
+
+	async add() {
+		if(!this.element && this.URL && !this.constructor.__URLSs.includes(this.URL)) {
+			let file = await CFFile.content(this.URL),
+				type =
+					this.URL.endsWith('.less') ? 'less' :
+					this.URL.endsWith('.css') ? 'css' :
+					undefined;
+
+			if(file && type) {
+				let add = $('<style/>');
+
+				this.constructor.__URLSs.push(this.URL);
+				add.attr('type', 'text/'+type);
+				add.text(file.replace(/@(Resources)/g, this.URL.replace(/(?<=\/Resources\/)(.*)/g, '')));
+
+				this.element = add.appendTo('body');
+
+				if(type === 'less') {
+					less?.refreshStyles();
+				}
+			}
+		}
+
+		return this;
+	}
+
+	remove() {
+		if(this.element) {
+			CFArrayOld.remove(this.constructor.__URLSs, this.URL);
+			this.element.remove();
+			this.element = undefined;
+		}
+
+		return this;
+	}
+}
+
+_environment.CGElement = class CGElement {
+	constructor(_) {
+		this._ = {
+			tag: 'CGElement',
+			style: {},
+			attributes: {},
+			text: '',
+			..._
+		}
+
+		this.node = $('<'+this._.tag+'/>')
+			.css(this._.style)
+			.attr(this._.attributes)
+			.text(this._.text);
+	}
+
+	set style(value) {
+		this._.style = value;
+		this.node.attr('style', '').css(value);
+	}
+
+	set attributes(value) {
+		this._.attributes = value;
+		for(let k in this.node[0].attributes) {
+			if(value[k] == undefined) {
+				this.node.removeAttr(k);
+			}
+		}
+		this.node.attr(value);
+	}
+
+	set text(value) {
+		this._.text = value;
+		this.node.text(value);
+	}
+
+	add(element) {
+		let add = element ? element.node : 'body';
+
+		this.node = this.node.appendTo(add);
+
+		return this;
+	}
+
+	addEvent(event, function_) {
+		this.node.on(event, function_);
+
+		return this;
+	}
+
+	removeEvents() {
+		this.node.off();
+
+		return this;
+	}
+
+	remove() {
+		this.node.remove();
+
+		return this;
+	}
+}
+
+_environment.CGCursor = $CFShared.CGCursor ?? class CGCursor {
+	static __shared;
+
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
+	__element;
+	__event;
+	__type;
+	__hidden = false;
+
+	constructor() {
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			throw new Error('Only one instance allowed');
+		}
+
+		this.add();
+	}
+
+	set type(value) {
+		if(['default', 'wait', 'progress', 'copy', 'notAllowed', 'text', 'hidden'].includes(value)) {
+			if(value !== 'default') {
+				this.__type = value;
+				this.__element.attr(value, '');
+			} else {
+				this.__element.removeAttr(this.__type);
+				this.__type = undefined;
+			}
+		}
+	}
+
+	set hidden(value) {
+		if([false, true].includes(value)) {
+			this.__hidden = value;
+			if(!value) {
+				this.__element.removeAttr('hidden');
+			} else {
+				this.__element.attr('hidden', '');
+			}
+		}
+	}
+
+	add() {
+		if(!this.__element) {
+			this.__element = $('<CGCursor>').appendTo('body');
+			this.__event = $._data($('body')[0], 'events')?.mousemove?.length+1 ?? 1;
+			$('body').on('mousemove.'+this.__event, (event) => {
+				this.__element.css('transform', 'translate('+event.pageX+'px, '+event.pageY+'px)');
+			});
+		}
+
+		return this;
+	}
+
+	remove() {
+		if(this.__element) {
+			this.__element.remove();
+			$('body').off('mousemove.'+this.__event);
+		}
+
+		return this;
+	}
+}
+
+_environment.CGFontManager = $CFShared.CGFontManager ?? class CGFontManager {
+	static __shared;
+
+	static get shared() {
+		return this.__shared;
+	}
+
+	static async new(URL) {
+		let self = this.__shared ?? new this();
+
+		if(!this.__shared) {
+			this.__shared = self;
+		} else {
+			throw new Error('Only one instance allowed');
+		}
+
+		self.URL = URL;
+		self.element = $('<style type="text/css"/>');
+		self.fonts = []
+
+		if(self.URL) {
+			let a = '';
+
+			for(let v of await CFDirectory.content(self.URL, 'Files')/*.sort((a, b) => a < b ? -1 : 1)*/) {
+				let a = v.includes('-') ? v.split('-')[1].toLowerCase() : '',
+					b = a !== '' ? a.substr(0, a.lastIndexOf('.')) : a,
+					c = v.split('.')[1].toLowerCase();
+
+				self.fonts.push({
+					URL: self.URL+'/'+v,
+					format: c === 'ttf' ? 'truetype' : c,
+					family: v.includes('-') ? v.substr(0, v.lastIndexOf('-')) : v.substr(0, v.lastIndexOf('.')),
+					style: 'normal',
+					weight: ['light', 'medium', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'].includes(b) ? b : 'normal'
+				});
+			}
+			for(let v of self.fonts) {
+				v.family = v.family+(v.weight !== 'normal' ? '-'+v.weight[0].toUpperCase()+v.weight.slice(1) : '');
+
+				a += `
+					@font-face {
+						src: url('${ v.URL }') format('${ v.format }');
+						font-family: '${ v.family }';
+						font-style: 'normal';
+						font-weight: 'normal';
+					}
+				`;
+			}
+
+			self.element.text(a);
+		}
+
+		self.add();
+
+		// TODO Доделать (не обязательно)
+
+		return self;
+	}
+
+	add() {
+		this.element = this.element.appendTo('body');
+
+		return this;
+	}
+
+	remove() {
+		this.element.remove();
+
+		return this;
+	}
+}
+
+// ---- //
+
+if(!CGSWindowServer.shared) {
+	await CGSWindowServer.new();
+}
+
+_environment.$CGAppearance = await new CGAppearance((await CFBundle.new(_path)).resourcesURL+'/Appearance.css').add();
+
+$CFShared.CGSWindowServer = CGSWindowServer;
+$CFShared.CGAppearance = CGAppearance;
+$CFShared.CGCursor = CGCursor;
+$CFShared.CGFontManager = CGFontManager;

@@ -1,0 +1,1362 @@
+/**
+ * CoreFoundation Framework
+ *
+ * Contains low-level management tools.
+ */
+
+_environment.CFProcessInfo = class CFProcessInfo {
+	static __shared;
+
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
+	__info = _call('info');
+
+	constructor() {
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			throw new Error('Only one instance allowed');
+		}
+	}
+
+	get identifier() {
+		return this.__info.ID;
+	}
+
+	get parentIdentifier() {
+		return this.__info.parentID;
+	}
+
+	get user() {
+		return this.__info.user;
+	}
+
+	get path() {
+		return this.__info.path;
+	}
+
+	get arguments() {
+		return _arguments;
+	}
+
+	get environment() {
+		return _environment;
+	}
+
+	get executable() {
+		return this.environment._executable;
+	}
+}
+
+_environment.CFFile = class CFFile {
+	static create(URL) {
+		return _call('write', URL, '');
+	}
+
+	static content(URL, content) {
+		let mode = !content ? 'Read' : 'Write';
+
+		return {
+			Read: () => _call('read', URL),
+			Write: () => _call('write', URL, content)
+		}[mode]();
+	}
+
+	static remove(URL) {
+		return _call('remove', URL);
+	}
+}
+
+_environment.CFDirectory = class CFDirectory {
+	static create(URL) {
+		return _call('createDir', URL);
+	}
+
+	static content(URL, mode) {
+		mode = ['', 'Files', 'Directories'].includes(mode) ? mode : '';
+
+		return {
+			'': async () => (await _call('readDir', URL)).map(v => v.name),
+			Files: async () => (await _call('readDir', URL)).filter(v => v.isFile()).map(v => v.name),
+			Directories: async () => (await _call('readDir', URL)).filter(v => !v.isFile()).map(v => v.name)
+		}[mode]();
+	}
+
+	static remove(URL) {
+		return _call('removeDir', URL);
+	}
+}
+
+_environment.CFPreferences = class CFPreferences {
+	static async new(identifier) {
+		let self = new this();
+
+		await self.setIdentifier(identifier);
+
+		return self;
+	}
+
+	__identifier;
+	__properties;
+
+	async setIdentifier(value) {
+		if(typeof value !== 'string') {
+			throw new TypeError();
+		}
+
+		this.__identifier = value;
+		this.__properties = await _call('readPref', value);
+	}
+
+	get(key) {
+		return key != null ? this.__properties[key] : this.__properties;
+	}
+
+	async set(key, value) {
+		this.__properties[key] = value;
+
+		await _call('writePref', this.__identifier, this.__properties);
+	}
+}
+
+_environment.CFIdentity = class CFIdentity {
+	static __shared;
+
+	static get shared() {
+		return new Promise(async (resolve) => {
+			if(!this.__shared) {
+				await this.new();
+			}
+
+			resolve(this.__shared);
+		});
+	}
+
+	static async new() {
+		let self = this.__shared ?? new this();
+
+		if(!this.__shared) {
+			this.__shared = self;
+		} else {
+			throw new Error('Only one instance allowed');
+		}
+
+		self.__user = (await CFPreferences.new('Global')).get().Users.find(v => v.Login === CFProcessInfo.shared.user);
+
+		return self;
+	}
+
+	get ID() {
+		return this.__user.ID;
+	}
+
+	get login() {
+		return this.__user.Login;
+	}
+
+	get password() {
+		return this.__user.Password;
+	}
+
+	get group() {
+		return this.__user.Group;
+	}
+
+	get hidden() {
+		return this.__user.Hidden;
+	}
+
+	get title() {
+		return this.__user.Title;
+	}
+
+	get image() {
+		return this.__user.Image;
+	}
+}
+
+_environment.CFEvent = class CFEvent {
+	static dispatch(processID, event, ...arguments_) {
+		if(processID && typeof processID !== 'number')  throw new TypeError(0);
+		if(typeof event !== 'string')                   throw new TypeError(1);
+
+		return _call('throw', processID, event, ...arguments_);
+	}
+
+	static addHandler(event, function_) {
+		if(typeof event !== 'string')       throw new TypeError(0);
+		if(typeof function_ !== 'function') throw new TypeError(1);
+
+		return _call('catcherCreate', event, function_);
+	}
+
+	static removeHandler(handler) {
+		if(typeof handler !== 'number') {
+			throw new TypeError(0);
+		}
+
+		return _call('catcherDestroy', handler);
+	}
+}
+
+// Каждый наблюдатель обязан автоматически удаляться:
+// - После завершения его породившего процесса.
+// - При недоступности наблюдаемого объекта.
+_environment.CFObject = class CFObject extends Object {
+	static __friends__ = [this]
+	static __observation = {
+		handlerID: undefined,
+		observers: []
+	}
+
+	static assign(object, ...arguments_) {
+		for(let object_ of arguments) {
+			for(let key in object_) {
+				if(Object.hasOwnProperty.call(object_, key)) {
+					object[key] = object_[key]
+				}
+			}
+		}
+	}
+
+	static addObserver(object, function_) {
+		if(!this.isObject(object) || !this.isKindOf(object, this)) {
+			throw new TypeError(0);
+		}
+
+		object.addObserver(CFProcessInfo.shared, function_);
+	}
+
+	static removeObserver(object, observerID) {
+		if(!this.isObject(object) || !this.isKindOf(object, this)) {
+			throw new TypeError(0);
+		}
+
+		object.removeObserver(CFProcessInfo.shared, observerID);
+	}
+
+	[Symbol.collection] = false;
+
+	__retained = false;
+	__shouldNotifyObservers = true;
+
+	constructor(object) {
+		super();
+
+		if(object) {
+			if(!Object.isObject(object) || !Object.isMemberOf(object, Object)) {
+				throw new TypeError(0);
+			}
+
+			this[Symbol.collection] = true;
+
+			for(let k in this) {
+				Object.defineProperty(this, k, {
+					enumerable: false
+				});
+			}
+			for(let k in object) {
+				if(['__proto__', '__friends__'].includes(k) || typeof object[k] === 'symbol') {
+					continue;
+				}
+				if(['@@collection', '@@get', '@@set', '@@call', '@@delete'].includes(k)) {
+					this[Symbol[k.substring(2)]] = object[k]
+				} else {
+					this[k] = object[k]
+				}
+			}
+		}
+	}
+
+	get __observers() {
+		return this.constructor.__observation.observers.filter(v => v.object === this);
+	}
+
+	get retained() {
+		return this.__retained;
+	}
+
+	[Symbol.get](self, key) {
+		let value = self[key]
+
+		CFEvent.dispatch(undefined, 'CFObjectNotification', { object: this, event: 'get', key: key });
+
+		return value;
+	}
+
+	[Symbol.set](self, key, value) {
+		let in_ = key in this;
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers ?? []) {
+				v.function(in_ ? 'willChangeValueForKey' : 'willAddKey', key, !key.startsWith('_') ? value : undefined);
+			}
+		}
+
+		self[key] = value;
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers ?? []) {
+				v.function(in_ ? 'didChangeValueForKey' : 'didAddKey', key, !key.startsWith('_') ? value : undefined);
+			}
+		}
+
+		CFEvent.dispatch(undefined, 'CFObjectNotification', { object: this, event: in_ ? 'changed' : 'added', key: key });
+	}
+
+	[Symbol.call](self, key, ...arguments_) {
+		let value = self[key](...arguments_);
+
+		CFEvent.dispatch(undefined, 'CFObjectNotification', { object: this, event: 'called', key: key });
+
+		return value;
+	}
+
+	[Symbol.delete](self, key) {
+		if(!(key in this)) {
+			return;
+		}
+
+		let value = this[key]
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers ?? []) {
+				v.function('willRemoveKey', key, !key.startsWith('_') ? value : undefined);
+			}
+		}
+
+		delete self[key]
+
+		if(this[Symbol.collection] === true && Object.isObject(value)) {
+			value.release?.();
+		}
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers ?? []) {
+				v.function('didRemoveKey', key, !key.startsWith('_') ? value : undefined);
+			}
+		}
+
+		CFEvent.dispatch(undefined, 'CFObjectNotification', { object: this, event: 'removed', key: key });
+	}
+
+	shallowlyEquals(object) {
+		return this.constructor.isShallowlyEqual(this, object);
+	}
+
+	key(value) {
+		return this.constructor.keys(this).find(k => this[k] === value);
+	}
+
+	addObserver(processInfo, function_) {
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo)) throw new TypeError(0);
+		if(typeof function_ !== 'function')                                                 throw new TypeError(1);
+
+		let observation = this.constructor.__observation;
+
+		if(observation.handlerID === undefined) {
+			observation.handlerID = CFEvent.addHandler('processListChanged', (a) => {
+				if(a.event === 'removed') {
+					for(let v of observation.observers.filter(v => v.processInfo.identifier === a.value)) {
+						v.object.removeObserver(v.processInfo, v.ID);
+					}
+				}
+			});
+		}
+
+		if(observation.observers.find(v => v.object === this && v.processInfo === processInfo && v.function === function_)) {
+			return;
+		}
+
+		let ID = observation.observers.length > 0 ? Math.max(...observation.observers.map(v => v.ID))+1 : 1;
+
+		observation.observers.push({
+			ID: ID,
+			object: this,
+			processInfo: processInfo,
+			function: function_
+		});
+
+		return ID;
+	}
+
+	removeObserver(processInfo, observerID) {
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo)) throw new TypeError(0);
+		if(typeof observerID !== 'number')                                                  throw new TypeError(1);
+
+		let observation = this.constructor.__observation;
+
+		observation.observers = observation.observers.filter(v => v.ID !== observerID && v.object !== this && v.processInfo !== processInfo);
+
+		if(observation.observers.length === 0) {
+			observation.handlerID = CFEvent.removeHandler(observation.handlerID);
+		}
+	}
+
+	/**
+	 * Перевод объект в режим удержания, что не позволит (одному) следующему запросу [release()]{@link CFObject.release} запуститься.
+	 */
+	retain() {
+		this.__retained = true;
+	}
+
+	/**
+	 * Сообщает объекту об окончании работы с ним, что ведёт к освобождению памяти, если он не находится в режиме удержания,
+	 * и возвращает логическое значение, указывающее, выполнен ли запрос.
+	 *
+	 * @returns {boolean}
+	 */
+	release() {
+		if(this.__retained) {
+			this.__retained = false;
+
+			return false;
+		}
+
+		this.destructor();
+
+		return true;
+	}
+
+	/**
+	 * Освобождает память, занятую объектом, в порядке:
+	 * - Поля
+	 * - Наблюдатели
+	 * - Прототип
+	 * <br>
+	 * Каждому полю также остылается сообщение [release()]{@link CFObject.release} после его удаления.
+	 * <br>
+	 * _Этот метод является скорее служебным чем публичным и не рекомендуется для прямого вызова в обход [release()]{@link CFObject.release}._
+	 */
+	destructor() {
+		for(let k of [...Object.getOwnPropertyNames(this), ...Object.getOwnPropertySymbols(this)]) {
+			let value = this[k]
+
+			delete this[k]
+
+			if(Object.isObject(value) && value !== this) {
+				value.release?.();
+			}
+		}
+
+		for(let v of this.__observers) {
+			this.removeObserver(v.processInfo, v.ID);
+		}
+
+		this.__proto__ = null;
+	}
+}
+
+_environment.CFArrayOld = class CFArrayOld extends Array {
+	[Symbol.collection] = true;
+
+	__observers = []
+	__observersHandlerID;
+
+	constructor(...arguments_) {
+		super(...arguments_);
+
+		Object.defineProperties(this, {
+			__observers:            { enumerable: false },
+			__observersHandlerID:   { enumerable: false }
+		});
+	}
+
+	get count() {
+		return this.length;
+	}
+
+	set count(value) {
+		if(value > this.count) {
+			throw new RangeError(0);
+		}
+
+		while(this.count > value) {
+			this.remove(this[this.count-1]);
+		}
+	}
+
+	push() {}
+	splice() {}
+	includes() {}
+
+	add(...value) {
+		for(let v of value) {
+			super.push(v);
+
+			for(let v_ of this.__observers) {
+				v_.function({ event: 'added', value: v });
+			}
+		}
+
+		return this;
+	}
+
+	remove(...value) {
+		for(let v of value) {
+			if(this.contains(v)) {
+				super.splice(this.indexOf(v), 1);
+
+				for(let v_ of this.__observers) {
+					v_.function({ event: 'removed', value: v });
+				}
+			}
+		}
+
+		return this;
+	}
+
+	removeAll() {
+		this.length = 0;
+
+		for(let v_ of this.__observers) {
+			v_.function({ event: 'removedAll' });
+		}
+
+		return this;
+	}
+
+	removeByFilter(function_) {
+		if(typeof function_ !== 'function') {
+			throw new TypeError(0);
+		}
+
+		for(let v of this) {
+			if(function_(v)) {
+				this.remove(v);
+			}
+		}
+
+		return this;
+	}
+
+	contains(value) {
+		return super.includes(value);
+	}
+
+	addObserver(processInfo, function_) {
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo)) throw new TypeError(0);
+		if(typeof function_ !== 'function')                                                 throw new TypeError(1);
+
+		let ID = this.__observers.length > 0 ? Math.max(...this.__observers.map(v => v.ID))+1 : 1;
+
+		this.__observers.push({
+			ID: ID,
+			processInfo: processInfo,
+			function: function_
+		});
+		if(this.__observersHandlerID === undefined) {
+			this.__observersHandlerID = CFEvent.addHandler('processListChanged', (a) => {   // Не удаляется вместе с объектом, его создавшим
+				if(a.event === 'removed') {
+					for(let v of this.__observers.filter(v => v.processInfo.identifier === a.value)) {
+						this.removeObserver(v.processInfo, v.ID);
+					}
+				}
+			});
+		}
+
+		return ID;
+	}
+
+	removeObserver(processInfo, observerID) {
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))             throw new TypeError(0);
+		if(typeof observerID !== 'number')                                                              throw new TypeError(1);
+		if(!this.__observers.find(v => v.ID === observerID && v.processInfo === processInfo))   throw new RangeError(2);
+
+		this.__observers = this.__observers.filter(v => v.ID !== observerID && v.processInfo !== processInfo);
+		if(this.__observers.length === 0) {
+			this.__observersHandlerID = CFEvent.removeHandler(this.__observersHandlerID);
+		}
+	}
+
+	static add(array, ...value) {
+		if(!super.isArray(array)) {
+			throw new TypeError(0);
+		}
+
+		(array.add || array.push)(...value);
+	}
+
+	static remove(array, ...value) {
+		if(!super.isArray(array)) {
+			throw new TypeError(0);
+		}
+
+		for(let v of value) {
+			if(array.contains?.(v)) {
+				array.remove(v);
+			} else
+			if(array.includes(v)) {
+				array.splice(array.indexOf(v), 1);
+			}
+		}
+	}
+
+	static contains(array, value) {
+		if(!super.isArray(array)) {
+			throw new TypeError(0);
+		}
+
+		return (array.contains || array.includes)(value);
+	}
+
+	static addObserver(array, function_) {
+		if(!Object.isKindOf(array, this)) {
+			throw new TypeError(0);
+		}
+
+		return array.addObserver(CFProcessInfo.shared, function_);
+	}
+
+	static removeObserver(array, observerID) {
+		if(!Object.isKindOf(array, this)) {
+			throw new TypeError(0);
+		}
+
+		array.removeObserver(CFProcessInfo.shared, observerID);
+	}
+}
+
+_environment.CFArray = class CFArray extends CFObject {
+	static add(array, ...value) {
+		if(!Object.isObject(array) || !Object.isKindOf(array, this) || !Array.isArray(array)) {
+			throw new TypeError(0);
+		}
+
+		(array.add || array.push)(...value);
+	}
+
+	static contains(array, value) {
+		if(!Object.isObject(array) || !Object.isKindOf(array, this) || !Array.isArray(array)) {
+			throw new TypeError(0);
+		}
+
+		return (array.contains || array.includes)(value);
+	}
+
+	static remove(array, ...value) {
+		if(!Object.isObject(array) || !Object.isKindOf(array, this) || !Array.isArray(array)) {
+			throw new TypeError(0);
+		}
+
+		for(let v of value) {
+			if(array.contains?.(v)) {
+				array.remove(v);
+			} else
+			if(array.includes(v)) {
+				array.splice(array.indexOf(v), 1);
+			}
+		}
+	}
+
+	__count = 0;
+	__type;
+
+	constructor(value) {
+		super({});
+
+		for(let k in this) {
+			Object.defineProperty(this, k, {
+				enumerable: false
+			});
+		}
+
+		if(value) {
+			if(Array.isArray(value) || Object.isObject(value) && Object.isKindOf(value, this)) {
+				this.add(...value);
+			} else
+			if(Object.isObject(value)) {
+				if(value.type) {
+					if(typeof value.type !== 'function') {
+						throw new TypeError(0);
+					}
+
+					this.__type = value.type;
+				}
+				if(value.elements) {
+					if(!Array.isArray(value.elements)) {
+						throw new TypeError(1);
+					}
+
+					this.add(...value.elements);
+				} else
+				if(value.count) {
+					if(!Number.isInteger(value.count)) {
+						throw new TypeError(2);
+					}
+
+					for(let i = 0; i < value.count; i++) {
+						this.add(value.repeating);
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Количество элементов в массиве.
+	 *
+	 * @returns {number}
+	 */
+	get count() {
+		return this.__count;
+	}
+
+	/**
+	 * Логическое значение, указывающее, пуст ли массив.
+	 *
+	 * @returns {boolean}
+	 */
+	get empty() {
+		return this.count === 0;
+	}
+
+	/**
+	 * Позиция первого элемента в массиве.
+	 *
+	 * @returns {?number}
+	 */
+	get startIndex() {
+		return !this.empty ? 0 : undefined;
+	}
+
+	/**
+	 * Позиция последнего элемента в массиве.
+	 *
+	 * @returns {?number}
+	 */
+	get endIndex() {
+		return !this.empty ? this.count-1 : undefined;
+	}
+
+	/**
+	 * Количество элементов в массиве.
+	 *
+	 * @param {number} value
+	 */
+	set count(value) {
+		if(!Number.isInteger(value))        throw new TypeError(0);
+		if(value < 0 || value > this.count) throw new RangeError(1);
+
+		while(this.count > value) {
+			this.removeLast();
+		}
+	}
+
+	[Symbol.set](self, key, value) {
+		if(typeof key !== 'number' && !key.isInteger()) {
+			self[key] = value; return;
+		} else {
+			key = parseInt(key);
+		}
+		if(this.__type && !Object.isKindOf(value, this.__type)) {
+			throw new TypeError(0);
+		}
+
+		let in_ = key in this;
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers ?? []) {
+				v.function(in_ ? 'willChangeValueForIndex' : 'willAddIndex', key, value);
+			}
+		}
+		if(key >= this.count) {
+			self[this.count] = value;
+			this.__count = this.__count+1;
+		} else {
+			self[key] = value;
+		}
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers ?? []) {
+				v.function(in_ ? 'didChangeValueForIndex' : 'didAddIndex', key, value);
+			}
+		}
+
+		CFEvent.dispatch(undefined, 'CFArrayNotification', { object: this, event: in_ ? 'changed' : 'added', key: key });
+	}
+
+	[Symbol.delete](self, key) {
+		if(!(key in this)) {
+			return;
+		}
+
+		let value = this[key]
+
+		if(typeof key !== 'number' && !key.isInteger()) {
+			delete self[key]
+
+			if(Object.isObject(value) && value !== this) {
+				value.release?.();
+			}
+
+			return;
+		} else {
+			key = parseInt(key);
+		}
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers ?? []) {
+				v.function('willRemoveIndex', key, value);
+			}
+		}
+
+		delete self[key]
+
+		if(Object.isObject(value) && value !== this) {
+			value.release?.();
+		}
+
+		let snoBackup = this.__shouldNotifyObservers;
+
+		this.__shouldNotifyObservers = false;
+		for(let k in this) {
+			if(k >= key) {
+				this[k-1] = this[k]
+			}
+		}
+		delete self[this.count-1]
+		this.__count = this.__count-1;
+		this.__shouldNotifyObservers = snoBackup;
+
+		if(this.__shouldNotifyObservers) {
+			for(let v of this.__observers ?? []) {
+				v.function('didRemoveIndex', key, value);
+			}
+		}
+
+		CFEvent.dispatch(undefined, 'CFArrayNotification', { object: this, event: 'removed', key: key });
+	}
+
+	[Symbol.iterator]() {
+		let done,
+			value,
+			k = 0;
+
+		return {
+			next: () => {
+				if(k < this.count) {
+					done = false;
+					value = this[k]
+					k = k+1;
+				} else {
+					done = true;
+				}
+
+				return {
+					done: done,
+					value: value
+				}
+			}
+		}
+	}
+
+	/**
+	 * Добавляет новый элемент в конец массива.
+	 *
+	 * @param {*} elements
+	 */
+	add(...elements) {
+		if(elements.length === 1) {
+			this[this.count] = elements[0]
+		}
+		if(elements.length > 1) {
+			let indexes = new Array(elements.length).fill().map((v, k) => this.count+k);
+
+			this.__shouldNotifyObservers = false;
+
+			for(let v of this.__observers ?? []) {
+				v.function('willAdd', indexes, elements);
+			}
+			for(let v of elements) {
+				this[this.count] = v;
+			}
+			for(let v of this.__observers ?? []) {
+				v.function('didAdd', indexes, elements);
+			}
+
+			this.__shouldNotifyObservers = true;
+		}
+	}
+
+	/**
+	 * Вставляет новый элемент или элементы массива в указанную позицию.
+	 *
+	 * @param {Object}  o
+	 * @param {?*}      o.element   Элемент
+	 * @param {?*[]}    o.elements  Массив элементов
+	 * @param {number}  o.at        Позиция
+	 */
+	insert({ element, elements, at } = {}) {
+		if(elements && !Array.isArray(elements) && !Object.isKindOf(elements, CFArray)) throw new TypeError(0);
+		if(!Number.isInteger(at))                                                           throw new TypeError(1);
+
+		let left = new Array(at).fill().map((v, k) => this[k]),
+			middle = elements ?? [element],
+			right = new Array(this.count-at).fill().map((v, k) => this[at+k]),
+			sum = [...left, ...middle, ...right],
+			indexes = new Array(middle.length).fill().map((v, k) => at+k);
+
+		this.__shouldNotifyObservers = false;
+
+		for(let v of this.__observers ?? []) {
+			if(!elements) {
+				v.function('willInsertIndex', at, element);
+			} else {
+				v.function('willInsert', indexes, elements);
+			}
+		}
+		for(let k in sum) {
+			this[k] = sum[k]
+		}
+		for(let v of this.__observers ?? []) {
+			if(!elements) {
+				v.function('didInsertIndex', at, element);
+			} else {
+				v.function('didInsert', indexes, elements);
+			}
+		}
+
+		this.__shouldNotifyObservers = true;
+	}
+
+	/**
+	 * Возвращает первый элемент массива, либо первый элемент, удовлетворяющий заданному предикату.
+	 *
+	 * @param   {Object}    o
+	 * @param   {?Function} o.where
+	 * @returns {?*}
+	 */
+	first({ where } = {}) {
+		if(where && typeof where !== 'function')    throw new TypeError(0);
+		if(this.empty)                              return;
+
+		if(!where) {
+			return this[0]
+		} else {
+			for(let v of this) {
+				if(where(v)) {
+					return v;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Возвращает первую позицию, на которой заданный элемент появляется в массиве,
+	 * либо элемент массива удовлетворяет заданному предикату.
+	 *
+	 * @param   {Object}    o
+	 * @param   {?*}        o.of    Элемент.
+	 * @param   {?Function} o.where Предикат.
+	 * @returns {?number}
+	 */
+	firstIndex({ of, where } = {}) {
+		if(where && typeof where !== 'function') {
+			throw new TypeError(0);
+		}
+
+		for(let k = 0; k < this.count; k++) {
+			if(!where ? this[k] === of : where(this[k])) {
+				return k;
+			}
+		}
+	}
+	/**
+	 * Возвращает последний элемент массива, либо последний элемент, удовлетворяющий заданному предикату.
+	 *
+	 * @param   {Object}    o
+	 * @param   {?Function} o.where
+	 * @returns {?*}
+	 */
+	last({ where } = {}) {
+		if(where && typeof where !== 'function')    throw new TypeError(0);
+		if(this.empty)                              return;
+
+		if(!where) {
+			return this[this.count-1]
+		} else {
+			for(let k = this.count-1; k > -1; k--) {
+				if(where(this[k])) {
+					return this[k]
+				}
+			}
+		}
+	}
+
+	/**
+	 * Возвращает последнюю позицию, на которой заданный элемент появляется в массиве,
+	 * либо элемент массива удовлетворяет заданному предикату.
+	 *
+	 * @param   {Object}    o
+	 * @param   {?*}        o.of    Элемент.
+	 * @param   {?Function} o.where Предикат.
+	 * @returns {?number}
+	 */
+	lastIndex({ of, where } = {}) {
+		if(where && typeof where !== 'function') {
+			throw new TypeError(0);
+		}
+
+		for(let k = this.count-1; k > -1; k--) {
+			if(!where ? this[k] === of : where(this[k])) {
+				return k;
+			}
+		}
+	}
+
+	/**
+	 * Возвращает массив, содержащий результаты сопоставления заданной функции с элементами.
+	 *
+	 * @param   {Function} function_
+	 * @returns {CFArray}
+	 */
+	map(function_) {
+		if(typeof function_ !== 'function') {
+			throw new TypeError(0);
+		}
+
+		let map = []
+
+		for(let v of this) {
+			map.push(function_(v));
+		}
+
+		return new this.constructor(map);
+	}
+
+	/**
+	 * Возвращает массив, содержащий элементы, удовлетворяющие заданному предикату.
+	 *
+	 * @param   {Function} function_
+	 * @returns {CFArray}
+	 */
+	filter(function_) {
+		if(typeof function_ !== 'function') {
+			throw new TypeError(0);
+		}
+
+		let filter = []
+
+		for(let v of this) {
+			if(function_(v)) {
+				filter.push(v);
+			}
+		}
+
+		return new this.constructor(filter);
+	}
+
+	/**
+	 * Возвращает логическое значение, указывающее, удовлетворяет ли каждый элемент массива заданному предикату.
+	 *
+	 * @param   {Function} function_
+	 * @returns {boolean}
+	 */
+	allSatisfy(function_) {
+		if(typeof function_ !== 'function') {
+			throw new TypeError(0);
+		}
+
+		for(let v of this) {
+			if(!function_(v)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Возвращает логическое значение, указывающее, содержит ли массив данный элемент.
+	 *
+	 * @param   {Object}    o
+	 * @param   {?*}        o.element
+	 * @param   {?Function} o.where
+	 * @returns {boolean}
+	 */
+	contains({ element, where } = {}) {
+		if(where && typeof where !== 'function') {
+			throw new TypeError(0);
+		}
+
+		for(let v of this) {
+			if(!where ? v === element : where(v)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Возвращает минимальный элемент в массиве.
+	 *
+	 * @returns {*}
+	 */
+	min() {
+		let min;
+
+		for(let v of this) {
+			min = min === undefined ? v : v < min ? v : min;
+		}
+
+		return min;
+	}
+
+	/**
+	 * Возвращает максимальный элемент в массиве.
+	 *
+	 * @returns {*}
+	 */
+	max() {
+		let max;
+
+		for(let v of this) {
+			max = max === undefined ? v : v > max ? v : max;
+		}
+
+		return max;
+	}
+
+	/**
+	 * Удаляет первое вхождение заданного элемента из массива.
+	 *
+	 * @param {*} elements
+	 */
+	remove(...elements) {
+		let indexes = []
+
+		for(let v of elements) {
+			if(this.contains(v)) {
+				indexes.push(this.firstIndex({ of: v }));
+			}
+		}
+
+		if(indexes.length === 1) {
+			delete this[indexes[0]]
+		}
+		if(indexes.length > 1) {
+			this.__shouldNotifyObservers = false;
+
+			for(let v of this.__observers ?? []) {
+				v.function('willRemove', indexes, elements);
+			}
+			for(let k of [...indexes].reverse()) {
+				delete this[k]
+			}
+			for(let v of this.__observers ?? []) {
+				v.function('didRemove', indexes, elements);
+			}
+
+			this.__shouldNotifyObservers = true;
+		}
+	}
+
+	/**
+	 * Удаляет и возвращает первый элемент, либо удаляет указанное количество элементов из начала массива.
+	 *
+	 * @param   {number} times
+	 * @returns {?*}
+	 */
+	removeFirst(times = 1) {
+		if(!Number.isInteger(times))        throw new TypeError(0);
+		if(times < 0 || times > this.count) throw new RangeError(1);
+		if(this.count < 1)                  return;
+
+		let value = times === 1 ? this[0] : undefined;
+
+		for(let i = 0; i < times; i++) {
+			delete this[0]
+		}
+
+		return value;
+	}
+
+	/**
+	 * Удаляет и возвращает последний элемент, либо удаляет указанное количество элементов из конца массива.
+	 *
+	 * @param   {number} times
+	 * @returns {?*}
+	 */
+	removeLast(times = 1) {
+		if(!Number.isInteger(times))        throw new TypeError(0);
+		if(times < 0 || times > this.count) throw new RangeError(1);
+		if(this.count < 1)                  return;
+
+		let value = times === 1 ? this[this.count-1] : undefined;
+
+		for(let i = 0; i < times; i++) {
+			delete this[this.count-1]
+		}
+
+		return value;
+	}
+
+	/**
+	 * Удаляет либо все элементы из массива, либо удовлетворяющие заданному предикату.
+	 *
+	 * @param {Object}      o
+	 * @param {?Function}   o.where     Предикат.
+	 * @param {boolean}     o.keepCount Сохранение количества элементов с очисткой позиций.
+	 */
+	removeAll({ where, keepCount = false } = {}) {
+		if(where && typeof where !== 'function')    throw new TypeError(0);
+		if(typeof keepCount !== 'boolean')          throw new TypeError(1);
+
+		if(!keepCount) {
+			if(!where) {
+				this.count = 0;
+			} else {
+				for(let k = this.count-1; k > -1; k--) {
+					if(where(this[k])) {
+						delete this[k]
+					}
+				}
+			}
+		} else {
+			for(let k = 0; k < this.count; k++) {
+				if(!where || where && where(this[k])) {
+					let value = this[k]
+
+					this[k] = undefined;
+
+					if(Object.isObject(value) && value !== this) {
+						value.release?.();
+					}
+				}
+			}
+		}
+	}
+
+	destructor() {
+		this.remove(...this);
+
+		super.destructor();
+	}
+}
+
+_environment.CFString = class CFString {
+	static splitByLast(string = '', value) {
+		let index = string.lastIndexOf(value);
+
+		return [string.slice(0, index), string.slice(index+1)]
+	}
+}
+
+_environment.CFURL = class CFURL {
+	components(value) {
+		if(typeof value !== 'string') {
+			throw new TypeError();
+		}
+
+		return value.split('/');
+	}
+}
+
+_environment.CFBundle = class CFBundle {
+	static main;
+
+	static async new(URL) {
+		let self = new this();
+
+		if(typeof URL !== 'string') {
+			throw new TypeError(0);
+		}
+
+		URL = URL.match(/(.*(?:\.bundle|\.framework|\.app))(?=\/Contents)?/gi)?.[0]
+
+		if(!URL) {
+			throw new RangeError(1);
+		}
+
+		self.__URL = URL;
+
+		for(let directory of await CFDirectory.content(self.resourcesURL, 'Directories')) {
+			let directoryExtension = '.lproj';
+
+			if(directory.endsWith(directoryExtension)) {
+				let directoryTitle = directory.split(directoryExtension)[0]
+
+				self.localizations[directoryTitle] = {}
+
+				for(let file of await CFDirectory.content(self.resourcesURL+'/'+directory, 'Files')) {
+					let fileExtension = '.strings';
+
+					if(file.endsWith(fileExtension)) {
+						let fileTitle = file.split(fileExtension)[0],
+							fileContent = JSON.parse(await CFFile.content(self.resourcesURL+'/'+directory+'/'+file));
+
+						self.localizations[directoryTitle][fileTitle] = fileContent;
+					}
+				}
+
+				if(self.localizations[directoryTitle].length === 0) {
+					delete self.localizations[directoryTitle]
+				}
+			}
+		}
+
+		let properties = await CFFile.content(self.contentsURL+'/Info.plist'),
+			language = (await CFPreferences.new('Global')).get().PreferredLanguages[0],
+			localizedStrings = self.localizations[language]?.InfoPlist
+
+		if(properties) {
+			self.properties = {
+				...JSON.parse(properties),
+				...localizedStrings ? localizedStrings : {}
+			}
+		}
+
+		return self;
+	}
+
+	__URL;
+
+	properties = {}
+	localizations = {}
+
+	get URL() {
+		return this.__URL;
+	}
+
+	get contentsURL() {
+		return this.URL+'/Contents';
+	}
+
+	get executablesURL() {
+		return this.contentsURL+'/Executables';
+	}
+
+	get resourcesURL() {
+		return this.contentsURL+'/Resources';
+	}
+}
+
+_environment.CFLocalizedString = async (key, bundle) => {
+	let language = (await CFPreferences.new('Global')).get().PreferredLanguages[0],
+		localizedStrings = (bundle ?? CFBundle.main).localizations[language]?.Localized;
+
+	return language && localizedStrings ? localizedStrings[key] ?? value ?? key : value ?? key;
+}
+
+_environment.CFLog = (...arguments_) => {
+	_call('log', ...arguments_);
+}
+
+// ---- //
+
+if(!_call('seInfo', _title)) {
+	_call('seCreate', 'r', _title);
+}
+
+_environment.$CFShared = _call('seInfo', _title).environment;
+
+try {
+	CFBundle.main = await CFBundle.new(CFProcessInfo.shared.path);
+} catch {}

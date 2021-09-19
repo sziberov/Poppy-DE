@@ -5,6 +5,8 @@
 			"Login": "root",
 			"Password": "root",
 			"Group": 0,
+			"Home": "/Users/root",
+			"Shell": "/bin/sh",
 			"Hidden": true,
 			"Title": "Super User",
 			"Image": ""
@@ -14,6 +16,8 @@
 			"Login": "guest",
 			"Password": "",
 			"Group": 2,
+			"Home": "/Users/guest",
+			"Shell": "/bin/sh",
 			"Hidden": false,
 			"Title": "Guest User",
 			"Image": ""
@@ -23,6 +27,8 @@
 			"Login": "dies",
 			"Password": "",
 			"Group": 1,
+			"Home": "/Users/dies",
+			"Shell": "/bin/sh",
 			"Hidden": false,
 			"Title": "DIES",
 			"Image": "/Library/User Images/Flower.png"

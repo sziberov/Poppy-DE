@@ -126,7 +126,12 @@
 					await this.mpCreate(undefined, 'devfs', undefined, '/dev', 'r');
 
 					/*
-					await this.deviceRegister('b', 'disk0s1', undefined, undefined, { physicalPath: 'G:\\' });
+					await this.deviceInstanceRegister(
+						await this.deviceRegister('b', 'disk', undefined, undefined),
+						0,
+						'disk0s1',
+						{ physicalPath: 'G:\\' }
+					);
 					await this.fsCreateDirectory(undefined, '/Volumes/HD');
 					await this.mpCreate(undefined, 'ufs', '/dev/disk0s1', '/Volumes/HD', 'u');
 					console.log(await this.fsReadDirectory('/Volumes/HD'));
@@ -535,7 +540,7 @@
 				if(this.fs.find(v => v.title === title))	throw new RangeError('Object with same title already exists');
 				if(![0, 1].includes(type))					throw new RangeError('Incorrect type');
 
-				let ID = Math.max(...this.fs.map(v => v.ID).initialize(-1))+1;
+				let ID = this.fs.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
 				for(let k in functions) {
 					functions[k] = functions[k].bind(this);
@@ -637,7 +642,7 @@
 				if(!['r', 'r+', 'w', 'w+', 'a', 'a+'].includes(mode))			throw new RangeError('Incorrect mode');
 				if(['r', 'r+'].includes(mode) && !await this.fsExists(path))	throw new RangeError('Unable to find file');
 
-				let ID = Math.max(...this.files.filter(v => v.processID === processID).map(v => v.ID).initialize(-1))+1;
+				let ID = this.files.filter(v => v.processID === processID).reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
 				this.files.push({
 					ID: ID,
@@ -794,7 +799,7 @@
 				if(!['c', 'b'].includes(type))						throw new RangeError('Incorrect type');
 				if(!/^[a-z0-9-/]+$/i.test(title))					throw new RangeError('Incorrect title');
 
-				let ID = Math.max(...this.devices.map(v => v.ID).initialize(-1))+1;
+				let ID = this.devices.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
 				this.devices.push({
 					ID: ID,
@@ -846,7 +851,7 @@
 			 */
 			deviceInstanceCreate(deviceMajorID, deviceMinorID, title, data = {}) {
 				let device = this.devices.find(v => v.ID === deviceMajorID),
-					ID = deviceMinorID ?? Math.max(...device.instances.map(v => v.ID).initialize(-1))+1;
+					ID = deviceMinorID ?? device.instances.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
 				device.instances.push({
 					ID: ID,
@@ -1200,7 +1205,7 @@
 					throw new Error(`"${ targetPath }" is not a directory`);
 				}
 
-				let ID = Math.max(...this.mp.map(v => v.ID).initialize(-1))+1,
+				let ID = this.mp.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1,
 					deviceID = sourcePath !== undefined ? (await this.fsStatistics(sourcePath)).internalDeviceID : undefined;
 
 				this.mp.push({
@@ -1630,9 +1635,9 @@
 			}
 
 			eventChannelCreate(processID) {
-				let ID = Math.max(...this.channels.map(v => v.ID).initialize(-1))+1;
+				let ID = this.channels.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
-				this.catchers.push({
+				this.channels.push({
 					ID: ID,
 					processID: processID
 				});
@@ -1655,7 +1660,7 @@
 				if(typeof title !== 'string')		throw new TypeError('Incorrect title');
 				if(typeof function_ !== 'function')	throw new TypeError('Incorrect function');
 
-				let ID = Math.max(...this.catchers.map(v => v.ID).initialize(-1))+1;
+				let ID = this.catchers.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
 				this.catchers.push({
 					ID: ID,
@@ -1711,7 +1716,7 @@
 				if(typeof delay !== 'number')		throw new TypeError('Incorrect delay');
 				if(typeof function_ !== 'function')	throw new TypeError('Incorrect function');
 
-				let ID = Math.max(...this.timers.map(v => v.ID).initialize(-1))+1,
+				let ID = this.timers.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1,
 					timer;
 
 				if(!repeat) {
@@ -1780,7 +1785,7 @@
 				if(!['r', 'u'].includes(access))					throw new RangeError('Incorrect access');
 				if(title && this.se.find(v => v.title === title))	throw new RangeError(`Object with same title already exists`);
 
-				let ID = Math.max(...this.se.map(v => v.ID).initialize(-1))+1;
+				let ID = this.se.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
 				this.se.push({
 					ID: ID,
@@ -1879,10 +1884,9 @@
 				this.kdbAdd(`seDestroy${ processID ? '@'+processID : '' }: Object ${ se.ID } destroyed`);
 			}
 
-			async dlLoad(processID, path, title) {
-				if(!processID || !path || !title) {
-					throw new Error('One or several arguments missing');
-				}
+			async dlLoad(processID, path) {
+				if(processID && typeof processID !== 'number')	throw new TypeError('Incorrect process ID');
+				if(typeof path !== 'string')					throw new TypeError('Incorrect path');
 
 				let process = this.processes.find(v => v.ID === processID),
 					dl = this.dl.find(v => v.path === path);
@@ -1893,24 +1897,25 @@
 
 				if(!dl) {
 					if(!await this.fsExists(path)) {
-						throw new Error(`Unable to access requested library`);
+						throw new Error('Unable to access requested library');
 					}
 
 					dl = {
-						ID: Math.max(...this.dl.map(v => v.ID).initialize(-1))+1,
+						ID: this.dl.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1,
 						processIDs: [],
 						path: path,
+						title: path.split('/').pop().replace(`'`, '_'),
 						code: undefined
 					}
 
 					try {
 						dl.code = this.codePrepare(`
-							var ${ title } = async (_title, _path) => {
+							_environment['_dl_${ dl.title }'] = async (_title, _path) => {
 								${ await this.fsRead(path) }
 							}
 						`);
 					} catch(error) {
-						error.message = `Unable to parse requested library`;
+						error.message = 'Unable to parse requested library';
 
 						throw error;
 					}
@@ -1921,6 +1926,7 @@
 							dlLoad@${ processID }: Object created:
 								ID: ${ dl.ID }
 								Path: ${ path }
+								Title: "${ dl.title }"
 						`);
 					}
 				}
@@ -1939,12 +1945,12 @@
 					}
 
 					try {
-						this.sbExecute(dl.code, process.environment, title);
+						this.sbExecute(dl.code, process.environment, dl.title);
 					} catch(error) {
 						a(error);
 					}
-					process.environment[title](title, path).then(value => {
-						process.environment[title] = value;
+					process.environment['_dl_'+dl.title](dl.title, path).then(v => {
+						delete process.environment['_dl_'+dl.title]
 						resolve(dl.ID);
 					}, error => {
 						a(error);
@@ -1984,6 +1990,66 @@
 			}
 
 			/**
+			 * Интерфейс для Dynamic Linker'а. Поддерживает как обычные библиотеки, так и framework'и.
+			 *
+			 * С помощью переменных окружения `_dlLibrariesPaths` и `_dlFrameworksPaths` можно контролировать
+			 * пути поиска (строка с разделением через `;`). ~~Переменная `_dlFrameworksPaths` изменяется автоматически
+			 * в зависимости от подключаемых framework'ов.~~
+			 *
+			 * _Этот метод является частью Objective-Root._
+			 *
+			 * @param {Object}	process	Объект процесса.
+			 * @param {string}	title	Название библиотеки или framework'а в формате `library` или `<framework>`.
+			 */
+			async dlImport(process, title) {
+				if(!Object.isObject(process))					throw new TypeError('Incorrect process');
+				if(typeof title !== 'string')					throw new TypeError('Incorrect title');
+				if(!this.processes.find(v => v === process))	throw new RangeError('Incorrect process');
+				if(title.length === 0 || title === '<>')		throw new RangeError('Incorrect title');
+
+				let framework = /^<.+>$/.test(title),
+					paths = process.environment['_dl'+(framework ? 'Frameworks' : 'Libraries')+'Paths']
+						.split(';')
+						.filter(v => v.length > 0)
+						.map(v => this.urlPathNormalize(v)
+							.replace(/^~\//, '/Users/'+process.user+'/')
+							.replace(/\/$/, '')
+						),
+					path;
+
+				title = framework ? title.substring(1, title.length-1) : title;
+
+				for(path of paths) {
+					path = framework ? path+'/'+title+'.framework/Contents/Executables/'+title : path+'/'+title+'.dylib';
+
+					if(await this.fsExists(path)) {
+						break;
+					} else {
+						path = undefined;
+					}
+				}
+
+				if(!path) {
+					throw new Error(`Unable to find requested ${ title } ${ framework ? 'framework' : 'library' }`);
+				}
+
+				return new Promise((resolve, reject) => {
+					this.dlLoad(process.ID, path).then(async () => {
+						this.kdbAdd(`dlImport: Successfully imported ${ title } ${ framework ? 'framework' : 'library' } into process ${ process.ID }`);
+						await this.eventThrow(undefined, process.ID, 'libraryListChanged', { event: 'added', title: title, path: path });
+
+						resolve();
+					}, error => {
+						if(error.message?.includes('Library already attached')) {
+							return resolve();
+						}
+
+						reject(`Failed to import requested ${ title } ${ framework ? 'framework' : 'library' }${ error.message ? ': '+error.message : '' }`);
+					});
+				});
+			}
+
+			/**
 			 * Регистрирует устройство-терминал с названием вида `term*`.
 			 *
 			 * @param	{number} processID Идентификатор процесса.
@@ -2009,7 +2075,7 @@
 			}
 
 			async terminalCreate(process) {
-				let ID = Math.max(...this.terminals.map(v => v.ID).initialize(0))+1;
+				let ID = this.terminals.reduce((a, b) => b.ID > a ? b.ID : a, 0)+1;
 
 				this.terminals.push({
 					ID: ID,
@@ -2202,7 +2268,7 @@
 					info: (a) => this.processInfo(a ?? process.ID),
 				//	fork: (a) => this.processFork(process.ID, a),
 					kill: (a) => this.processKill(a ?? process.ID),
-					import: (...a) => this.classImport(process, ...a),
+					import: (...a) => this.dlImport(process, ...a),
 					protected: (...a) => this.classProtected(process.ID, ...a),
 					system: () => this.system(),
 					relaunch: () => this.environmentRelaunch(process),
@@ -2234,20 +2300,20 @@
 					executable = await this.fsRead(path);
 
 				if(terminalID != null && !this.terminals.find(v => v.ID === terminalID)) {
-					throw new Error(`Incorrect terminal`);
+					throw new Error('Incorrect terminal');
 				}
 				if(terminalID == null) {
 					terminalID = await this.terminalCreate();
 				}
 				if(!user) {
-					throw new Error(`Incorrect authorization`);
+					throw new Error('Incorrect authorization');
 				}
 				if(!executable) {
-					throw new Error(`Unable to access executable`);
+					throw new Error('Unable to access executable');
 				}
 
-				var process = {
-					ID: Math.max(...this.processes.map(v => v.ID).initialize(0))+1,
+				let process = {
+					ID: this.processes.reduce((a, b) => b.ID > a ? b.ID : a, 0)+1,
 					parentID: processID ?? 0,
 					terminalID: terminalID,
 					user: user,
@@ -2257,23 +2323,17 @@
 				}
 
 				process.environment = this.sbCreate(new Proxy({
+					_dlLibrariesPaths: '~/lib;/usr/lib;/lib',
+					_dlFrameworksPaths: '~/Library/Frameworks;/Library/Frameworks;/Environment/Library/Frameworks',
 					_call: (...a) => this.processCall(process, ...a),
 					_import: (...a) => this.processCall(process, 'import', ...a),
 					_protected: (...a) => this.processCall(process, 'protected', ...a)
 				}, {
 					get: (target, key) => {
-						if(key === '_path') {
-							return process.path;
-						}
-						if(key === '_arguments') {
-							return [...process.arguments]
-						}
-						if(['_environment', 'window'].includes(key)) {
-							return target;
-						}
-						if(key === 'require') {
-							return;
-						}
+						if(key === '_path')								return process.path;
+						if(key === '_arguments')						return [...process.arguments]
+						if(['_environment', 'window'].includes(key))	return target;
+						if(key === 'require')							return;
 
 						return target[key] ?? this.environment[key]
 					}
@@ -2399,58 +2459,6 @@
 					this.kdbAdd(`processKill: Process ${ processID } stopped`);
 				}
 				this.eventThrow(undefined, undefined, 'processListChanged', { event: 'removed', value: processID });
-			}
-
-			/**
-			 * Импортирует классы из фреймворка в окружение процесса.
-			 *
-			 * _Этот метод является частью Objective-Root._
-			 *
-			 * @param {Object}	process		Объект процесса.
-			 * @param {string}	framework	Название фреймворка.
-			 * @param {?string}	class_		Название класса.
-			 */
-			async classImport(process, framework, class_) {
-				class_ ??= framework;
-
-				let pathSearch = [
-					//	'/Frameworks/'+framework+'.framework/Contents',
-						'/Library/Frameworks/'+framework+'.framework/Contents',
-						'/Environment/Library/Frameworks/'+framework+'.framework/Contents'
-					],
-					path;
-
-				for(let v of pathSearch) {
-					let a = v+'/Classes/'+class_,
-						b = await this.fsExists(a);
-
-					if(b) {
-						path = a; break;
-					}
-				}
-
-				if(!path) {
-					throw new Error(`Unable to access requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework`);
-				}
-
-				return new Promise((resolve, reject) => {
-					this.dlLoad(process.ID, path, class_).then(async () => {
-						if(framework === class_) {
-							this.kdbAdd(`classImport: Successfully imported main class of ${ framework } framework into process ${ process.ID }`);
-							await this.eventThrow(undefined, process.ID, 'frameworkListChanged', { event: 'added', title: framework, path: path });
-						} else
-						if(this.verbose) {
-							this.kdbAdd(`classImport: Successfully imported ${ class_ } class of ${ framework } framework into process ${ process.ID }`);
-						}
-						resolve();
-					}, error => {
-						if(error.message?.includes('Library already attached')) {
-							return resolve();
-						}
-
-						reject(`Failed to import requested ${ framework !== class_ ? class_+' class of ' : '' }${ framework } framework${ error.message ? ': '+error.message : '' }`);
-					});
-				});
 			}
 
 			/**
@@ -2599,8 +2607,8 @@
 			/**
 			 * Подготавливает код для исполнения в процессах.
 			 * - Заменяет любое несанкционированное использование `classProtected()` на undefined.
-			 * - ~~Заменяет обычные `import` на вызовы `await import()`.~~
-			 * - Добавляет `await` передо всеми вызовами `import()`.
+			 * - ~~Заменяет обычные `import` на вызовы `await _import()`.~~
+			 * - Добавляет `await` передо всеми вызовами `_import()`.
 			 * - Заменяет обычный синтаксис приватных полей на нужный для `classProtected()`.
 			 * - Заменяет обычные обращения к полям на проходящие через `classProtected()`.
 			 *

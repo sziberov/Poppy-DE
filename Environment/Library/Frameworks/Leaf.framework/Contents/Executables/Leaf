@@ -1,0 +1,2126 @@
+/**
+ * Leaf Framework
+ *
+ * Содержит инструменты для создания графических приложений.
+ */
+
+_import('<CoreFoundation>');
+_import('<CoreGraphics>');
+
+_environment.LFObject = class LFObject {
+	static __friends__ = [CFObject]
+
+	__element;
+	__properties = {
+		style: new CFObject({
+			'@@set': (s, k, v) => {
+				s[k] = v;
+
+				if(this.element) {
+					this.element.css(k, v);
+				}
+			}
+		}),
+		attributes: new CFObject({
+			'@@set': (s, k, v) => {
+				s[k] = v;
+
+				if(this.element) {
+					if(v !== undefined) {
+						this.element.attr(k, v);
+					} else {
+						this.element.removeAttr(k);
+					}
+				}
+			}
+		}),
+		text: ''
+	}
+
+	get element() {
+		return this.__element;
+	}
+
+	get style() {
+		return this.__properties.style;
+	}
+
+	get attributes() {
+		return this.__properties.attributes;
+	}
+
+	get text() {
+		return this.__properties.text;
+	}
+
+	set style(value) {
+		let style = this.__properties.style;
+
+		for(let v in style) {
+			delete style[v]
+		}
+		Object.assign(style, value);
+	}
+
+	set attributes(value) {
+		let attributes = this.__properties.attributes;
+
+		for(let v in attributes) {
+			delete attributes[v]
+		}
+		Object.assign(attributes, value);
+	}
+
+	set text(value) {
+		this.__properties.text = value;
+		if(this.element) {
+			this.element.text(value);
+		}
+	}
+
+	create() {
+		return $('<'+this.constructor.name+'/>')
+			.css(this.style)
+			.attr(this.attributes)
+			.text(this.text);
+	}
+
+	add() {
+		if(!this.element) {
+			this.__element = this.create().appendTo('body');
+		}
+
+		return this;
+	}
+
+	remove() {
+		if(this.element) {
+			this.element.remove();
+			this.__element = undefined;
+		}
+
+		return this;
+	}
+
+	release() {
+		let environment = CFProcessInfo.shared.environment;
+
+		this.remove();
+		for(let v in environment) {
+			if(environment.hasOwnProperty(v) && environment[v] === this) {
+				delete environment[v]
+			}
+		}
+	}
+}
+
+_environment.LFResponder = class LFResponder extends LFObject {
+	constructor() {
+		super();
+	}
+
+	create() {
+		let create = super.create();
+
+		for(let v of ['click', 'dblclick', 'contextmenu', 'mouseover', 'mouseenter', 'mouseout', 'mouseleave', 'mousedown', 'mouseup', 'mousemove', 'drag']) {
+			if(typeof this[v] === 'function') {
+				if(v !== 'drag') {
+					create.on(v, this[v].bind(this));
+				} else {
+					this.dragCache = []
+
+					let dragCache = this.dragCache;
+
+					create.on('mousedown', (e) => {
+						if(e.button === 0) {
+							dragCache = [true, e.pageX, e.pageY]
+						}
+					});
+					$(document).on('mousemove mouseup', (e) => {
+						if(e.type === 'mousemove' && dragCache[0]) {
+							this['drag'](e, dragCache);
+						}
+						if(e.type === 'mouseup') {
+							dragCache[0] = false;
+						}
+					});
+				}
+			}
+		}
+
+		return create;
+	}
+}
+
+_environment.LFView = class LFView extends LFResponder {
+	__superview;
+	__subviews = new CFArrayOld();
+	__subviews_;
+	__layer = new CGLayer();
+	__tag;
+	__type;
+	__tight;
+	__xAlign;
+	__yAlign;
+
+//	_constraints = new CFArrayOld();
+
+	constructor({ tag, type = 'horizontal', tight = false, xAlign = 'start', yAlign = 'start', subviews } = {}) {
+		super();
+
+		this.__subviews_ = subviews;
+		this.__type = type;
+		this.__tight = tight;
+		this.__xAlign = xAlign;
+		this.__yAlign = yAlign;
+
+		this.tag = tag;
+
+	//	CFArrayOld.addObserver(this.__subviews, () => {});
+	}
+
+	get superview() {
+		return this.__superview;
+	}
+
+	get subviews() {
+		return this.__subviews;
+	}
+
+	get tag() {
+		return this.__tag;
+	}
+
+	set superview(value) {
+		this.__superview = value;
+	}
+
+	set subviews(value) {
+		if(value && !Array.isArray(value)) {
+			throw new TypeError(0);
+		}
+
+		for(let k = this.subviews.length; k--;) {
+			this.subviews[k].release();
+		}
+		if(value) {
+			this.addSubviews(value.filter(v => v));
+		}
+	}
+
+	set tag(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__tag = value;
+	}
+
+	create() {
+		if(Object.isMemberOf(this, LFView)) {
+			this.attributes = {
+				'vertical': this.__type === 'vertical' ? '' : undefined,
+				'tight': this.__tight === true ? '' : undefined,
+				['x'+this.__xAlign]: ['center', 'end'].includes(this.__xAlign) ? '' : undefined,
+				['y'+this.__yAlign]: ['center', 'end', 'stretch'].includes(this.__yAlign) ? '' : undefined
+			}
+			if(this.__subviews_) {
+				this.subviews = this.__subviews_;
+			}
+		}
+
+		return super.create();
+	}
+
+	add(view) {
+		let mode =
+				!view ? 'View' :
+				view.subviews && this.subviews ? 'Subview' :
+				undefined,
+			add = {
+				View: () => {
+					super.add();
+
+					return true;
+				},
+				Subview: () => {
+					let did = false;
+
+					if(!view.subviews.contains(this)) {
+						did = true;
+
+						view.subviews.add(this);
+					}
+					if(!this.element && view.element || view.element && !$.contains(view.element[0], this.element[0])) {
+						did = true;
+
+						this.remove();
+						this.__element = this.create().appendTo(view.element);
+					}
+					this.superview = view;
+
+					return did;
+				}
+			}
+
+		if(mode && add[mode]()) {
+			this.addSubviews(this.subviews);
+			if(typeof this.didAdd === 'function') {
+				this.didAdd();
+			}
+			if(typeof this.superview?.didAddSubview === 'function') {
+				this.superview.didAddSubview();
+			}
+		}
+
+		return this;
+	}
+
+	addSubviews(subviews) {
+		for(let v of subviews) {
+			v.add(this);
+		}
+
+		return this;
+	}
+
+	get(mode, value) {
+		return {
+			Superview: () => {
+				let superview = this.superview;
+
+				while(superview) {
+					if(!Object.isKindOf(superview, value)) {
+						if(!superview.superview) {
+							superview = undefined;
+
+							break;
+						} else {
+							superview = superview.superview;
+						}
+					} else {
+						break;
+					}
+				}
+
+				return superview;
+			},
+			Siblings: () => {
+				return this.superview.subviews.filter(v => v !== this && Object.isKindOf(v, value));
+			},
+			Subviews: () => {
+				/*
+				var subview = undefined,
+					current = this;
+
+				function check() {
+					for(var v of current.subviews) {
+						if(Object.isKindOf(v, value)) {
+							subview = v;
+							return subview;
+						}
+					}
+				}
+				check();
+
+				return subview;
+				*/
+
+				return this.subviews.filter(v => Object.isKindOf(v, value));
+			},
+			TaggedSubviews: () => {
+				return this.subviews.filter(v => v.tag === value);
+			}
+		}[mode]();
+	}
+
+	remove() {
+		super.remove();
+
+		for(let v of this.subviews) {
+			v.remove();
+		}
+	}
+
+	release() {
+		for(let v of this.subviews) {
+			v.superview = undefined;
+		//	v.release();
+		}
+		if(!this.superview) {
+			super.release();
+		} else {
+			this.remove();
+			this.superview.subviews.remove(this);
+		//	this.superview.subviews = this.superview.subviews.filter(v => v !== this);
+		}
+	}
+}
+
+_environment.LFConstraint = class LFConstraint {
+	constructor({ view, multiplier = 1, side, position, margin = 16, direction = 'out' }) {
+		return {
+			top: 0,
+			left: 0
+		}
+	}
+}
+
+_environment.LFControl = class LFControl extends LFView {
+	__action;
+
+	constructor({ action } = {}) {
+		super(...arguments);
+
+		this.action = action;
+	}
+
+	get highlighted() {
+		return this.attributes['highlighted'] === '';
+	}
+
+	get activated() {
+		return this.attributes['activated'] === '';
+	}
+
+	get enabled() {
+		return this.attributes['enabled'] === '';
+	}
+
+	get action() {
+		return this.__action;
+	}
+
+	set highlighted(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.attributes['highlighted'] = value ? '' : undefined;
+	}
+
+	set activated(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.attributes['activated'] = value ? '' : undefined;
+	}
+
+	set action(value) {
+		if(value && typeof value !== 'function') {
+			throw new TypeError();
+		}
+
+		this.__action = value;
+		this.attributes['enabled'] = value ? '' : undefined;
+	}
+
+	click() {
+		this.action?.();
+	}
+
+	mouseover() {
+		this.highlighted = true;
+	}
+
+	mouseleave() {
+		this.highlighted = false;
+		this.activated = false;
+	}
+
+	mousedown(event, exceptView) {
+		event.stopPropagation();
+		if(event.button === 0) {
+			this.activated = true;
+		}
+		LFMenu.deactivateAll(exceptView);
+		this.get('Superview', LFWindow)?.focus();
+	}
+
+	mouseup() {
+		this.activated = false;
+	}
+}
+
+_environment.LFButton = class LFButton extends LFControl {
+	__minWidth;
+	__title;
+	__image;
+	__menu;
+
+	constructor({ minWidth, title = 'Button', image, menu } = {}) {
+		super(...arguments);
+
+		this.minWidth = minWidth;
+		this.title = title;
+		this.image = image;
+		this.menu = menu;
+
+	//	this.attributes['tabIndex'] = 0;
+	}
+
+	get minWidth() {
+		return this.__minWidth;
+	}
+
+	get title() {
+		return this.__title;
+	}
+
+	get image() {
+		return this.__image;
+	}
+
+	get menu() {
+		return this.__menu;
+	}
+
+	set minWidth(value) {
+		if(value) {
+			if(typeof value !== 'number')	throw new TypeError();
+			if(value < 0)					throw new RangeError();
+		}
+
+		this.__minWidth = value;
+		this.style['min-width'] = value || '';
+	}
+
+	set title(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
+		}
+
+		this.__title = value;
+		this.attributes['title'] = value === '' ? undefined : value;
+	}
+
+	set image(value) {
+		if(value && !Object.isKindOf(value, LFImage)) {
+			throw new TypeError();
+		}
+
+		this.__image = value;
+		this.attributes['image'] = value ? '' : undefined;
+		this.image?.release();
+		if(value) {
+			this.addSubviews([value]);
+		}
+	}
+
+	set menu(value) {
+		if(value && !Object.isKindOf(value, LFMenu)) {
+			throw new TypeError();
+		}
+
+		this.__menu = value;
+		this.attributes['menu'] = value ? '' : undefined;
+		this.menu?.release();
+		if(value) {
+			this.attributes['enabled'] = '';
+			this.addSubviews([value]);
+		} else
+		if(!this.action) {
+			this.attributes['enabled'] = undefined;
+		}
+	}
+
+	mouseleave() {
+		this.highlighted = false;
+		if(!this.menu) {
+			this.activated = false;
+		}
+	}
+
+	mousedown(event) {
+		super.mousedown(event, this.menu);
+
+		if(!this.action && this.menu && event.button === 0) {
+			this.menu.setActivated('Toggle', this);
+		} else
+		if(this.action && this.menu && event.button === 0) {
+			// TODO
+		}
+	}
+
+	mouseup() {
+		if(!this.menu) {
+			super.mouseup();
+		}
+	}
+
+	didAdd() {
+		this.menu.add(this);
+	}
+
+	release() {
+		this.menu?.release();
+
+		super.release();
+	}
+}
+
+_environment.LFMenubar = $CFShared.LFMenubar ?? class LFMenubar extends LFView {
+	static __friends__ = [CGSWindowServer]
+
+	static __shared;
+
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
+	__transparent;
+
+	constructor({ transparent = false } = {}) {
+		super(...arguments);
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			throw new Error('Only one instance allowed');
+		}
+
+		this.transparent = transparent;
+
+		this.subviews.add(
+			new LFMenu({ tag: 'main', autoactivatesItems: false }),
+			new LFMenu({ tag: 'application', autoactivatesItems: false }),
+			new LFMenu({ tag: 'status', autoactivatesItems: false })
+		);
+
+		this.applicationMenu.attributes['application'] = '';
+		this.statusMenu.attributes['status'] = '';
+	}
+
+	get transparent() {
+		return this.__transparent;
+	}
+
+	get mainMenu() {
+		return this.subviews.find(v => v.tag === 'main');
+	}
+
+	get applicationMenu() {
+		return this.subviews.find(v => v.tag === 'application');
+	}
+
+	get statusMenu() {
+		return this.subviews.find(v => v.tag === 'status');
+	}
+
+	set transparent(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.__transparent = value;
+		this.attributes['transparent'] = value === true ? '' : undefined;
+	}
+
+	draw() {
+		let layer = this.__layer;
+
+		layer.width = CGScreen.size.width;
+		layer.height = 48;
+
+		let width = layer.width,
+			height = layer.height/2,
+			body = new CGLayer({ width: width, height: height }),
+			pitTop = new CGLayer({ width: width, height: 1 }),
+			pitBottom = new CGLayer({ y: height-1, width: width, height: 1 }),
+			shadow = new CGLayer({ y: height, width: width, height: height });
+
+		if(!this.transparent) {
+			body.backgroundGradient = [
+				[
+					[0, CGColor('99.375', '99.375', '99.375')],
+					[1, CGColor('50', '50', '50')]
+				],
+				0, 0, 0, height
+			]
+			pitTop.backgroundColor = CGColor('100', '100', '100');
+			pitBottom.backgroundColor = CGColor('25', '25', '25');
+		} else {
+			let blurMask = new CGLayer({ width: width, height: height });
+
+			blurMask.backgroundColor = CGColor('100', '100', '100');
+
+			body.backgroundFilters = [{ title: 'blur', mask: blurMask, amount: 4 }]
+			body.backgroundGradient = [
+				[
+					[0, CGColor('100', '100', '100', 0.75)],
+					[1, CGColor('100', '100', '100', 0.25)]
+				],
+				0, 0, 0, height
+			]
+			pitTop.backgroundColor = CGColor('100', '100', '100', 0.25);
+			pitBottom.backgroundColor = CGColor(0, 0, 0, 0.5);
+		}
+
+		shadow.backgroundGradient = [
+			[
+				[0, CGColor(0, 0, 0, 0.25)],
+				[1, CGColor(0, 0, 0, 0)]
+			],
+			0, 0, 0, height
+		]
+
+		layer.sublayers.add(body, pitTop, pitBottom, shadow);
+	}
+
+	release() {
+		super.release();
+
+		this.constructor.__shared = undefined;
+	}
+}
+
+_environment.LFMenu = class LFMenu extends LFView {
+	__x;
+	__y;
+	__corners = []
+	__title;
+	__autoactivatesItems;
+
+	target;
+	application;
+
+	constructor({ x = 24, y = 48, corners, title = 'Menu', items, autoactivatesItems = true } = {}) {
+		super(...arguments);
+
+		this.origin = {
+			x: x,
+			y: y,
+			corners: corners
+		}
+		this.items = items;
+		this.autoactivatesItems = autoactivatesItems;
+	}
+
+	get activated() {
+		return this.attributes['activated'] === '';
+	}
+
+	get origin() {
+		return {
+			x: this.__x,
+			y: this.__y,
+			corners: [...this.__corners]
+		}
+	}
+
+	get title() {
+		return this.__title;
+	}
+
+	get items() {
+		return this.subviews.filter(v => Object.isKindOf(v, LFMenuItem));
+	}
+
+	get autoactivatesItems() {
+		return this.__autoactivatesItems;
+	}
+
+	set activated(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.attributes['activated'] = value ? '' : undefined;
+	}
+
+	set origin(value) {
+		if(!Object.isObject(value))										throw new TypeError();
+		if(!value.x || !value.y)										throw new TypeError();
+		if(typeof value.x !== 'number' || typeof value.y !== 'number')	throw new TypeError();
+		if(value.corners && !Array.isArray(value.corners))				throw new TypeError();
+		if(value.x < 0 || value.y < 0)									throw new RangeError();
+
+		this.__x = value.x;
+		this.__y = value.y;
+		this.__corners = value.corners || []
+		this.style['transform'] = 'translate('+value.x+'px, '+value.y+'px)';
+		for(let v of ['topLeft', 'topRight', 'bottomLeft', 'bottomRight']) {
+			this.attributes[v] = (value.corners || []).includes(v) ? '' : undefined;
+		}
+	}
+
+	set title(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
+		}
+
+		this.__title = value;
+	}
+
+	set items(value) {
+		if(value && !Array.isArray(value)) {
+			throw new TypeError();
+		}
+
+		this.subviews = value ? value.filter(v => Object.isKindOf(v, LFMenuItem)) : undefined
+	}
+
+	set autoactivatesItems(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.__autoactivatesItems = value;
+	}
+
+	mousedown(event) {
+		event.stopPropagation();
+	}
+
+	add(view) {
+		super.add(Object.isKindOf(view, LFMenubar) ? view : LFWorkspace.shared);
+
+		return this;
+	}
+
+	setActivated(mode, view) {
+		this.target = view ? view : this.target;
+
+		if((mode === true || mode === 'Toggle') && this.activated === false) {
+			let topDepth = 0,
+				element = this.target?.element,
+				side = this.target?.get('Superview', LFMenubar) ? 'Bottom' : 'TopRight',
+				origin = {
+					Default: () => {
+						return { x: Math.round(this.__x), y: Math.round(this.__y), corners: [] }
+					},
+					Bottom: () => {
+						let offsetX = element.offset().left || this.__x,
+							offsetY = element.offset().top+element.outerHeight() || this.__y;
+
+						offsetX = offsetX+(offsetX+this.element.outerWidth() > LFWorkspace.shared.element.outerWidth() ? element.outerWidth()-this.element.outerWidth() : 0);
+
+						return { x: Math.round(offsetX), y: Math.round(offsetY), corners: ['topLeft', 'topRight'] }
+					},
+					TopRight: () => {
+						let offsetX = element.offset().left+element.outerWidth() || this.__x,
+							offsetY = element.offset().top-4 || this.__y;
+
+						return { x: Math.round(offsetX), y: Math.round(offsetY), corners: ['topLeft'] }
+					}
+				}[element ? side : 'Default']();
+
+			for(let v of [...LFWorkspace.shared.get('Subviews', this), ...LFWorkspace.shared.get('Subviews', LFWindow)]) {
+				topDepth = v.element ? Math.max(topDepth, Number.parseInt(v.element.css('z-index'))) : 0;
+			}
+			this.style['z-index'] = topDepth+1;
+			if(Object.isKindOf(this.target, LFButton) || Object.isKindOf(this.target, LFMenuItem)) {
+				if(Object.isKindOf(this.target, LFButton)) {
+					this.target.menu = this;
+				}
+				this.target.activated = true;
+			}
+			this.origin = origin;
+			this.activated = true;
+		} else
+		if((mode === false || mode === 'Toggle') && this.activated === true) {
+			if(Object.isKindOf(this.target, LFButton) || Object.isKindOf(this.target, LFMenuItem)) {
+				this.target.activated = false;
+			}
+			this.activated = false;
+		}
+		for(let v of this.subviews) {
+			v.highlighted = false;
+			if(v.menu) {
+				v.activated = false;
+				v.menu.setActivated(false);
+			}
+		}
+	}
+
+	release() {
+		this.setActivated(false);
+		for(let v of this.subviews) {
+			v.menu?.release();
+		}
+
+		super.release();
+	}
+
+	static deactivateAll(view) {
+		let exceptList = [],
+			exceptCheck = () => {
+				if(view) {
+					if(Object.isKindOf(view, LFMenu)) {
+						exceptList.push(view);
+
+						view = view.target;
+					} else
+					if(Object.isKindOf(view, LFMenuItem)) {
+						view = view.superview;
+					} else {
+						view = undefined;
+					}
+					exceptCheck();
+				}
+			}
+
+		exceptCheck();
+		for(let v of LFWorkspace.shared.get('Subviews', this).filter(v => !exceptList.includes(v))) {
+			v.setActivated(false);
+		}
+	}
+}
+
+_environment.LFMenuItem = class LFMenuItem extends LFButton {
+	constructor({ title = 'MenuItem' } = {}) {
+		super(...arguments);
+	}
+
+	click() {}
+
+	mouseover() {
+		let shouldActivate = false;
+
+		this.highlighted = true;
+		if(this.menu) {
+			if(this.superview.autoactivatesItems) {
+				shouldActivate = true;
+			} else {
+				for(let v of this.get('Siblings', this).filter(v => v.menu)) {
+					if(v.activated) {
+						shouldActivate = true; break;
+					}
+				}
+			}
+		}
+		if(shouldActivate) {
+			this.menu.setActivated(true, this);
+		}
+		if(this.superview.autoactivatesItems && this.action || shouldActivate) {
+			for(let v of this.get('Siblings', this).filter(v => v.menu)) {
+				v.menu.setActivated(false);
+			}
+		}
+	}
+
+	mousedown(event) {
+		if(event.button === 0) {
+			if(this.action && !this.menu) {
+				this.activated = true;
+				for(let v of this.get('Siblings', this).filter(v => v.menu)) {
+					v.menu.setActivated(false);
+				}
+			} else
+			if(this.menu && !this.superview.autoactivatesItems) {
+				this.menu.setActivated('Toggle', this);
+				LFMenu.deactivateAll(this.menu);
+			}
+		}
+	}
+
+	mouseup() {
+		if(this.action) {
+			if(!this.menu) {
+				this.activated = false;
+				LFMenu.deactivateAll();
+			}
+			this.action();
+		}
+	}
+
+	separator() {
+		this.action = undefined;
+		this.attributes = {
+			'title': undefined,
+			'separator': ''
+		}
+		for(let v of ['click', 'dblclick', 'contextmenu', 'mouseover', 'mouseenter', 'mouseout', 'mouseleave', 'mousedown', 'mouseup', 'mousemove', 'drag']) {
+			if(typeof this[v] === 'function') {
+				this[v] = undefined;
+			}
+		}
+
+		return this;
+	}
+}
+
+_environment.LFWorkspace = $CFShared.LFWorkspace ?? class LFWorkspace extends LFView {
+	static __shared;
+
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
+	__launchedApplications = new CFArrayOld();
+	__desktopImageURL;
+
+	constructor({ desktopImageURL } = {}) {
+		super(...arguments);
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			throw new Error('Only one instance allowed');
+		}
+
+		this.desktopImageURL = desktopImageURL;
+
+		this.subviews.add(new LFMenubar({ transparent: true }));
+		CFEvent.addHandler('processListChanged', (a) => {
+			if(a.event === 'removed') {
+				let application = this.launchedApplications.find(v => v.processIdentifier === a.value),
+					menu = LFMenubar.shared.applicationMenu,
+					focused = menu.application;
+
+				if(!application) {
+					return;
+				}
+
+				this.launchedApplications.remove(application);
+				if(focused === application) {
+					menu.items = []
+					menu.application = undefined;
+				}
+				for(let v of this.subviews.filter(v => v.application === application)) {
+					v.release();
+				}
+
+				let default_ = this.launchedApplications.find(v => v.identifier === 'ru.poppy.enviro');
+
+				if(focused === application && default_) {
+					default_.focus();
+				}
+				if(focused !== application) {
+					focused.focus();
+				}
+			}
+		});
+		CFArrayOld.addObserver(this.subviews, (a) => {
+			if(!Object.isKindOf(a.value, LFWindow)) {
+				return;
+			}
+			if(a.event === 'added') {
+				a.value.ID = CGSWindowServer.shared.createWindow(
+					CGSConnection.shared,
+					undefined,
+					a.value.origin.x,	// Может вернуть 'center', что не соответствует ожидаемому типу
+					a.value.origin.y,	// ...
+					a.value.size.width,
+					a.value.size.height
+				);
+			} else
+			if(a.event === 'removed') {
+				CGSWindowServer.shared.destroyWindow(a.value.ID);
+			}
+		});
+	}
+
+	get launchedApplications() {
+		return this.__launchedApplications;
+	}
+
+	get desktopImageURL() {
+		return this.__desktopImageURL;
+	}
+
+	set desktopImageURL(value) {
+		if(value && typeof value !== 'string') {
+			throw new TypeError();
+		}
+
+		this.__desktopImageURL = value;
+
+		CFEvent.dispatch(undefined, 'LFWorkspaceDesktopImageNotification', { event: value ? 'changed' : 'removed', value: value });
+	}
+
+	mousedown() {
+		LFMenu.deactivateAll();
+	}
+
+	async launch(URL, ...arguments_) {
+		let user = (await CFPreferences.new('Global')).get().Users.find(v => v.Group === 1);
+
+		return _call('exec', user.Login, user.Password, URL, ...arguments_);
+	}
+
+	async launchApplication(URL, ...arguments_) {
+		URL = URL.endsWith('.app') ? URL : URL+'.app';
+
+		if(this.getApplication(URL)) {
+			this.getApplication(URL).focus();
+
+			return this.getApplication(URL);
+		}
+
+		let bundle = await CFBundle.new(URL),
+			title = bundle.properties.CFBundleTitle ?? URL.split('/').pop().replace(/\.app$/, ''),
+			user = (await CFPreferences.new('Global')).get().Users.find(v => v.Group === 1);
+
+		try {
+			if(!bundle.properties.CFBundleExecutable) {
+				throw new Error(`Properties list has no executable set`);
+			}
+
+			await _call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable, ...arguments_);
+
+			return this.getApplication(URL);
+		} catch(error) {
+			this.getApplication(URL)?.quit();
+			LFAlert.new({
+				message: `"${ title }" unable to launch.`,
+				information: error.name+': '+error.message
+			});
+
+			throw(error);
+		}
+	}
+
+	getApplication(bundleURL) {
+		return this.launchedApplications.find(v => v.bundleURL === bundleURL);
+	}
+
+	release() {
+		super.release();
+
+		this.constructor.__shared = undefined;
+	}
+}
+
+_environment.LFLaunchedApplication = class LFLaunchedApplication {
+	static __shared;
+
+	static get shared() {
+		return this.__shared;
+	}
+
+	__application;
+
+	constructor(application) {
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			throw new Error('Only one instance allowed');
+		}
+		if(!Object.isKindOf(application, LFApplication)) {
+			throw new TypeError(0);
+		}
+
+		this.__application = application;
+	}
+
+	get processIdentifier() {
+		return this.__application.process.identifier;
+	}
+
+	get bundleURL() {
+		return this.__application.bundle?.URL;
+	}
+
+	get identifier() {
+		return this.__application.identifier;
+	}
+
+	get executable() {
+		return this.__application.executable;
+	}
+
+	get title() {
+		return this.__application.title;
+	}
+
+	get version() {
+		return this.__application.version;
+	}
+
+	get license() {
+		return this.__application.license;
+	}
+
+	get icon() {
+		return this.__application.icon;
+	}
+
+	focus(...arguments_) {
+		this.__application.focus(...arguments_);
+	}
+
+	cautiously(...arguments_) {
+		this.__application.cautiously(...arguments_);
+	}
+
+	quit(...arguments_) {
+		this.__application.quit(...arguments_);
+	}
+}
+
+_environment.LFApplication = class LFApplication {
+	static __shared;
+
+	static get shared() {
+		if(!this.__shared) {
+			new this();
+		}
+
+		return this.__shared;
+	}
+
+	__menuItems = new CFArrayOld();
+	__focusingPolicy = 0;
+	__quitableBySingleWindow = false;
+
+	constructor() {
+		if(!this.constructor.__shared) {
+			this.constructor.__shared = this;
+		} else {
+			throw new Error('Only one instance allowed');
+		}
+
+		this.process.environment.LFApp = this.constructor.shared;
+
+		LFWorkspace.shared.launchedApplications.add(new LFLaunchedApplication(this));
+		CFArrayOld.addObserver(LFWorkspace.shared.subviews, (a) => {
+			if(a.value.application === LFLaunchedApplication.shared && Object.isKindOf(a.value, LFWindow)) {
+				this.update(1);
+			}
+		});
+		CFArrayOld.addObserver(this.menuItems, () => this.update(0));
+	}
+
+	get menuItems() {
+		return this.__menuItems;
+	}
+
+	get windows() {
+		return LFWorkspace.shared.subviews.filter(v => v.application === LFLaunchedApplication.shared && Object.isKindOf(v, LFWindow));
+	}
+
+	get focusingPolicy() {
+		return this.__focusingPolicy;
+	}
+
+	get quitableBySingleWindow() {
+		return this.__quitableBySingleWindow;
+	}
+
+	get process() {
+		return CFProcessInfo.shared;
+	}
+
+	get application() {
+		return this.process.executable;
+	}
+
+	get bundle() {
+		return CFBundle.main;
+	}
+
+	get identifier() {
+		return this.bundle?.properties.CFBundleIdentifier;
+	}
+
+	get executable() {
+		return this.bundle?.properties.CFBundleExecutable ?? this.process.path.split('/').pop();
+	}
+
+	get title() {
+		return this.bundle?.properties.CFBundleTitle ?? this.process.path.split('/').pop();
+	}
+
+	get version() {
+		return this.bundle?.properties.CFBundleVersion;
+	}
+
+	get license() {
+		return this.bundle?.properties.CFBundleLicense;
+	}
+
+	get icon() {
+		if(this.bundle?.properties.CFBundleIcon) {
+			return this.bundle.resourcesURL+'/'+this.bundle.properties.CFBundleIcon;
+		}
+	}
+
+	set menuItems(value) {
+		value = value.filter(v => Object.isKindOf(v, LFMenuItem));
+
+		this.__menuItems.removeAll().add(...value);
+	}
+
+	set focusingPolicy(value) {
+		if(typeof value !== 'number')	throw new TypeError();
+		if(value < 0 || value > 2)		throw new RangeError();
+
+		this.__focusingPolicy = value;
+
+		this.update(0);
+		this.update(1);
+	}
+
+	set quitableBySingleWindow(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.__quitableBySingleWindow = value;
+	}
+
+	/**
+	 * @param mode 0 - строка меню, 1 - окна.
+	 */
+	update(mode) {
+		return {
+			0: () => {
+				if(this.focusingPolicy < 1 && LFWorkspace.shared.launchedApplications.find(v => v.processIdentifier === this.process.identifier)) {
+					this.menuItems[0]?.title = this.title;
+					LFMenubar.shared.applicationMenu.items = this.menuItems.length > 0 ? this.menuItems : [new LFMenuItem({ title: this.title })]
+					LFMenubar.shared.applicationMenu.application = LFLaunchedApplication.shared;
+				} else {
+					let applications = LFWorkspace.shared.launchedApplications;
+
+					if(LFMenubar.shared.applicationMenu.application === LFLaunchedApplication.shared && applications.length > 1) {
+						applications[1].focus(0);
+					}
+				}
+			},
+			1: () => {
+				if(this.focusingPolicy < 2) {
+					LFWorkspace.shared.addSubviews(this.windows);
+				} else {
+					for(let v of this.windows) {
+						v.remove();
+					}
+				}
+			}
+		}[mode]();
+	}
+
+	/**
+	 * @param mode 0 - строка меню, 1 - окно.
+	 */
+	focus(mode) {
+		if(mode === undefined || mode === 0) {
+			if(this.focusingPolicy < 1 && LFMenubar.shared.applicationMenu.application !== LFLaunchedApplication.shared) {
+				this.update(0);
+			}
+		}
+		if(mode === undefined || mode === 1) {
+			let windows = this.windows;
+
+			if(this.focusingPolicy < 2 && windows.length > 0 && !windows.find(v => v.attributes['focused'] === '')) {
+				windows.find(v => v.main === true)?.focus();
+			}
+		}
+	}
+
+	cautiously(method, ..._arguments) {
+		try {
+			return this.application[method](..._arguments);
+		} catch(error) {
+			LFAlert.new({
+				message: `"${ this.title }"'s method returned exception.`,
+				information: error.name+': '+error.message
+			});
+		}
+	}
+
+	async about() {
+		if(typeof this.application.about === 'function') {
+			return this.application.about();
+		} else {
+			let window = this.windows.find(v => v.tag === 'about');
+
+			if(!window) {
+				new LFWindow({ tag: 'about', width: 256, type: ['titled', 'closable', 'minimizable'], title: '', view:
+					new LFView({ type: 'vertical', yAlign: 'center', subviews: [
+						await LFImage.new({ width: 64, height: 64, url: this.icon, shared: 'Generic Application' }),
+						new LFText({ string: this.title, weight: 'bold' }),
+						...this.version ? [new LFText({ string: await CFLocalizedString('Version', $LFBundle)+' '+this.version, size: 'small' })] : [],
+						...this.license ? [new LFText({ string: this.license, size: 'small' })] : []
+					] })
+				}).center();
+			} else {
+				window.focus();
+			}
+		}
+	}
+
+	quit() {
+		if(LFWorkspace.shared.launchedApplications.find(v => v.processIdentifier === this.process.identifier)) {
+			try {
+				this.process.executable?.willQuit?.();
+			} catch {}
+
+			_call('kill');
+		}
+	}
+}
+
+_environment.LFWindow = class LFWindow extends LFView {
+	static center = Object.freeze({
+		xy:	0,
+		x:	1,
+		y:	2
+	});
+
+	static level = Object.freeze({
+		base:		0,
+		background:	4,
+		desktop:	8,
+		normal:		12,
+		panel:		16,
+		floating:	20,
+		launchpad:	24,
+		dock:		28,
+		menu:		32,
+		menubar:	36
+	});
+
+	__hidden = true;
+	__main = false;
+	__x;
+	__y;
+	__width;
+	__height;
+	__background;
+	__level;
+	__type = []
+	__title;
+	__toolbar;
+	__view;
+
+	ID;
+
+	constructor({
+		x = 24,
+		y = 48,
+		width,
+		height,
+		background,
+		level = 'normal',
+		type = [
+			'titled',
+			'closable',
+			'minimizable',
+			'resizable'
+		],
+		title = 'Window',
+		toolbar,
+		view
+	}) {
+		super(...arguments);
+
+		this.origin = new CFObject({
+			x: x,
+			y: y
+		});
+		this.size = new CFObject({
+			width: width,
+			height: height
+		});
+		this.background = background;
+		this.level = level;
+		this.type = type;
+		this.title = title;
+		this.toolbar = toolbar;
+		this.view = view;
+
+		this.subviews = [
+			...!type.includes('borderless') ? [
+				new LFFrame({ type: 'top', subviews: [
+					...type.includes('titled') ? [
+						new LFTitlebar({ title: this.title, subviews: [
+							new LFTitlebarButton({ type: 'close',		action: type.includes('closable')		? () => this.close()	: undefined }),
+							new LFTitlebarButton({ type: 'minimize',	action: type.includes('minimizable')	? () => this.minimize()	: undefined }),
+							new LFTitlebarButton({ type: 'maximize',	action: type.includes('resizable')		? () => this.maximize()	: undefined })
+						] })
+					] : [],
+					...this.toolbar ? [this.toolbar] : []
+				] }),
+			] : [],
+			...this.view ? [this.view] : [new LFView()]
+		]
+
+		this.add(LFWorkspace.shared);
+	}
+
+	get hidden() {
+		return this.__hidden;
+	}
+
+	get main() {
+		return this.__main;
+	}
+
+	get origin() {
+		return {
+			x: this.__x,
+			y: this.__y
+		}
+	}
+
+	get size() {
+		if(!this.element) {
+			return {
+				width: this.__width,
+				height: this.__height
+			}
+		} else {
+			return {
+				width: Math.round(this.element.outerWidth()),
+				height: Math.round(this.element.outerHeight())
+			}
+		}
+	}
+
+	get minimized() {
+		return this.attributes['minimized'] === '';
+	}
+
+	get maximized() {
+		return this.element.position().top === 24 && this.element.position().left === 0 && LFWorkspace.shared.element.outerWidth() === this.element.outerWidth() && LFWorkspace.shared.element.outerHeight()-24 === this.element.outerHeight();
+	}
+
+	get background() {
+		return this.__background;
+	}
+
+	get level() {
+		return this.__level;
+	}
+
+	get type() {
+		return [...this.__type]
+	}
+
+	get title() {
+		return this.__title;
+	}
+
+	get toolbar() {
+		return this.__toolbar;
+	}
+
+	get view() {
+		return this.__view;
+	}
+
+	get application() {
+		return LFLaunchedApplication.shared;
+	}
+
+	set hidden(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError();
+		}
+
+		this.__hidden = value;
+		this.attributes['hidden'] = value ? '' : undefined;
+	}
+
+	set main(value) {
+		if(typeof value !== 'boolean') {
+			throw new TypeError(0);
+		}
+
+		this.__main = value;
+		if(value) {
+			for(let v of this.get('Siblings', this).filter(v => v.application === this.application)) {
+				v.main = false;
+			}
+		}
+	}
+
+	set origin(value) {
+		value.x = this.element && value.x === 'center' ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : value.x;
+		value.y = this.element && value.y === 'center' ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : value.y;
+
+		this.__x = value.x;
+		this.__y = value.y;
+		if(typeof value.x === 'number' && typeof value.y === 'number') {
+			this.style['transform'] = 'translate3d('+Math.round(value.x)+'px, '+Math.round(value.y)+'px, 0)';
+		}
+	}
+
+	set size(value) {
+		if(typeof value.width === 'number') {
+			this.__width = value.width;
+			this.style['width'] = value.width+'px';
+		}
+		if(typeof value.height === 'number') {
+			this.__height = value.height;
+			this.style['height'] = value.height+'px';
+		}
+	}
+
+	set background(value) {
+		if(value && typeof value !== 'string') {
+			throw new TypeError(0);
+		}
+
+		this.__background = value;
+		this.style['background'] = value ? value : '';
+	}
+
+	set level(value) {
+		if(typeof value !== 'string' && typeof value !== 'number')						throw new TypeError(0);
+		if(typeof value === 'string' && this.constructor.level[value] === undefined)	throw new RangeError(1);
+
+		this.__level = typeof value === 'string' ? this.constructor.level[value] : value;
+	}
+
+	set type(value) {
+		if(!Array.isArray(value))																														throw new TypeError(0);
+		for(let v of value) {
+			if(typeof v !== 'string')																													throw new TypeError(1);
+			if(!['titled', 'closable', 'minimizable', 'resizable', 'maximized', 'fullscreen', 'borderless', 'unifiedTitlebarAndToolbar'].includes(v))	throw new RangeError(2);
+		}
+
+		this.__type = value;
+		for(let v of ['maximized', 'fullscreen', 'borderless', 'unifiedTitlebarAndToolbar']) {
+			this.attributes[v] = value.includes(v) ? '' : undefined;
+		}
+	}
+
+	set title(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__title = value;
+	}
+
+	set toolbar(value) {
+		if(value && !Object.isKindOf(value, LFToolbar)) {
+			throw new TypeError(0);
+		}
+
+		this.__toolbar = value;
+	}
+
+	set view(value) {
+		if(value && !Object.isMemberOf(value, LFView)) {
+			throw new TypeError(0);
+		}
+
+		this.__view = value;
+	}
+
+	mousedown() {
+		LFMenu.deactivateAll();
+		this.focus();
+	}
+
+	didAdd() {
+		this.origin = this.origin;
+		this.size = this.size;
+
+		this.hidden = false;
+		this.focus();
+	}
+
+	center(value = 0) {
+		if(value) {
+			if(typeof value !== 'string' && typeof value !== 'number')										throw new TypeError(0);
+			if(typeof value === 'string' && this.constructor.center[value] === undefined)					throw new RangeError(1);
+			if(typeof value === 'number' && Object.values(this.constructor.center)[value] === undefined)	throw new RangeError(2);
+		}
+		if(!this.element)																					return this;
+
+		value = typeof value === 'string' ? this.constructor.center[value] : value;
+		this.origin = new CFObject({
+			x: value === 0 || value === 1 ? Math.round(LFWorkspace.shared.element.outerWidth()/2-this.element.outerWidth()/2) : this.__x,
+			y: value === 0 || value === 2 ? Math.round(LFWorkspace.shared.element.outerHeight()/2-this.element.outerHeight()/2) : this.__y
+		});
+
+		return this;
+	}
+
+	focus() {
+		if(this.element) {
+			let topDepth = 0;
+
+			for(let v of this.get('Siblings', this)) {
+				let depth = v.element ? Number.parseInt(v.element.css('z-index')) : 0;
+
+				if(v.level <= this.level) {
+					topDepth = Math.max(topDepth, depth);
+				}
+				if(v.level > this.level) {
+					v.style['z-index'] = depth+1;
+				}
+				v.attributes['focused'] = undefined;
+			}
+			this.style['z-index'] = topDepth+1;
+			this.attributes['focused'] = '';
+			LFMenubar.shared.style['z-index'] = (LFWorkspace.shared.subviews.find(v => v.level === this.constructor.level.background).style['z-index'] ?? -1)+1;
+		}
+		if(this.application) {
+			this.main = true;
+			this.application.focus();
+		}
+
+		return this;
+	}
+
+	close() {
+		if(this.type.includes('closable')) {
+			this.release();
+		}
+	}
+
+	minimize() {
+		if(this.type.includes('minimizable')) {
+			this.attributes['animatedResize'] = '';
+			if(!this.minimized) {
+				this.attributes['minimized'] = '';
+			} else {
+				this.attributes['minimized'] = undefined;
+			}
+			_call('timerCreate', false, 250, () => {
+				this.attributes['animatedResize'] = undefined;
+			});
+		}
+
+		return this;
+	}
+
+	maximize() {
+		if(this.type.includes('resizable')) {
+			if(!this.maximized) {
+				if(this.minimized) {
+					this.minimize();
+				}
+				this.attributes['animatedResizeIn'] = '';
+				this.style['width'] = LFWorkspace.shared.element.outerWidth()+'px';
+				this.style['height'] = LFWorkspace.shared.element.outerHeight()-24+'px';
+				this.style['transform'] = 'translate3d(0px, 24px, 0)';
+			} else {
+				this.attributes['animatedResizeOut'] = '';
+				this.style['width'] = this.__width+'px';
+				this.style['height'] = this.__height+'px';
+				this.style['transform'] = 'translate3d('+this.__x+'px, '+this.__y+'px, 0)';
+			}
+			_call('timerCreate', false, 250, () => {
+				this.attributes['animatedResizeIn'] = undefined;
+				this.attributes['animatedResizeOut'] = undefined;
+			});
+		}
+
+		return this;
+	}
+
+	release() {
+		super.release();
+
+		if(LFApp.quitableBySingleWindow && LFApp.windows.length === 0) {
+			LFApp.quit();
+		}
+	}
+}
+
+_environment.LFFrame = class LFFrame extends LFView {	// Не имеет ничего общего с CGRectangle и .frame, название выбрано по ошибке
+	__type;
+
+	constructor({ type = 'top', subviews } = {}) {
+		super(...arguments);
+
+		this.type = type;
+		this.subviews = subviews;
+	}
+
+	dblclick() {
+		this.get('Superview', LFWindow).minimize();
+	}
+
+	drag(event, dragCache) {
+		let window = this.get('Superview', LFWindow),
+			dragX = window.element.offset().left-(dragCache[1]-event.pageX),
+			dragY = window.element.offset().top-(dragCache[2]-event.pageY);
+
+		dragY = dragY >= 24 ? dragY : 24;
+		dragCache[1] = event.pageX;
+		dragCache[2] = event.pageY >= 24 ? event.pageY : 24;
+
+	//	if(!window._.style.includes('maximized')) {
+			window.origin = { x: dragX, y: dragY }
+	//	}
+	}
+
+	get type() {
+		return this.__type;
+	}
+
+	set type(value) {
+		if(value) {
+			if(typeof value !== 'string')			throw new TypeError(0);
+			if(!['top', 'bottom'].includes(value))	throw new RangeError(1);
+		}
+
+		this.__type = value;
+		this.attributes[value] = value ? '' : undefined;
+	}
+}
+
+_environment.LFTitlebar = class LFTitlebar extends LFView {
+	__title;
+
+	constructor({ title, subviews } = {}) {
+		super(...arguments);
+
+		this.title = title;
+		this.subviews = subviews;
+	}
+
+	get title() {
+		return this.__title;
+	}
+
+	set title(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__title = value;
+		this.attributes['title'] = value === '' ? undefined : value;
+	}
+}
+
+_environment.LFTitlebarButton = class LFTitlebarButton extends LFControl {
+	__type;
+
+	constructor({ type } = {}) {
+		super(...arguments);
+
+		this.type = type;
+	}
+
+	mouseover() {
+		this.highlighted = true;
+		for(let v of this.get('Siblings', this)) {
+			v.highlighted = true;
+		}
+	}
+
+	mouseout() {
+		this.highlighted = false;
+		for(let v of this.get('Siblings', this)) {
+			v.highlighted = false;
+		}
+	}
+
+	get type() {
+		return this.__type;
+	}
+
+	set type(value) {
+		if(typeof value !== 'string')							throw new TypeError(0);
+		if(!['close', 'minimize', 'maximize'].includes(value))	throw new RangeError(1);
+
+		this.__type = value;
+		for(let v of ['close', 'minimize', 'maximize']) {
+			this.attributes[v] = v === value ? '' : undefined;
+		}
+	}
+}
+
+_environment.LFToolbar = class LFToolbar extends LFView {
+	constructor({ subviews } = {}) {
+		super(...arguments);
+
+		this.subviews = subviews;
+	}
+}
+
+_environment.LFSidebar = class LFSidebar extends LFView {
+	constructor({ subviews } = {}) {
+		super(...arguments);
+
+		this.subviews = subviews;
+	}
+}
+
+_environment.LFImage = class LFImage extends LFView {
+	__width;
+	__height;
+	__url;
+
+	static async new({ width = 16, height = 16, url, shared } = {}) {
+		let self = new this();
+
+		self.width = width;
+		self.height = height;
+		self.url = !url && shared ? (await CFBundle.new('/Environment/Library/Frameworks/CoreTypes.bundle')).resourcesURL+'/'+shared+'.icns' : url;
+
+		return self;
+	}
+
+	create() {
+		this.style = {
+			'width': this.width+'px',
+			'height': this.height+'px',
+			'background-image': `url('${ this.__url }')`
+		}
+		this.attributes['template'] = this.__url.includes('Template') ? '' : undefined;
+
+		return super.create();
+	}
+
+	get width() {
+		return this.__width;
+	}
+
+	get height() {
+		return this.__height;
+	}
+
+	get size() {
+		return {
+			width: this.__width,
+			height: this.__height
+		}
+	}
+
+	get url() {
+		return this.__url;
+	}
+
+	set width(value) {
+		if(typeof value !== 'number')	throw new TypeError(0);
+		if(value < 0)					throw new RangeError(1);
+
+		this.__width = value;
+		this.style['width'] = value+'px';
+	}
+
+	set height(value) {
+		if(typeof value !== 'number')	throw new TypeError(0);
+		if(value < 0)					throw new RangeError(1);
+
+		this.__height = value;
+		this.style['height'] = value+'px';
+	}
+
+	set size(value) {
+		if(!Array.isArray(value) || !value.width || !value.height) {
+			throw new TypeError(0);
+		}
+
+		this.width = value.width;
+		this.height = value.height;
+	}
+
+	set url(value) {
+		if(value) {
+			if(typeof value !== 'string')	throw new TypeError(0);
+			if(value.length < 1)			throw new RangeError(1);
+		}
+
+		this.__url = value ? value.endsWith('.icns') ? value+'/'+this.width+'x'+this.height+'.svg' : value : undefined;
+		this.style['background-image'] = value ? `url('${ value }')` : '';
+		this.attributes['template'] = value.includes('Template') ? '' : undefined;
+	}
+}
+
+_environment.LFText = class LFText extends LFView {
+	__string;
+	__size;
+	__weight;
+
+	constructor({ string = 'Text', size = 'medium', weight } = {}) {
+		super(...arguments);
+
+		this.string = string;
+		this.size = size;
+		this.weight = weight;
+	}
+
+	get string() {
+		return this.__string;
+	}
+
+	get size() {
+		return this.__size;
+	}
+
+	get weight() {
+		return this.__weight;
+	}
+
+	set string(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError(0);
+		}
+
+		this.__string = value;
+		this.text = value === '' ? undefined : value;
+	}
+
+	set size(value) {
+		if(typeof value !== 'string')					throw new TypeError(0);
+		if(!['small', 'medium', 'big'].includes(value))	throw new RangeError(1);
+
+		this.__size = value;
+		for(let v of ['small', 'medium', 'big']) {
+			this.attributes[v] = v === value ? '' : undefined;
+		}
+	}
+
+	set weight(value) {
+		if(value) {
+			if(typeof value !== 'string')	throw new TypeError(0);
+			if(value !== 'bold')			throw new RangeError(1);
+		}
+
+		this.__weight = value;
+		this.attributes['bold'] = value ? '' : undefined;
+	}
+}
+
+_environment.LFTable = class LFTable extends LFView {
+	constructor({ subviews } = {}) {
+		super(...arguments);
+
+		this.subviews = subviews;
+	}
+
+	get activeRow() {
+		return this.subviews.find(v => v.activated);
+	}
+
+	mousedown() {
+		for(let v of this.subviews) {
+			v.activated = false;
+		}
+	}
+}
+
+_environment.LFTableRow = class LFTableRow extends LFControl {
+	__title;
+
+	data;
+
+	constructor({ title = 'TableRow', data } = {}) {
+		super(...arguments);
+
+		this.title = title;
+		this.data = data;
+	}
+
+	get title() {
+		return this.__title;
+	}
+
+	get activated() {
+		return super.activated;
+	}
+
+	set title(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
+		}
+
+		this.__title = value;
+		this.attributes['title'] = value === '' ? undefined : value;
+	}
+
+	set activated(value) {
+		super.activated = value;
+
+		if(value) {
+			for(let v of this.get('Siblings', this)) {
+				v.activated = false;
+			}
+		}
+	}
+
+	click() {}
+
+	dblclick() {
+		this.action?.();
+	}
+
+	mouseleave() {
+		this.highlighted = false;
+	}
+
+	mouseup() {}
+}
+
+_environment.LFAlert = class LFAlert {
+	__type;
+	__message;
+	__information;
+
+	static async new({ type = 'warning', message = 'Message.', information = 'Information.' } = {}) {
+		let self = new this();
+
+		self.type = type;
+		self.message = message;
+		self.information = information;
+
+		return new LFWindow({ width: 512, level: 'floating', type: ['closable'], view:
+			new LFView({ type: 'vertical', yAlign: 'stretch', subviews: [
+				new LFView({ subviews: [
+					await LFImage.new({ width: 64, height: 64, shared: self.type[0].toUpperCase()+self.type.substring(1) }),
+					new LFView({ type: 'vertical', subviews: [
+						...self.message ? [new LFText({ string: self.message, weight: 'bold' })] : [],
+						...self.information ? [new LFText({ string: self.information })] : [],
+					] })
+				] }),
+				new LFView({ xAlign: 'end', subviews: [
+					new LFButton({ minWidth: 64, title: 'OK', action: function() {
+						this.get('Superview', LFWindow).close();
+					} })
+				] })
+			] })
+		}).center(LFWindow.center.x);
+	}
+
+	get type() {
+		return this.__type;
+	}
+
+	get message() {
+		return this.__message;
+	}
+
+	get information() {
+		return this.__information;
+	}
+
+	set type(value) {
+		if(typeof value !== 'string')						throw new TypeError();
+		if(!['info', 'warning', 'error'].includes(value))	throw new RangeError();
+
+		this.__type = value;
+	}
+
+	set message(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
+		}
+
+		this.__message = value;
+	}
+
+	set information(value) {
+		if(value && typeof value !== 'string' && typeof value !== 'number') {
+			throw new TypeError();
+		}
+
+		this.__information = value;
+	}
+}
+
+// ---- //
+
+_environment.$LFBundle = await CFBundle.new(_path);
+_environment.$LFAppearance = await new CGAppearance((await CFBundle.new(_path)).resourcesURL+'/Appearance.less').add();
+
+$CFShared.LFMenubar = LFMenubar;
+$CFShared.LFWorkspace = LFWorkspace;
+
+new LFApplication();
