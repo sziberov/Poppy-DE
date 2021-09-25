@@ -76,7 +76,7 @@
 					RegExp: RegExp,
 					Symbol: Symbol,
 					TypeError: TypeError,
-					WeakRef: WeakRef,
+				//	WeakRef: WeakRef,
 					console: console,
 					eval: (code) => eval(this.codePrepare(code)),
 					parseInt: parseInt
@@ -126,7 +126,7 @@
 					await this.mpCreate(undefined, 'devfs', undefined, '/dev', 'r');
 
 					/*
-					await this.deviceInstanceRegister(
+					await this.deviceInstanceCreate(
 						await this.deviceRegister('b', 'disk', undefined, undefined),
 						0,
 						'disk0s1',
@@ -401,7 +401,7 @@
 				this.objects.processes = value;
 			}
 
-			kdbAdd(...a) {
+			kdInfo(...a) {
 				for(let v of a) {
 					let b = v?.replace(/^\t*/gm, '').trim().split(/^/gm) ?? []
 
@@ -427,7 +427,7 @@
 					this.timerDestroy(undefined, v.ID);
 				}
 				this.kdbClear();
-				this.kdbAdd(`
+				this.kdInfo(`
 					Please contact someone with an image of the
 					information printed below, along with a description of your
 					environment configuration and what you were doing at the time that
@@ -502,6 +502,42 @@
 			}
 
 			/**
+			 * Возвращает информацию о пути, включающую в себя оригинальные объекты:
+			 * - Файловая система.
+			 * - Устройство.
+			 * - Экземпляр устройства.
+			 * - Точка монтирования.
+			 *
+			 * @param	{string} path Абсолютный путь к файлу или директории.
+			 * @returns	{?Object}
+			 */
+			async urlPathInfo(path) {
+				if(typeof path !== 'string') {
+					throw new TypeError('Incorrect path');
+				}
+
+				for(let mp of this.mp.sort((a, b) => b.targetPath.length-a.targetPath.length)) {
+					if(path.startsWith(mp.targetPath)) {
+						let info = {
+							fs: this.fs.find(v => v.ID === mp.fsID),
+							device: undefined,
+							deviceInstance: undefined,
+							mp: mp
+						}
+
+						if(mp.sourcePath) {
+							let deviceStatistics = await this.fsStatistics(mp.sourcePath);
+
+							info.device = this.devices.find(v => v.ID === deviceStatistics.internalDeviceMajorID && v.type === deviceStatistics.type.replace('inode/chardevice', 'c').replace('inode/blockdevice', 'b'));
+							info.deviceInstance = info.device.instances.find(v => v.ID === deviceStatistics.internalDeviceMinorID);
+						}
+
+						return info;
+					}
+				}
+			}
+
+			/**
 			 * Регистрирует файловую систему и возвращает её идентификатор.
 			 *
 			 * После монтирования взаимодействие с файлами в ней производится посредством развилочных методов ФС.
@@ -512,17 +548,17 @@
 			 * - `exists(path)` - Возврат логического значения, указывающего, существует ли файл.
 			 * - `existsDirectory(path)` - Возврат логического значения, указывающего, существует ли директория.
 			 * - `statistics(path)` - Возврат статистики файла или директории, такой как:
-			 *     - `deviceID` - Идентификатор устройства хранения.
-			 *     - `type` - Тип в формате MIME.
-			 *     - `size`- Размер в байтах.
+			 *   - `deviceID` - Идентификатор устройства хранения.
+			 *   - `type` - Тип в формате MIME.
+			 *   - `size`- Размер в байтах.
 			 * - `read(path, raw)` - Чтение файла.
 			 * - `readDirectory(path)` - Возврат массива `Dirent`'ов.
 			 * - `write(path, content)` - Запись данных в файл.
 			 *
 			 * ФС, работающая с файлами устройств, также должна иметь методы вида:
-			 * - `createNode(path, type, majorDeviceID, minorDeviceID)` - Создание файла устройства.
+			 * - `createNode(processID, path, type, deviceMajorID, deviceMinorID)` - Создание файла устройства.
 			 * - `statistics(path)` - Дополнительное свойство:
-			 *     - `internalDeviceID` - Идентификатор устройства, отражённый в файле.
+			 *   - `internalDeviceID` - Идентификатор устройства, отражённый в файле.
 			 * - `control(path, ...arguments_)` - Управление устройством: отправка команд, изменение его свойств и т.д.
 			 *
 			 * @param	{string}	title		Название.
@@ -551,7 +587,7 @@
 					functions: functions,
 					type: type
 				});
-				this.kdbAdd(`
+				this.kdInfo(`
 					fsRegister: Object created:
 					    ID: ${ ID }
 					    Title: ${ title ? '"'+title+'"' : 'Not set' }
@@ -571,54 +607,38 @@
 
 				if(!fs) {
 					if(this.verbose) {
-						this.kdbAdd(`fsUnregister: Unable to find object`);
+						this.kdInfo(`fsUnregister: Unable to find object`);
 					}
 
 					return;
 				}
 
 				this.fs = this.fs.filter(v => v !== fs);
-				this.kdbAdd(`fsUnregister: Object ${ fs.ID } destroyed`);
+				this.kdInfo(`fsUnregister: Object ${ fs.ID } destroyed`);
 			}
 
 			async fsCreateDirectory(processID, path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				return this.mpInfo(path)?.fs.functions.createDirectory?.(...arguments);
+				return (await this.urlPathInfo(path))?.fs.functions.createDirectory?.(...arguments);
 			}
 
 			async fsCreateNode(processID, path, deviceMajorID, deviceMinorID) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
+				return (await this.urlPathInfo(path))?.fs.functions.createNode?.(...arguments);
+			}
 
-				return this.mpInfo(path)?.fs.functions.createNode?.(...arguments);
+			async fsDestroy(path) {
+				return (await this.urlPathInfo(path))?.fs.functions.destroy?.(...arguments);
 			}
 
 			async fsExists(path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				return this.mpInfo(path)?.fs.functions.exists?.(...arguments);
+				return (await this.urlPathInfo(path))?.fs.functions.exists?.(...arguments);
 			}
 
 			async fsExistsDirectory(path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				return this.mpInfo(path)?.fs.functions.existsDirectory?.(...arguments);
+				return (await this.urlPathInfo(path))?.fs.functions.existsDirectory?.(...arguments);
 			}
 
 			async fsStatistics(path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				return this.mpInfo(path)?.fs.functions.statistics?.(...arguments);
+				return (await this.urlPathInfo(path))?.fs.functions.statistics?.(...arguments);
 			}
 
 			/**
@@ -651,7 +671,7 @@
 					mode: mode,
 					position: !['a', 'a+'].includes(mode) ? 0 : ((await this.fsStatistics(path))?.size ?? -1)+1
 				});
-				this.kdbAdd(`
+				this.kdInfo(`
 					fsOpen${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    Path: ${ path }
@@ -668,8 +688,14 @@
 				let file = this.files.find(v => v.ID === fileID && v.processID === processID);
 
 				if(!file) {
-					throw new RangeError('Unable to find object');
+					if(this.verbose) {
+						this.kdInfo(`fsClose${ processID ? '@'+processID : '' }: Unable to find object`);
+					}
+
+					return;
 				}
+
+				this.files = this.files.filter(v => v !== file);
 			}
 
 			/**
@@ -697,10 +723,7 @@
 			}
 
 			async fsRead(path, raw = false) {
-				if(typeof path !== 'string') throw new TypeError('Incorrect path');
-				if(typeof raw !== 'boolean') throw new TypeError('Incorrect raw');
-
-				return this.mpInfo(path)?.fs.functions.read?.(...arguments);
+				return (await this.urlPathInfo(path))?.fs.functions.read?.(...arguments);
 			}
 
 			async fsReadBasic(path, raw) {
@@ -712,11 +735,7 @@
 			}
 
 			async fsReadDirectory(path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				return this.mpInfo(path)?.fs.functions.readDirectory?.(...arguments);
+				return (await this.urlPathInfo(path))?.fs.functions.readDirectory?.(...arguments);
 			}
 
 			async fsReadDirectoryBasic(path) {
@@ -737,11 +756,7 @@
 			}
 
 			async fsWrite(path, content) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				return this.mpInfo(path)?.fs.functions.write?.(...arguments);
+				return (await this.urlPathInfo(path))?.fs.functions.write?.(...arguments);
 			}
 
 			async fsWritePreferences(process, identifier, properties, type) {
@@ -765,19 +780,7 @@
 			}
 
 			async fsControl(path, ...arguments_) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				return this.mpInfo(path)?.fs.functions.control?.(...arguments);
-			}
-
-			async fsDestroy(path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				return this.mpInfo(path)?.fs.functions.destroy?.(...arguments);
+				return (await this.urlPathInfo(path))?.fs.functions.control?.(...arguments);
 			}
 
 			/**
@@ -786,31 +789,31 @@
 			 * @param	{'c'|'b'}	type			Тип: символьный или блочный.
 			 * @param	{string}	title			Название. Зачастую сокращённое, например "fb" (FrameBuffer) или "disk". Может состоять только из символов [a-zA-Z0-9-/].
 			 * @param	{?string}	description		Описание. Зачастую - реальное, полное название.
-			 * @param	{?Object}	functions		Функции: `read(path, raw)`, `write(path, content)` и `control(...arguments_)`.
-			 * @param	{?Object}	data			Данные.
+			 * @param	{Object}	functions		Функции: `read(path, raw)`, `write(path, content)` и `control(...arguments_)`.
 			 * @returns	{number}
 			 */
-			deviceRegister(type, title, description, functions, data) {
-				if(typeof type !== 'string')						throw new TypeError('Incorrect type');
-				if(typeof title !== 'string')						throw new TypeError('Incorrect title');
-				if(description && typeof description !== 'string')	throw new TypeError('Incorrect description');
-				if(functions && !Object.isObject(functions))		throw new TypeError('Incorrect functions');
-				if(data && !Object.isObject(data))					throw new TypeError('Incorrect data');
-				if(!['c', 'b'].includes(type))						throw new RangeError('Incorrect type');
-				if(!/^[a-z0-9-/]+$/i.test(title))					throw new RangeError('Incorrect title');
+			deviceRegister(type, title, description, functions = {}) {
+				if(typeof type !== 'string')						throw new TypeError('Type should be string');
+				if(typeof title !== 'string')						throw new TypeError('Title should be string');
+				if(description && typeof description !== 'string')	throw new TypeError('Description should be string or void');
+				if(!Object.isObject(functions))						throw new TypeError('Functions should be object');
+				for(let k in functions) {
+					if(typeof functions[k] !== 'function')			throw new TypeError('Is not function: '+k);
+				}
+				if(!['c', 'b'].includes(type))						throw new RangeError(`Type should be 'c' or 'b'`);
+				if(!/^[a-z0-9-/]+$/i.test(title))					throw new RangeError('Title should match [a-zA-Z0-9-/]');
 
 				let ID = this.devices.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
 				this.devices.push({
 					ID: ID,
-				//	instances: [],
+					instances: [],
 					type: type,
 					title: title,
 					description: description,
-					functions: functions,
-					data: data
+					functions: functions
 				});
-				this.kdbAdd(`
+				this.kdInfo(`
 					deviceRegister: Object created:
 					    ID: ${ ID }
 					    Type: ${ type === 'c' ? 'Character' : 'Block' }
@@ -831,14 +834,14 @@
 
 				if(!device) {
 					if(this.verbose) {
-						this.kdbAdd(`deviceUnregister: Unable to find object`);
+						this.kdInfo(`deviceUnregister: Unable to find object`);
 					}
 
 					return;
 				}
 
 				this.devices = this.devices.filter(v => v !== device);
-				this.kdbAdd(`deviceUnregister: Object ${ device.ID } destroyed`);
+				this.kdInfo(`deviceUnregister: Object ${ device.ID } destroyed`);
 			}
 
 			/**
@@ -849,16 +852,27 @@
 			 * @param {string}	title			Название. Зачастую сокращённое и включающее идентификатор, например "fb0" (FrameBuffer 0) или "disk0s1" (Disk 0 Sector 1). Может состоять только из символов [a-zA-Z0-9-/].
 			 * @param {Object}	data			Данные.
 			 */
-			deviceInstanceCreate(deviceMajorID, deviceMinorID, title, data = {}) {
+			async deviceInstanceCreate(deviceMajorID, deviceMinorID, title, data = {}) {
+				if(typeof deviceMajorID !== 'number')					throw new TypeError('Device major ID should be number');
+				if(deviceMinorID && typeof deviceMinorID !== 'number')	throw new TypeError('Device minor ID should be number or void');
+				if(typeof title !== 'string')							throw new TypeError('Title should be string');
+				if(!Object.isObject(data))								throw new TypeError('Data should be object');
+				if(deviceMajorID < 0)									throw new RangeError('Device major ID should be >= 0');
+				if(deviceMinorID && deviceMinorID < 0)					throw new RangeError('Device minor ID should be >= 0');
+				if(title.length === 0)									throw new RangeError('Title length should be >= 1');
+
 				let device = this.devices.find(v => v.ID === deviceMajorID),
-					ID = deviceMinorID ?? device.instances.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
+					ID = deviceMinorID ?? device?.instances.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
+
+				if(!device)									throw new RangeError('Unable to find object');
+				if(device.instances.find(v => v.ID === ID))	throw new RangeError(`Object ${ ID } already exists`);
 
 				device.instances.push({
 					ID: ID,
 					title: title,
 					data: data
 				});
-			//	this.fsCreateNode(undefined, '/dev/'+title, deviceMajorID, deviceMinorID);
+				await this.fsCreateNode(undefined, '/dev/'+title, device.type, deviceMajorID, deviceMinorID);
 
 				return ID;
 			}
@@ -879,29 +893,28 @@
 			/**
 			 * Возвращает информацию об устройстве.
 			 *
-			 * @param	{number}		processID		Идентификатор процесса.
-			 * @param	{number|string}	deviceSearch	Идентификатор устройства или его название.
-			 * @returns	{Object}
+			 * @param	{number}	processID		Идентификатор процесса.
+			 * @param	{number}	deviceMajorID	Старший идентификатор устройства.
+			 * @returns	{?Object}
 			 */
-			deviceInfo(processID, deviceSearch) {
+			deviceInfo(processID, deviceMajorID) {
 				if(!['number', 'string'].includes(typeof deviceSearch)) {
 					throw new TypeError('Incorrect search');
 				}
 
-				let device = this.devices.find(v => v.ID === deviceSearch || v.title === deviceSearch);
+				let device = this.devices.find(v => v.ID === deviceMajorID);
 
 				if(!device) {
 					if(this.verbose) {
-						this.kdbAdd(`deviceInfo${ processID ? '@'+processID : '' }: Unable to find object`);
+						this.kdInfo(`deviceInfo${ processID ? '@'+processID : '' }: Unable to find object`);
 					}
 
 					return;
 				}
 
 				return {
-					ID: device.ID,
-				//	majorDeviceID: device.majorDeviceID,
-				//	minorDeviceIDs: device.minorDeviceIDs,
+					majorID: device.ID,
+					minorIDs: device.instances.map(v => v.ID),
 					type: device.type,
 					title: device.title,
 					description: device.description
@@ -915,13 +928,13 @@
 			 * @param	{string} path
 			 * @returns	{string}
 			 */
-			universalFsDestination(path) {
+			async universalFsDestination(path) {
 				if(typeof path !== 'string') {
 					throw new TypeError('Incorrect path');
 				}
 
-				let info = this.mpInfo(path),
-					physicalPath = info.device?.data.physicalPath;
+				let info = await this.urlPathInfo(path),
+					physicalPath = info?.deviceInstance?.data.physicalPath;
 
 				return this.urlPathNormalize(physicalPath ? physicalPath+'/'+path.replace(new RegExp('^'+info.mp.targetPath), '') : /^[\\/]+/g.test(path) ? '.'+path : path);
 			}
@@ -931,14 +944,14 @@
 					return;
 				}
 				try {
-					await require('fs').promises.mkdir(this.universalFsDestination(path), { recursive: true });
+					await require('fs').promises.mkdir(await this.universalFsDestination(path), { recursive: true });
 				} catch(error) {
 					throw 'Unable to create directory: '+error.message;
 				}
 			}
 
 			async universalFsExists(path) {
-				let finalPath = this.universalFsDestination(path);
+				let finalPath = await this.universalFsDestination(path);
 
 				try {
 					return await require('fs').promises.access(finalPath) === undefined && (await require('fs').promises.stat(finalPath)).isFile();
@@ -948,7 +961,7 @@
 			}
 
 			async universalFsExistsDirectory(path) {
-				let finalPath = this.universalFsDestination(path);
+				let finalPath = await this.universalFsDestination(path);
 
 				try {
 					return await require('fs').promises.access(finalPath) === undefined && (await require('fs').promises.stat(finalPath)).isDirectory();
@@ -1011,14 +1024,14 @@
 				if(!type) {
 					for(let v of types) {
 						if(v.magic && data.startsWith(v.magic)) {
-							size = v.mime; break;
+							type = v.mime; break;
 						}
 					}
 				}
 				if(!type) {
 					for(let v of types) {
 						if(v.content?.(data.toString())) {
-							size = v.mime; break;
+							type = v.mime; break;
 						}
 					}
 				}
@@ -1038,15 +1051,18 @@
 					size = 0;
 				}
 
+				let info = await this.urlPathInfo(path);
+
 				return {
-					deviceID: this.mpInfo(path).device?.ID,
+					deviceMajorID: info.device?.ID,
+					deviceMinorID: info.deviceInstance?.ID,
 					type: type,
 					size: size
 				}
 			}
 
 			async universalFsRead(path, raw) {
-				let finalPath = this.universalFsDestination(path);
+				let finalPath = await this.universalFsDestination(path);
 
 				if(await this.universalFsExists(path)) {
 					let c = await require('fs').promises.readFile(finalPath);
@@ -1054,19 +1070,19 @@
 					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || raw ? c : c.toString();
 				} else {
 					if(this.verbose) {
-						this.kdbAdd('fsRead: Unable to access file: '+path);
+						this.kdInfo('fsRead: Unable to access file: '+path);
 					}
 				}
 			}
 
 			async universalFsReadDirectory(path) {
-				let finalPath = this.universalFsDestination(path);;
+				let finalPath = await this.universalFsDestination(path);
 
 				if(await this.universalFsExistsDirectory(path)) {
 					return require('fs').promises.readdir(finalPath, { withFileTypes: true });
 				} else {
 					if(this.verbose) {
-						this.kdbAdd('fsReadDirectory: Unable to access directory: '+path);
+						this.kdInfo('fsReadDirectory: Unable to access directory: '+path);
 					}
 
 					return []
@@ -1074,7 +1090,7 @@
 			}
 
 			async universalFsWrite(path, content) {
-				let finalPath = this.universalFsDestination(path),
+				let finalPath = await this.universalFsDestination(path),
 					event = await this.universalFsExists(path) ? 'written' : 'created';
 
 				try {
@@ -1088,7 +1104,7 @@
 			}
 
 			async universalFsDestroy(path) {
-				let finalPath = this.universalFsDestination(path);
+				let finalPath = await this.universalFsDestination(path);
 
 				if(await this.universalFsExists(path)) {
 					try {
@@ -1100,77 +1116,91 @@
 					}
 				} else {
 					if(this.verbose) {
-						this.kdbAdd('fsDestroy: Unable to access file: '+path);
+						this.kdInfo('fsDestroy: Unable to access file: '+path);
 					}
 				}
 			}
 
-			devicesFsCreateNode(processID, path, deviceMajorID, deviceMinorID) {}
+			devicesFsData = []
 
-			devicesFsDestroy(path) {}
+			async devicesFsCreateNode(processID, path, type, deviceMajorID, deviceMinorID) {
+				if(processID && typeof processID !== 'number')	throw new TypeError('Process ID should be number or void');
+				if(typeof path !== 'string')					throw new TypeError('Path should be string');
+				if(typeof type !== 'string')					throw new TypeError('Type should be string');
+				if(typeof deviceMajorID !== 'number')			throw new TypeError('Device major ID should be number');
+				if(typeof deviceMinorID !== 'number')			throw new TypeError('Device minor ID should be number');
+				if(!['c', 'b'].includes(type))					throw new RangeError(`Type should be 'c' or 'b'`);
+
+				path = this.urlPathNormalize(path);
+
+				if(await this.fsExists(path) || await this.fsExistsDirectory(path))			throw new RangeError(`Unable to create file: Already exists: "${ path }"`);
+				if(!await this.fsExistsDirectory(path.substring(0, path.lastIndexOf('/'))))	throw new RangeError(`Unable to create file: Directory does not exists: "${ path }"`);
+
+				this.devicesFsData.push({
+					path: path,
+					type: type,
+					deviceMajorID: deviceMajorID,
+					deviceMinorID: deviceMinorID
+				});
+			}
+
+			devicesFsDestroy(path) {
+				this.devicesFsData = this.devicesFsData.filter(v => v.path !== this.urlPathNormalize(path));
+			}
 
 			devicesFsExists(path) {
-				return !!this.devices.find(v => v.title === path.split('/').at(-1));
+				return this.devicesFsData.find(v => v.path === this.urlPathNormalize(path)) !== undefined;
 			}
 
-			devicesFsExistsDirectory(path) {
-				return path === this.mpInfo(path).mp.targetPath;
+			async devicesFsExistsDirectory(path) {
+				return path === (await this.urlPathInfo(path))?.mp.targetPath;
 			}
 
-			devicesFsStatistics(path) {
-				let info = this.mpInfo(path);
+			async devicesFsStatistics(path) {
+				let info = await this.urlPathInfo(path);
 
-				if(path === info.mp.targetPath) {
-					return {
-						deviceID: info.device?.ID,
-						type: 'inode/directory',
-						size: 0
-					}
+				if(path === info?.mp.targetPath) return {
+					deviceMajorID: info.device?.ID,
+					deviceMinorID: info.deviceInstance?.ID,
+					type: 'inode/directory',
+					size: 0
 				}
 
-				let device = this.devices.find(v => v.title === path.split('/').at(-1));
+				let file = this.devicesFsData.find(v => v.path === path);
 
-				if(device) {
-					return {
-					//	deviceMajorID: undefined,
-					//	deviceMinorID: undefined,
-					//	internalDeviceMajorID: undefined,
-					//	internalDeviceMinorID: undefined,
-						deviceID: info.device?.ID,
-						internalDeviceID: device.ID,
-						type: device.type === 'c' ? 'inode/chardevice' : device.type === 'b' ? 'inode/blockdevice' : undefined,
-						size: 0
-					}
+				if(file) return {
+					deviceMajorID: info?.device?.ID,
+					deviceMinorID: info?.deviceInstance?.ID,
+					internalDeviceMajorID: file.deviceMajorID,
+					internalDeviceMinorID: file.deviceMinorID,
+					type: file.type === 'c' ? 'inode/chardevice' : file.type === 'b' ? 'inode/blockdevice' : undefined,
+					size: 0
 				}
+			}
+
+			devicesFsDevice(path) {
+				return this.devices.find(v => v.ID === this.devicesFsData.find(v => v.path === path).deviceMajorID);
 			}
 
 			devicesFsRead(path) {
-				let device = this.devices.find(v => v.title === path.split('/').at(-1));
-
-				return device?.functions?.read?.(...arguments);
+				return this.devicesFsDevice(path)?.functions.read?.(...arguments);
 			}
 
-			devicesFsReadDirectory(path) {
-				let mp = this.mpInfo(path).mp;
+			async devicesFsReadDirectory(path) {
+				let mp = (await this.urlPathInfo(path))?.mp;
 
-				if(path === mp.targetPath) {
-					return this.devices.map(v => new (require('fs')).Dirent(v.title, 1));
+				if(mp && path === mp.targetPath) {
+					return this.devicesFsData.filter(v => v.path.startsWith(path)).map(v => new (require('fs')).Dirent(v.path.split('/').pop(), 1));
 				}
 			}
 
 			devicesFsWrite(path, content) {
-				let device = this.devices.find(v => v.title === path.split('/').at(-1));
-
-				return device?.functions?.write?.(...arguments);
+				return this.devicesFsDevice(path)?.functions.write?.(...arguments);
 			}
 
 			devicesFsControl(path, ...arguments_) {
-				let device = this.devices.find(v => v.title === path.split('/').at(-1));
-
-				return device?.functions?.control?.(...arguments);
+				return this.devicesFsDevice(path)?.functions.control?.(...arguments);
 			}
-
-			devicesFsRemove(path) {}
 
 			/**
 			 * Создаёт точку монтирования.
@@ -1205,22 +1235,19 @@
 					throw new Error(`"${ targetPath }" is not a directory`);
 				}
 
-				let ID = this.mp.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1,
-					deviceID = sourcePath !== undefined ? (await this.fsStatistics(sourcePath)).internalDeviceID : undefined;
+				let ID = this.mp.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
 				this.mp.push({
 					ID: ID,
 					fsID: fs.ID,
-					deviceID: deviceID,
 					sourcePath: sourcePath,
 					targetPath: targetPath,
 					access: access
 				});
-				this.kdbAdd(`
+				this.kdInfo(`
 					mpCreate${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    FS ID: ${ fs.ID }
-					    Device ID: ${ deviceID ?? 'Not set' }
 					    Source Path: ${ sourcePath ? '"'+sourcePath+'"' : 'Not set' }
 					    Target Path: "${ targetPath }"
 					    Access: ${ access === 'r' ? 'Read' : 'Read-Write' }
@@ -1233,31 +1260,6 @@
 			 * Уничтожает точку монтирования.
 			 */
 			mpDestroy(processID, targetPath) {}
-
-			/**
-			 * Возвращает информацию о последней точке монтирования в пути, включающую в себя оригинальные объекты:
-			 * - Файловая система.
-			 * - Устройство.
-			 * - Сама точка монтирования.
-			 *
-			 * @param	{string} path Абсолютный путь к файлу или директории.
-			 * @returns	{?Object}
-			 */
-			mpInfo(path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				for(let v of this.mp.sort((a, b) => b.targetPath.length-a.targetPath.length)) {
-					if(path.startsWith(v.targetPath)) {
-						return {
-							fs: this.fs.find(v_ => v_.ID === v.fsID),
-							device: this.devices.find(v_ => v_.ID === v.deviceID),
-							mp: v
-						}
-					}
-				}
-			}
 
 			async extensionExecute(...a) {
 				a = Array.isArray(a) ? a : []
@@ -1273,7 +1275,7 @@
 						c = await this.fsReadBasic(b);
 
 					if(c) {
-						this.kdbAdd('extensionExecute: Loading: '+b);
+						this.kdInfo('extensionExecute: Loading: '+b);
 					//	window[v] = require(`../Extensions/${ v }.kext/Contents/Classes/${ v }`);
 						new Function(c)();
 					}
@@ -1625,7 +1627,7 @@
 						catcher.function(...arguments_);
 					} catch(error) {
 						error.fileName = this.processes.find(v => v.ID === catcher.processID)?.path;
-						this.kdbAdd(`
+						this.kdInfo(`
 							eventThrow@${ catcher.processID }: Catcher failed to execute its function:
 							    Process ID: ${ processID_ ?? 'Not set' }
 							    Title: "${ title }"
@@ -1641,7 +1643,7 @@
 					ID: ID,
 					processID: processID
 				});
-				this.kdbAdd(`eventChannelCreate${ processID ? '@'+processID : '' }: Object ${ ID } created`);
+				this.kdInfo(`eventChannelCreate${ processID ? '@'+processID : '' }: Object ${ ID } created`);
 
 				return ID;
 			}
@@ -1668,7 +1670,7 @@
 					title: title,
 					function: function_
 				});
-				this.kdbAdd(`
+				this.kdInfo(`
 					eventCatcherCreate${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    Title: "${ title }"
@@ -1688,7 +1690,7 @@
 
 				if(!catcher) {
 					if(this.verbose) {
-						this.kdbAdd(`eventCatcherDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+						this.kdInfo(`eventCatcherDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
 					}
 
 					return;
@@ -1698,7 +1700,7 @@
 				}
 
 				this.catchers = this.catchers.filter(v => v !== catcher);
-				this.kdbAdd(`eventCatcherDestroy${ processID ? '@'+processID : '' }: Object ${ catcher.ID } destroyed`);
+				this.kdInfo(`eventCatcherDestroy${ processID ? '@'+processID : '' }: Object ${ catcher.ID } destroyed`);
 			}
 
 			/**
@@ -1733,7 +1735,7 @@
 					repeat: repeat,
 					timer: timer
 				});
-				this.kdbAdd(`
+				this.kdInfo(`
 					timerCreate${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    Repeat: ${ repeat ? 'Yes' : 'No' }
@@ -1753,7 +1755,7 @@
 
 				if(!timer) {
 					if(this.verbose) {
-						this.kdbAdd(`timerDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+						this.kdInfo(`timerDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
 					}
 
 					return;
@@ -1768,7 +1770,7 @@
 					sbClearInterval(timer.timer);
 				}
 				this.timers = this.timers.filter(v => v !== timer);
-				this.kdbAdd(`timerDestroy${ processID ? '@'+processID : '' }: Object ${ timer.ID } destroyed`);
+				this.kdInfo(`timerDestroy${ processID ? '@'+processID : '' }: Object ${ timer.ID } destroyed`);
 			}
 
 			/**
@@ -1794,7 +1796,7 @@
 					title: title,
 					environment: {}
 				});
-				this.kdbAdd(`
+				this.kdInfo(`
 					seCreate${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    Access: ${ access === 'r' ? 'Read' : 'Read-Write' }
@@ -1824,7 +1826,7 @@
 
 				if(!se) {
 					if(this.verbose) {
-						this.kdbAdd(`seInfo${ processID ? '@'+processID : '' }: Unable to find object`);
+						this.kdInfo(`seInfo${ processID ? '@'+processID : '' }: Unable to find object`);
 					}
 
 					return;
@@ -1871,7 +1873,7 @@
 
 				if(!se) {
 					if(this.verbose) {
-						this.kdbAdd(`seDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+						this.kdInfo(`seDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
 					}
 
 					return;
@@ -1881,7 +1883,7 @@
 				}
 
 				this.se = this.se.filter(v => v !== se);
-				this.kdbAdd(`seDestroy${ processID ? '@'+processID : '' }: Object ${ se.ID } destroyed`);
+				this.kdInfo(`seDestroy${ processID ? '@'+processID : '' }: Object ${ se.ID } destroyed`);
 			}
 
 			async dlLoad(processID, path) {
@@ -1922,7 +1924,7 @@
 
 					this.dl.push(dl);
 					if(this.verbose) {
-						this.kdbAdd(`
+						this.kdInfo(`
 							dlLoad@${ processID }: Object created:
 								ID: ${ dl.ID }
 								Path: ${ path }
@@ -1938,7 +1940,7 @@
 						if(Object.isObject(error)) {
 							error.fileName = process.path;
 						}
-						this.kdbAdd(`dlLoad@${ processID }: Unable to execute requested library: ${ error.message ?? error }`, error.stack);
+						this.kdInfo(`dlLoad@${ processID }: Unable to execute requested library: ${ error.message ?? error }`, error.stack);
 						this.dlUnload(processID, dl.ID);
 
 						reject(error);
@@ -1967,14 +1969,14 @@
 
 				if(!dl) {
 					if(this.verbose) {
-						this.kdbAdd(`dlUnload${ processID }: Unable to find object`);
+						this.kdInfo(`dlUnload${ processID }: Unable to find object`);
 					}
 
 					return;
 				}
 				if(!dl.processIDs.includes(processID)) {
 					if(this.verbose) {
-						this.kdbAdd(`dlUnload@${ processID }: Process isn't attached`);
+						this.kdInfo(`dlUnload@${ processID }: Process isn't attached`);
 					}
 
 					return;
@@ -1985,7 +1987,7 @@
 					this.dl = this.dl.filter(v => v !== dl);
 				}
 				if(this.verbose) {
-					this.kdbAdd(`dlUnload@${ processID }: Object ${ dl.ID } destroyed`);
+					this.kdInfo(`dlUnload@${ processID }: Object ${ dl.ID } destroyed`);
 				}
 			}
 
@@ -2035,7 +2037,7 @@
 
 				return new Promise((resolve, reject) => {
 					this.dlLoad(process.ID, path).then(async () => {
-						this.kdbAdd(`dlImport: Successfully imported ${ title } ${ framework ? 'framework' : 'library' } into process ${ process.ID }`);
+						this.kdInfo(`dlImport: Successfully imported ${ title } ${ framework ? 'framework' : 'library' } into process ${ process.ID }`);
 						await this.eventThrow(undefined, process.ID, 'libraryListChanged', { event: 'added', title: title, path: path });
 
 						resolve();
@@ -2165,7 +2167,7 @@
 				}
 				if(!terminal) {
 					if(this.verbose) {
-						this.kdbAdd(`terminalMode${ process ? '@'+process.ID : '' }: Unable to find terminal`);
+						this.kdInfo(`terminalMode${ process ? '@'+process.ID : '' }: Unable to find terminal`);
 					}
 
 					return;
@@ -2185,7 +2187,7 @@
 
 				if(!terminal) {
 					if(this.verbose) {
-						this.kdbAdd(`terminalDestroy${ process ? '@'+process.ID : '' }: Unable to find terminal`);
+						this.kdInfo(`terminalDestroy${ process ? '@'+process.ID : '' }: Unable to find terminal`);
 					}
 
 					return;
@@ -2198,7 +2200,7 @@
 					this.processKill(v.ID);
 				}
 				this.terminals = this.terminals.filter(v => v !== terminal);
-				this.kdbAdd(`terminalDestroy: Terminal ${ terminal.ID } destroyed`);
+				this.kdInfo(`terminalDestroy: Terminal ${ terminal.ID } destroyed`);
 				this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'removed', value: terminal.ID });
 			}
 
@@ -2231,7 +2233,7 @@
 					version: (a) => this.version[a],
 					uptime: () => this.uptime,
 					screen: () => this.screen,
-					log: (...a) => this.kdbAdd(process.path.split('/').pop()+': ', ...a),
+					log: (...a) => this.kdInfo(process.path.split('/').pop()+': ', ...a),
 					createDir: (a) => this.fsCreateDirectory(a),
 					createNode: (...a) => this.fsCreateNode(...a),
 					remove: (a) => this.fsDestroy(a),
@@ -2340,7 +2342,7 @@
 				}));
 
 				this.processes.push(process);
-				this.kdbAdd(`
+				this.kdInfo(`
 					processExecute${ processID ? '@'+processID : '' }: Process started:
 					    ID: ${ process.ID }
 					    Parent ID: ${ process.parentID }
@@ -2355,7 +2357,7 @@
 						if(Object.isObject(error)) {
 							error.fileName = process.path;
 						}
-						this.kdbAdd(`processExecute${ processID ? '@'+processID : '' }: Process ${ process.ID } failed: ${ error.message ?? error }:`, error.stack);
+						this.kdInfo(`processExecute${ processID ? '@'+processID : '' }: Process ${ process.ID } failed: ${ error.message ?? error }:`, error.stack);
 						this.processKill(process.ID, true);
 						reject(error);
 					}
@@ -2410,7 +2412,7 @@
 
 				if(processes.length === 0) {
 					if(this.verbose) {
-						this.kdbAdd(`processInfo: Unable to find processes: `+processSearch);
+						this.kdInfo(`processInfo: Unable to find processes: `+processSearch);
 					}
 
 					return;
@@ -2444,7 +2446,7 @@
 
 				if(!process) {
 					if(this.verbose) {
-						this.kdbAdd('processKill: Unable to find process '+processID);
+						this.kdInfo('processKill: Unable to find process '+processID);
 					}
 
 					return;
@@ -2456,7 +2458,7 @@
 				for(let v of this.dl.filter(v => v.processIDs.includes(processID)))	this.dlUnload(processID, v.ID);
 				this.processes = this.processes.filter(v => v !== process);
 				if(!quiet) {
-					this.kdbAdd(`processKill: Process ${ processID } stopped`);
+					this.kdInfo(`processKill: Process ${ processID } stopped`);
 				}
 				this.eventThrow(undefined, undefined, 'processListChanged', { event: 'removed', value: processID });
 			}
@@ -2507,7 +2509,7 @@
 			 */
 			classProtected(processID, caller, class_, field, type = 'get', ...arguments_) {
 				if(this.verbose && (!caller || !class_)) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: No ${ !caller ? `caller's context` : 'class' } set${ field ? ' for: "'+field+'"' : '' }`);
+					this.kdInfo(`classProtected${ processID ? '@'+processID : '' }: No ${ !caller ? `caller's context` : 'class' } set${ field ? ' for: "'+field+'"' : '' }`);
 				}
 				if(!caller || !class_) {
 					return;
@@ -2531,16 +2533,16 @@
 					mutable = Object.isObject(class_) && (Object.isMemberOf(class_, Object) || Object.isMemberOf(class_, Array) || class_[Symbol.collection] === true);
 
 				if(reserved && !equals) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved field: ${ symbol ? field.toString() : field }`); return;
+					this.kdInfo(`classProtected${ processID ? '@'+processID : '' }: Can't access reserved field: ${ symbol ? field.toString() : field }`); return;
 				}
 				if(private_ && !global && !equals && !befriends) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access private field: ${ field }`); return;
+					this.kdInfo(`classProtected${ processID ? '@'+processID : '' }: Can't access private field: ${ field }`); return;
 				}
 				if(protected_ && !global && !equals && !inherits && !befriends) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't access protected field: ${ field }`); return;
+					this.kdInfo(`classProtected${ processID ? '@'+processID : '' }: Can't access protected field: ${ field }`); return;
 				}
 				if(mutating && !global && !equals && !befriends && !mutable) {
-					this.kdbAdd(`classProtected${ processID ? '@'+processID : '' }: Can't mutate field: ${ field }`); return;
+					this.kdInfo(`classProtected${ processID ? '@'+processID : '' }: Can't mutate field: ${ field }`); return;
 				}
 
 				let proxied = Symbol[type],
