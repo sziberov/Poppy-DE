@@ -1276,7 +1276,6 @@
 
 					if(c) {
 						this.kdInfo('extensionExecute: Loading: '+b);
-					//	window[v] = require(`../Extensions/${ v }.kext/Contents/Classes/${ v }`);
 						new Function(c)();
 					}
 				}
@@ -1294,7 +1293,7 @@
 				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
-					throw new Error(`Groups 1+ aren't allowed to write to framebuffer`);
+					throw new Error(`Groups > 0 aren't allowed to write to framebuffer`);
 				}
 				if(value !== undefined && !value instanceof Buffer && !value instanceof HTMLCanvasElement) {
 					throw new TypeError(`Incorrect value`);
@@ -2426,7 +2425,7 @@
 						user: v.user,
 						path: v.path,
 						arguments: [...v.arguments],
-					//	memory: Object.sizeOf(v.environment)	// Всё окружение вылетает со свистом
+					//	memory: Object.sizeOf(v.environment)	// Всё Окружение вылетает со свистом
 					});
 				}
 
@@ -2835,9 +2834,8 @@
 			 *
 			 * Трекер задач:
 			 * - [!] Перевести DOM-интерфейс на Canvas.
-			 * - [~] Дописать методы FS, UniversalFS и DevicesFS. Разделить deviceID на deviceMajorID и deviceMinorID, использующихся для указания
-			 *       идентификатора устройства и его экземпляров соответственно.
-			 * - [~] Добавить возможность импорта обычных библиотек. Желательно с динамическим путём поиска.
+			 * - [~] Дописать методы FS, UniversalFS и DevicesFS.
+			 * - [~] Дописать поддержку динамических путей поиска фреймворков (и, желательно, namespace'ов), для поддержки их возможной вложенности.
 			 * - [~] Дописать функции асинхронного ввода/вывода.
 			 * - [~] Дописать поддержку нескольких курсоров в CGSWindowServer.
 			 * - [~] Везде заменить CFArrayOld на CFArray.
@@ -2846,8 +2844,7 @@
 			 * - [~] Закрыть возможность доступа к полям без проверок безопасности напрямую через
 			 *       .assign(), .defineProperty(), .defineProperties() и .values().
 			 * - [~] Добавить в .eventCatcherCreate() и .eventThrow() возможность ограничения определённым каналом (а не только процессом).
-			 * - [~] Добавить .fs* методам таблицу открытых файлов (и внедрить идею файл-дескрипторов - как оказалось,
-			 *       по сути своей тех же ID, что и везде).
+			 * - [~] Дописать методы взаимодействия с открытыми файлами и заменить прямую запись/чтение на запись/чтение только посредством открытых файлов.
 			 * - [~] Добавить классы-интерфейсы к объектам CGSWindowServer.
 			 * - [~] Разобраться с созданием окон в CGSWindowServer (обеспечить отрисовку слоёв окон в .__draw()).
 			 * - [~] Добавить возможность смены workspac'ов с анимациями. При переходах фиксированные окна естественно должны оставаться
