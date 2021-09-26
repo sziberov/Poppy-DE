@@ -1844,7 +1844,7 @@
 					set: (target, key, value) => {
 						if(this.se.find(v => v === se)) {
 							if(processID && processID !== se.processID && se.access === 'r') {
-								return;
+								return true;
 							}
 
 							target[key] = value;
@@ -2574,16 +2574,10 @@
 						}
 					},
 					'set': () => {
-						try {
-							if(typeof class_[proxied] === 'function') {
-								class_[proxied](proxy, field, arguments_[0]);
-							} else {
-								class_[field] = arguments_[0]
-							}
-						} catch(error) {
-							if(!error.message.startsWith(`'set' on proxy: trap returned falsish`)) {	// TypeError (какая-то рандомная проблема с Proxy и SE)
-								throw error;
-							}
+						if(typeof class_[proxied] === 'function') {
+							class_[proxied](proxy, field, arguments_[0]);
+						} else {
+							class_[field] = arguments_[0]
 						}
 
 						return class_[field]
