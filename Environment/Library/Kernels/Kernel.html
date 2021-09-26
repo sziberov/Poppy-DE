@@ -151,7 +151,7 @@
 						this.fsWrite('/dev/term'+this.terminalCurrent(), character);
 					});
 					*/
-					$(document).on('click dblclick contextmenu mouseover mouseenter mouseout mouseleave mousedown mouseup mousemove', 'body', (e) => {
+					$(document).on('click dblclick contextmenu mouseover mouseenter mouseout mouseleave mousedown mouseup mousemove', 'framebuffer canvas', (e) => {
 						if(this.verbose) {
 							this.eventThrow(undefined, undefined, 'mouseChanged', { event: e.type, value: e.originalEvent });
 						}
@@ -2050,22 +2050,35 @@
 				});
 			}
 
+			terminalDeviceID;
+
 			/**
-			 * Регистрирует устройство-терминал с названием вида `term*`.
+			 * Регистрирует устройство-терминал.
+			 */
+			async terminalRegister() {
+				if(terminalDeviceID != null) {
+					throw new RangeError('Unable to register terminal device: Already exists');
+				}
+
+				this.terminalDeviceID = await this.deviceRegister('c', 'term', undefined, {
+					read: this.terminalRead,
+					write: this.terminalWrite,
+					control: this.terminalControl
+				});
+			}
+
+			/**
+			 * Создаёт экземпляр устройства-терминала с названием вида `termN` и возвращает его идентификатор.
 			 *
 			 * @param	{number} processID Идентификатор процесса.
 			 * @returns	{number}
 			 */
-			async terminalRegister(processID) {
+			async terminalInstanceCreate(processID) {
 				let process = this.processes.find(v => v.ID === processID),
-					terminals = this.devices.filter(v => /^term[0-9]+$/.test(v.title)),
+					terminals = this.devices.find(v => v.ID === this.terminalDeviceID).instances,
 					ID = terminals.length;
 
-				await this.deviceRegister('c', 'term'+ID, undefined, {
-					read: this.terminalRead,
-					write: this.terminalWrite,
-					control: this.terminalControl
-				}, {
+				await this.deviceInstanceCreate(this.terminalDeviceID, ID, 'term', {
 					parentID: process?.terminalID ?? 0,
 					mode: 'text',
 					current: !terminals.some(v => v.data.current),
@@ -2507,10 +2520,11 @@
 			 * @param {?*}							arguments_	Дополнительные аргументы. Используются в случае присваивания (только первый) и вызова.
 			 */
 			classProtected(processID, caller, class_, field, type = 'get', ...arguments_) {
-				if(this.verbose && (!caller || !class_)) {
-					this.kdInfo(`classProtected${ processID ? '@'+processID : '' }: No ${ !caller ? `caller's context` : 'class' } set${ field ? ' for: "'+field+'"' : '' }`);
-				}
 				if(!caller || !class_) {
+					if(this.verbose) {
+						this.kdInfo(`classProtected${ processID ? '@'+processID : '' }: No ${ !caller ? `caller's context` : 'class' } set${ field ? ' for: "'+field+'"' : '' }`);
+					}
+
 					return;
 				}
 				if(field == null) {
@@ -2525,7 +2539,7 @@
 					mutating = type === 'set' && !(field in class_) || type === 'delete' && field in class_,
 					environment = this.processes.find(v => v.ID === processID)?.environment,
 					global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
-					equals = Object.isMemberOf(caller, class_) || caller === class_,
+					equals = caller === class_ || Object.isMemberOf(caller, class_),
 					inherits = Object.isKindOf(caller, class_),
 					friends = (class_.constructor ?? class_).__friends__ ?? [],
 					befriends = !!friends.find(v => Object.isMemberOf(caller, v)),
@@ -2566,14 +2580,14 @@
 					});
 
 				return {
-					'get': () => {
+					get: () => {
 						if(typeof class_[proxied] === 'function') {
 							return class_[proxied](proxy, field);
 						} else {
 							return class_[field]
 						}
 					},
-					'set': () => {
+					set: () => {
 						if(typeof class_[proxied] === 'function') {
 							class_[proxied](proxy, field, arguments_[0]);
 						} else {
@@ -2582,14 +2596,14 @@
 
 						return class_[field]
 					},
-					'call': () => {
+					call: () => {
 						if(typeof class_[proxied] === 'function') {
 							return class_[proxied](proxy, field, ...arguments_);
 						} else {
 							return class_[field]?.(...arguments_);
 						}
 					},
-					'delete': () => {
+					delete: () => {
 						if(typeof class_[proxied] === 'function') {
 							return class_[proxied](proxy, field);
 						} else {
@@ -3015,8 +3029,6 @@
 
 		framebuffer {
 			z-index: 0;	/* 2 */
-
-			pointer-events: none;
 		}
 
 		wormhole > *:not([visible]) {
