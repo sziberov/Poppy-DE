@@ -5,7 +5,7 @@
 			"Login": "root",
 			"Password": "root",
 			"Group": 0,
-			"Home": "/Users/root",
+			"Home": "/var/root",
 			"Shell": "/bin/sh",
 			"Hidden": true,
 			"Title": "Super User",
@@ -37,5 +37,10 @@
 	"PreferredLanguages": [
 		"Russian",
 		"English"
-	]
+	],
+	"Languages": [
+		"ru",
+		"en"
+	],
+	"UserLanguages": 2
 }

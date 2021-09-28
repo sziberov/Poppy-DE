@@ -1910,11 +1910,15 @@
 					}
 
 					try {
+					//	let fileID = await this.fsOpen(undefined, path);
+
 						dl.code = this.codePrepare(`
 							_environment['_dl_${ dl.title }'] = async (_title, _path) => {
-								${ await this.fsRead(path) }
+								${ await this.fsRead(path /*fileID*/) }
 							}
 						`);
+
+					//	this.fsClose(undefined, fileID);
 					} catch(error) {
 						error.message = 'Unable to parse requested library';
 
@@ -2251,6 +2255,9 @@
 					remove: (a) => this.fsDestroy(a),
 					exists: (a) => this.fsExists(a),
 					existsDir: (a) => this.fsExistsDirectory(a),
+					stat: (a) => this.fsStatistics(a),
+					open: (a) => this.fsOpen(a),
+					close: (a) => this.fsClose(a),
 					read: (a) => this.fsRead(a),
 					readDir: (a) => this.fsReadDirectory(a),
 					readPref: (a) => this.fsReadPreferences(process, a),
@@ -2843,6 +2850,8 @@
 			 * Трекер задач:
 			 * - [!] Перевести DOM-интерфейс на Canvas.
 			 * - [~] Дописать методы FS, UniversalFS и DevicesFS.
+			 * - [~] Переделать терминалы как устройства.
+			 * - [~] Написать как минимум часть NetInfo/Directory Services, для администрирования локальных пользователей
 			 * - [~] Дописать поддержку динамических путей поиска фреймворков (и, желательно, namespace'ов), для поддержки их возможной вложенности.
 			 * - [~] Дописать функции асинхронного ввода/вывода.
 			 * - [~] Дописать поддержку нескольких курсоров в CGSWindowServer.

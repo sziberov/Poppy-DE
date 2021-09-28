@@ -1,0 +1,11 @@
+{
+	"ID": 1,
+	"Login": "guest",
+	"Password": "",
+	"Group": 2,
+	"Home": "/Users/guest",
+	"Shell": "/bin/sh",
+	"Hidden": false,
+	"Title": "Guest User",
+	"Image": ""
+}

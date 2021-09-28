@@ -1,0 +1,11 @@
+{
+	"ID": 0,
+	"Login": "root",
+	"Password": "root",
+	"Group": 0,
+	"Home": "/var/root",
+	"Shell": "/bin/sh",
+	"Hidden": true,
+	"Title": "Super User",
+	"Image": ""
+}
