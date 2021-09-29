@@ -1,0 +1,7 @@
+_import('<Leaf>');
+
+return class Main {
+	constructor() {
+		new LFWindow({ width: 256, height: 256 });
+	}
+}

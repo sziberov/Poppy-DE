@@ -47,7 +47,7 @@ return class Main {
 
 				for(let v of LFApp.windows) {
 					if(v.level >= LFWindow.level.normal) {
-						list.push(new LFMenuItem({ title: v.title ?? await CFLocalizedString('[Titleless]'), action: () => v.focus() }));
+						list.push(new LFMenuItem({ title: v.title?.length > 0 ? v.title : await CFLocalizedString('[Titleless]'), action: () => v.focus() }));
 					}
 				}
 				if(list.length > 0) {

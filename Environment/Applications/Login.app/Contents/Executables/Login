@@ -12,12 +12,12 @@ return class Main {
 		this.__services = [
 			{
 				identifier: 'ru.poppy.enviro',
-				URL: '/Environment/Library/Applications/Enviro',
+				URL: '/Environment/Applications/Enviro',
 				status: 'stopped'
 			},
 			{
 				identifier: 'ru.poppy.dock',
-				URL: '/Environment/Library/Applications/Dock',
+				URL: '/Environment/Applications/Dock',
 				status: 'stopped'
 			}
 		]
@@ -34,7 +34,7 @@ return class Main {
 				menu: new LFMenu({ items: [
 					new LFMenuItem({ title: await CFLocalizedString('About this Poppy'), action: () => this.about() }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: await CFLocalizedString('Environment Preferences'), action: () => LFWorkspace.shared.launchApplication('/Applications/Environment Preferences') }),
+					new LFMenuItem({ title: await CFLocalizedString('Environment Preferences'), action: () => LFWorkspace.shared.launchApplication('/Environment/Applications/Environment Preferences') }),
 					new LFMenuItem({ title: await CFLocalizedString('Dock'),
 						menu: new LFMenu({ items: [
 							new LFMenuItem({ title: 'Test Alert', action: () => LFAlert.new() }),
@@ -48,7 +48,7 @@ return class Main {
 					}),
 					new LFMenuItem().separator(),
 					new LFMenuItem({ title: await CFLocalizedString('Force quit...'), action: () => this.forceQuit() }),
-					new LFMenuItem({ title: await CFLocalizedString('Activity Monitor'), action: () => LFWorkspace.shared.launchApplication('/Applications/Activity Monitor') }),
+					new LFMenuItem({ title: await CFLocalizedString('Activity Monitor'), action: () => LFWorkspace.shared.launchApplication('/Environment/Applications/Activity Monitor') }),
 					new LFMenuItem().separator(),
 					new LFMenuItem({ title: await CFLocalizedString('Relaunch'), action: () => _call('relaunch') }),
 					new LFMenuItem({ title: await CFLocalizedString('Quit'), action: () => _call('quit') })
@@ -79,7 +79,7 @@ return class Main {
 					new LFMenuItem({ title: await CFLocalizedString('View as analog') }),
 					new LFMenuItem({ title: await CFLocalizedString('View as digital') }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: await CFLocalizedString('Date & Time preferences...'), action: () => LFWorkspace.shared.launchApplication('/Applications/Environment Preferences') })
+					new LFMenuItem({ title: await CFLocalizedString('Date & Time preferences...'), action: () => LFWorkspace.shared.launchApplication('/Environment/Applications/Environment Preferences') })
 				] })
 			}),
 			new LFMenuItem({ title: '', image: await LFImage.new({ width: 24, shared: 'TemplateBatteryConnected' }),
@@ -87,7 +87,7 @@ return class Main {
 					new LFMenuItem({ title: '100% Remaining' }),
 					new LFMenuItem({ title: 'Power source: Charger' }),
 					new LFMenuItem().separator(),
-					new LFMenuItem({ title: 'Energy saver preferences...', action: () => LFWorkspace.shared.launchApplication('/Applications/Environment Preferences') })
+					new LFMenuItem({ title: 'Energy saver preferences...', action: () => LFWorkspace.shared.launchApplication('/Environment/Applications/Environment Preferences') })
 				] })
 			})
 		]
