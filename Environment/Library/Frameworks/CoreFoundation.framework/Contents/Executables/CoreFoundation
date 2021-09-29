@@ -1259,6 +1259,24 @@ _environment.CFURL = class CFURL {
 	}
 }
 
+_environment.CFPropertyList = class CFPropertyList {
+	static serialize(value) {
+		if(!Object.isObject(value)) {
+			throw new TypeError();
+		}
+
+		return JSON.stringify(value);
+	}
+
+	static deserialize(value) {
+		if(typeof value !== 'string') {
+			throw new TypeError();
+		}
+
+		return JSON.parse(value);
+	}
+}
+
 _environment.CFBundle = class CFBundle {
 	static main;
 
@@ -1290,7 +1308,7 @@ _environment.CFBundle = class CFBundle {
 
 					if(file.endsWith(fileExtension)) {
 						let fileTitle = file.split(fileExtension)[0],
-							fileContent = JSON.parse(await CFFile.content(self.resourcesURL+'/'+directory+'/'+file));
+							fileContent = CFPropertyList.deserialize(await CFFile.content(self.resourcesURL+'/'+directory+'/'+file));
 
 						self.localizations[directoryTitle][fileTitle] = fileContent;
 					}
@@ -1304,12 +1322,12 @@ _environment.CFBundle = class CFBundle {
 
 		let properties = await CFFile.content(self.contentsURL+'/Info.plist'),
 			language = (await CFPreferences.new('Global')).get().PreferredLanguages[0],
-			localizedStrings = self.localizations[language]?.InfoPlist
+			localizedStrings = self.localizations[language]?.InfoPlist;
 
 		if(properties) {
 			self.properties = {
-				...JSON.parse(properties),
-				...localizedStrings ? localizedStrings : {}
+				...CFPropertyList.deserialize(properties),
+				...localizedStrings ?? {}
 			}
 		}
 
