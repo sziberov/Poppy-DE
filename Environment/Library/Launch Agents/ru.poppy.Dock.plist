@@ -1,0 +1,32 @@
+{
+	"KeepAlive": {
+		"AfterInitialDemand": true,
+		"SuccessfullExit": false
+	},
+	"Label": "ru.poppy.Dock.agent",
+	"MachServices": {
+		"ru.poppy.dock.remotedesktoppicture": {
+			"HideUntilCheckIn": true
+		},
+		"ru.poppy.dock.appstore": {
+			"HideUntilCheckIn": true
+		},
+		"ru.poppy.dock.downloads": {
+			"HideUntilCheckIn": true
+		},
+		"ru.poppy.dock.fullscreen": {
+			"HideUntilCheckIn": true
+		},
+		"ru.poppy.dock.launchpad": {
+			"HideUntilCheckIn": true
+		},
+		"ru.poppy.dock.notificationcenter": true,
+		"ru.poppy.dock.server": {
+			"HideUntilCheckIn": true
+		}
+	},
+	"Program": "/Environment/Applications/Dock.app/Contents/Executables/Dock",
+	"RunAtLoad": false,
+	"ThrottleInterval": 1,
+	"POSIXSpawnType": "Interactive"
+}
