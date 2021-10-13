@@ -43,3 +43,5 @@ _environment._call_protected = 41;
 _environment._call_system = 42;
 _environment._call_relaunch = 43;
 _environment._call_quit = 44;
+
+_environment._exit = () => _call('kill');

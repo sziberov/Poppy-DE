@@ -1,0 +1,74 @@
+// noinspection JSAnnotator
+return class Main {
+	__daemonsPaths = [
+		'/Library/Launch Daemons',
+		'/System/Library/Launch Daemons'
+	]
+	__agentsPaths = [
+		'~/Library/Launch Agents',
+		'/Library/Launch Agents',
+		'/System/Library/Launch Agents'
+	]
+	__services = []
+
+	constructor() {
+		this.initialize().catch((e) => _call('exit'));
+	}
+
+	async initialize() {
+		let process = _call('info');
+
+		if(process.ID !== '1' && process.parentID !== '1') {
+			console.log("launchd: This program is not meant to be run directly.");
+			_call('exit');
+		}
+
+		await this.load();
+		this.observe();
+		await _call('catcherCreate', 'processListChanged', this.observe);
+	}
+
+	async load() {
+		for(let directoryPath of [...__daemonsPaths, ...__agentsPaths]) {
+			let type = __daemonsPaths.include(directoryPath) ? 'daemon' : 'agent',
+				filePath = (await _call('readDir', directoryPath)).filter(v => v.isFile()).map(v => v.name);
+
+			if(!await _call('exists', filePath)) {
+				continue;
+			}
+
+			let properties = JSON.parse(await _call('read', filePath));
+
+			if(!properties || typeof properties.Label !== 'string' || typeof properties.Program !== 'string' || properties.Label.length === 0 || properties.Program.length === 0) {
+				continue;
+			}
+
+			this.__services = this.__services.filter(v => v.properties.Label !== properties.Label);
+
+			this.__services.push({
+				processID: undefined,
+				type: type,
+				status: 'stopped',
+				firstLaunch: true,
+				properties: properties
+			});
+		}
+	}
+
+	observe(a) {
+		if(a?.event === 'removed') {
+			this.__services.find(v => v.processID === a.value && v.status !== 'failed').status = 'stopped';
+		}
+		for(let v of this.__services.filter(v => v.status === 'stopped' && (v.firstLaunch || v.properties.KeepAlive))) {
+			v.status = 'launching';
+			_call('exec', 'root', 'root', v.properties.Program ?? v.properties.ProgramArguments[0], v.properties.ProgramArguments.slice(1)).then(value => {
+				v.processID = value;
+				v.status = 'launched';
+				v.firstLaunch = false;
+			}, () => {
+				v.processID = undefined;
+				v.status = 'failed';
+			});
+		}
+	}
+}

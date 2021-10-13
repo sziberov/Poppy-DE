@@ -1,8 +1,4 @@
 {
 	"Label": "ru.poppy.Login",
-	"ProgramArguments": [
-		"/Environment/Applications/Login.app/Contents/Executables/Login"
-	],
-	"KeepAlive": true,
-	"POSIXSpawnType": "Interactive"
+	"Program": "/Environment/Applications/Login.app/Contents/Executables/Login"
 }
