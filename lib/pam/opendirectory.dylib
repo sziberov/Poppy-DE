@@ -1,0 +1,5 @@
+_environment.pamAuthentificate = (user) => {
+	if(_call('info', 'opendirectoryd')) {
+		return true;
+	}
+}

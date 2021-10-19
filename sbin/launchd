@@ -2,12 +2,12 @@
 return class Main {
 	__daemonsPaths = [
 		'/Library/Launch Daemons',
-		'/System/Library/Launch Daemons'
+		'/Environment/Library/Launch Daemons'
 	]
 	__agentsPaths = [
-		'~/Library/Launch Agents',
-		'/Library/Launch Agents',
-		'/System/Library/Launch Agents'
+	//	'~/Library/Launch Agents',
+	//	'/Library/Launch Agents',
+	//	'/Environment/Library/Launch Agents'
 	]
 	__services = []
 
@@ -18,57 +18,88 @@ return class Main {
 	async initialize() {
 		let process = _call('info');
 
-		if(process.ID !== '1' && process.parentID !== '1') {
-			console.log("launchd: This program is not meant to be run directly.");
+		if(process.ID !== 1 && process.parentID !== 1) {
+			console.log('launchd: This program is not meant to be run directly');
 			_call('exit');
 		}
 
 		await this.load();
-		this.observe();
 		await _call('catcherCreate', 'processListChanged', this.observe);
+		await _call('catcherCreate', 'launchdLoad', (a) => this.load(a.value));
 	}
 
-	async load() {
-		for(let directoryPath of [...__daemonsPaths, ...__agentsPaths]) {
-			let type = __daemonsPaths.include(directoryPath) ? 'daemon' : 'agent',
-				filePath = (await _call('readDir', directoryPath)).filter(v => v.isFile()).map(v => v.name);
-
-			if(!await _call('exists', filePath)) {
-				continue;
-			}
-
-			let properties = JSON.parse(await _call('read', filePath));
-
-			if(!properties || typeof properties.Label !== 'string' || typeof properties.Program !== 'string' || properties.Label.length === 0 || properties.Program.length === 0) {
-				continue;
-			}
-
-			this.__services = this.__services.filter(v => v.properties.Label !== properties.Label);
-
-			this.__services.push({
-				processID: undefined,
-				type: type,
-				status: 'stopped',
-				firstLaunch: true,
-				properties: properties
-			});
+	async load(label) {
+		if(label != null && this.__services.find(v => v.properties.Label === label)) {
+			return this.start(label);
 		}
+
+		for(let directoryPath of [...this.__daemonsPaths, ...this.__agentsPaths]) {
+			for(let filePath of (await _call('readDir', directoryPath)).filter(v => v.isFile()).map(v => directoryPath+'/'+v.name)) {
+				let properties = JSON.parse(await _call('read', filePath));
+
+				if(!properties || typeof properties.Label !== 'string' || typeof properties.Program !== 'string' || properties.Label.length === 0 || properties.Program.length === 0 || label != null && properties.Label !== label) {
+					continue;
+				}
+
+				this.__services.push({
+					processID: undefined,
+					type: this.__daemonsPaths.includes(directoryPath) ? 'daemon' : 'agent',
+					status: 'stopped',
+					properties: properties
+				});
+
+				if(label == null) {
+					this.start(properties.Label);
+				}
+			}
+		}
+
+		if(label != null) {
+			this.start(label);
+		}
+	}
+
+	start(label) {
+		let service = this.__services.find(v => v.properties.Label === label);
+
+		if(!service || service.status === 'failed') {
+			_call('throw', 'launchdStatus', { event: 'failed', value: label });
+		}
+		if(['launching', 'launched'].includes(service.status)) {
+			_call('throw', 'launchdStatus', { event: service.status, value: label });
+		}
+		if(service.status !== 'stopped') {
+			return;
+		}
+
+		service.status = 'launching';
+
+		_call('exec', 'root', 'root', service.properties.Program ?? service.properties.ProgramArguments[0], service.properties.ProgramArguments.slice(1)).then(value => {
+			service.processID = value;
+			service.status = 'launched';
+		}, () => {
+			service.processID = undefined;
+			service.status = 'failed';
+		}).finally(() => {
+			_call('throw', 'launchdStatus', { event: service.status, value: label });
+		});
 	}
 
 	observe(a) {
-		if(a?.event === 'removed') {
-			this.__services.find(v => v.processID === a.value && v.status !== 'failed').status = 'stopped';
+		if(a?.event !== 'removed') {
+			return;
 		}
-		for(let v of this.__services.filter(v => v.status === 'stopped' && (v.firstLaunch || v.properties.KeepAlive))) {
-			v.status = 'launching';
-			_call('exec', 'root', 'root', v.properties.Program ?? v.properties.ProgramArguments[0], v.properties.ProgramArguments.slice(1)).then(value => {
-				v.processID = value;
-				v.status = 'launched';
-				v.firstLaunch = false;
-			}, () => {
-				v.processID = undefined;
-				v.status = 'failed';
-			});
+
+		let service = this.__services.find(v => v.processID === a.value && v.status === 'launched');
+
+		if(!service) {
+			return;
+		}
+
+		service.status = 'stopped';
+
+		for(let service of this.__services.filter(v => v.status === 'stopped' && v.properties.KeepAlive)) {
+			this.start(service.properties.Label);
 		}
 	}
 }
