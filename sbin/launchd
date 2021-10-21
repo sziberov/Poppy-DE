@@ -24,7 +24,7 @@ return class Main {
 		}
 
 		await this.load();
-		await _call('catcherCreate', 'processListChanged', this.observe);
+		await _call('catcherCreate', 'processListChanged', (a) => this.observe(a));	// (..., this.observe.bind(this))
 		await _call('catcherCreate', 'launchdLoad', (a) => this.load(a.value));
 	}
 
@@ -63,10 +63,10 @@ return class Main {
 		let service = this.__services.find(v => v.properties.Label === label);
 
 		if(!service || service.status === 'failed') {
-			_call('throw', 'launchdStatus', { event: 'failed', value: label });
+			_call('throw', undefined, 'launchdStatus', { event: 'failed', value: label });
 		}
 		if(['launching', 'launched'].includes(service.status)) {
-			_call('throw', 'launchdStatus', { event: service.status, value: label });
+			_call('throw', undefined, 'launchdStatus', { event: service.status, value: label });
 		}
 		if(service.status !== 'stopped') {
 			return;
@@ -75,13 +75,13 @@ return class Main {
 		service.status = 'launching';
 
 		_call('exec', 'root', 'root', service.properties.Program ?? service.properties.ProgramArguments[0], service.properties.ProgramArguments.slice(1)).then(value => {
-			service.processID = value;
+			service.processID = value.ID;
 			service.status = 'launched';
 		}, () => {
 			service.processID = undefined;
 			service.status = 'failed';
 		}).finally(() => {
-			_call('throw', 'launchdStatus', { event: service.status, value: label });
+			_call('throw', undefined, 'launchdStatus', { event: service.status, value: label });
 		});
 	}
 
@@ -96,6 +96,7 @@ return class Main {
 			return;
 		}
 
+		service.processID = undefined;
 		service.status = 'stopped';
 
 		for(let service of this.__services.filter(v => v.status === 'stopped' && v.properties.KeepAlive)) {

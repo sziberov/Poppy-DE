@@ -100,7 +100,7 @@
 				//	await this.fbWrite();
 					await this.bootState(true);
 
-					this.fsRegister('ufs', {
+					this.vfsFsRegister('ufs', {
 						createDirectory: this.universalFsCreateDirectory,
 						destroy: this.universalFsDestroy,
 						exists: this.universalFsExists,
@@ -110,7 +110,7 @@
 						readDirectory: this.universalFsReadDirectory,
 						write: this.universalFsWrite
 					}, 1);
-					this.fsRegister('devfs', {
+					this.vfsFsRegister('devfs', {
 						createNode: this.devicesFsCreateNode,
 						destroy: this.devicesFsDestroy,
 						exists: this.devicesFsExists,
@@ -122,7 +122,7 @@
 						control: this.devicesFsControl
 					}, 1);
 					await this.mpCreate(undefined, 'ufs', undefined, '/', 'u');
-					await this.fsCreateDirectory(undefined, '/dev');
+					await this.vfsCreateDirectory(undefined, '/dev');
 					await this.mpCreate(undefined, 'devfs', undefined, '/dev', 'r');
 
 					/*
@@ -132,9 +132,9 @@
 						'disk0s1',
 						{ physicalPath: 'G:\\' }
 					);
-					await this.fsCreateDirectory(undefined, '/Volumes/HD');
+					await this.vfsCreateDirectory(undefined, '/Volumes/HD');
 					await this.mpCreate(undefined, 'ufs', '/dev/disk0s1', '/Volumes/HD', 'u');
-					console.log(await this.fsReadDirectory('/Volumes/HD'));
+					console.log(await this.vfsReadDirectory('/Volumes/HD'));
 					*/
 
 					$(document).on('keydown keyup keypress', 'body', (e) => {
@@ -148,7 +148,7 @@
 								.replace('Tab', '\\t')
 								.replace('Enter', '\\n') : '';
 
-						this.fsWrite('/dev/term'+this.terminalCurrent(), character);
+						this.vfsWrite('/dev/term'+this.terminalCurrent(), character);
 					});
 					*/
 					$(document).on('click dblclick contextmenu mouseover mouseenter mouseout mouseleave mousedown mouseup mousemove', 'framebuffer canvas', (e) => {
@@ -494,46 +494,19 @@
 				}[value]();
 			}
 
-			/**
-			 * Заменяет лишние и обратные `/` в пути на одинарные.
-			 */
-			urlPathNormalize(path) {
-				return path.replace(/[\\/]+/gm, '/');
+			async fsRead(path, raw) {
+				try {
+					let c = await require('fs').promises.readFile('.'+path);
+
+					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || raw ? c : c.toString();
+				} catch {}
 			}
 
-			/**
-			 * Возвращает информацию о пути, включающую в себя оригинальные объекты:
-			 * - Файловая система.
-			 * - Устройство.
-			 * - Экземпляр устройства.
-			 * - Точка монтирования.
-			 *
-			 * @param	{string} path Абсолютный путь к файлу или директории.
-			 * @returns	{?Object}
-			 */
-			async urlPathInfo(path) {
-				if(typeof path !== 'string') {
-					throw new TypeError('Incorrect path');
-				}
-
-				for(let mp of this.mp.sort((a, b) => b.targetPath.length-a.targetPath.length)) {
-					if(path.startsWith(mp.targetPath)) {
-						let info = {
-							fs: this.fs.find(v => v.ID === mp.fsID),
-							device: undefined,
-							deviceInstance: undefined,
-							mp: mp
-						}
-
-						if(mp.sourcePath) {
-							let deviceStatistics = await this.fsStatistics(mp.sourcePath);
-
-							info.device = this.devices.find(v => v.ID === deviceStatistics.internalDeviceMajorID && v.type === deviceStatistics.type.replace('inode/chardevice', 'c').replace('inode/blockdevice', 'b'));
-							info.deviceInstance = info.device.instances.find(v => v.ID === deviceStatistics.internalDeviceMinorID);
-						}
-
-						return info;
-					}
+			async fsReadDirectory(path) {
+				try {
+					return require('fs').promises.readdir('.'+path, { withFileTypes: true });
+				} catch {
+					return []
 				}
 			}
 
@@ -566,7 +539,7 @@
 			 * @param	{0|1}		type		Тип: физический или виртуальный. Указывает на то, может ли ФС использоваться без устройства-источника.
 			 * @returns	{number}
 			 */
-			async fsRegister(title, functions = {}, type = 0) {
+			async vfsFsRegister(title, functions = {}, type = 0) {
 				if(typeof title !== 'string')				throw new TypeError('Incorrect title');
 				if(!Object.isObject(functions))				throw new TypeError('Incorrect functions');
 				for(let k in functions) {
@@ -588,7 +561,7 @@
 					type: type
 				});
 				this.kdInfo(`
-					fsRegister: Object created:
+					vfsFsRegister: Object created:
 					    ID: ${ ID }
 					    Title: ${ title ? '"'+title+'"' : 'Not set' }
 					    Type: ${ type === 0 ? 'Physical' : 'Virtual' }
@@ -602,43 +575,86 @@
 			 *
 			 * @param {string|number} fsSearch
 			 */
-			fsUnregister(fsSearch) {
+			vfsFsUnregister(fsSearch) {
 				let fs = this.fs.find(v => v.ID === fsSearch || v.title === fsSearch);
 
 				if(!fs) {
 					if(this.verbose) {
-						this.kdInfo(`fsUnregister: Unable to find object`);
+						this.kdInfo(`vfsFsUnregister: Unable to find object`);
 					}
 
 					return;
 				}
 
 				this.fs = this.fs.filter(v => v !== fs);
-				this.kdInfo(`fsUnregister: Object ${ fs.ID } destroyed`);
+				this.kdInfo(`vfsFsUnregister: Object ${ fs.ID } destroyed`);
 			}
 
-			async fsCreateDirectory(processID, path) {
-				return (await this.urlPathInfo(path))?.fs.functions.createDirectory?.(...arguments);
+			/**
+			 * Возвращает информацию о пути, включающую в себя оригинальные объекты:
+			 * - Файловая система.
+			 * - Устройство.
+			 * - Экземпляр устройства.
+			 * - Точка монтирования.
+			 *
+			 * @param	{string} path Абсолютный путь к файлу или директории.
+			 * @returns	{?Object}
+			 */
+			async vfsPathInfo(path) {
+				if(typeof path !== 'string') {
+					throw new TypeError('Incorrect path');
+				}
+
+				for(let mp of this.mp.sort((a, b) => b.targetPath.length-a.targetPath.length)) {
+					if(path.startsWith(mp.targetPath)) {
+						let info = {
+							fs: this.fs.find(v => v.ID === mp.fsID),
+							device: undefined,
+							deviceInstance: undefined,
+							mp: mp
+						}
+
+						if(mp.sourcePath) {
+							let deviceStatistics = await this.vfsStatistics(mp.sourcePath);
+
+							info.device = this.devices.find(v => v.ID === deviceStatistics.internalDeviceMajorID && v.type === deviceStatistics.type.replace('inode/chardevice', 'c').replace('inode/blockdevice', 'b'));
+							info.deviceInstance = info.device.instances.find(v => v.ID === deviceStatistics.internalDeviceMinorID);
+						}
+
+						return info;
+					}
+				}
 			}
 
-			async fsCreateNode(processID, path, deviceMajorID, deviceMinorID) {
-				return (await this.urlPathInfo(path))?.fs.functions.createNode?.(...arguments);
+			/**
+			 * Заменяет лишние и обратные `/` в пути на одинарные.
+			 */
+			vfsPathNormalize(path) {
+				return path.replace(/[\\/]+/gm, '/');
 			}
 
-			async fsDestroy(path) {
-				return (await this.urlPathInfo(path))?.fs.functions.destroy?.(...arguments);
+			async vfsCreateDirectory(processID, path) {
+				return (await this.vfsPathInfo(path))?.fs.functions.createDirectory?.(...arguments);
 			}
 
-			async fsExists(path) {
-				return (await this.urlPathInfo(path))?.fs.functions.exists?.(...arguments);
+			async vfsCreateNode(processID, path, deviceMajorID, deviceMinorID) {
+				return (await this.vfsPathInfo(path))?.fs.functions.createNode?.(...arguments);
 			}
 
-			async fsExistsDirectory(path) {
-				return (await this.urlPathInfo(path))?.fs.functions.existsDirectory?.(...arguments);
+			async vfsDestroy(path) {
+				return (await this.vfsPathInfo(path))?.fs.functions.destroy?.(...arguments);
 			}
 
-			async fsStatistics(path) {
-				return (await this.urlPathInfo(path))?.fs.functions.statistics?.(...arguments);
+			async vfsExists(path) {
+				return (await this.vfsPathInfo(path))?.fs.functions.exists?.(...arguments);
+			}
+
+			async vfsExistsDirectory(path) {
+				return (await this.vfsPathInfo(path))?.fs.functions.existsDirectory?.(...arguments);
+			}
+
+			async vfsStatistics(path) {
+				return (await this.vfsPathInfo(path))?.fs.functions.statistics?.(...arguments);
 			}
 
 			/**
@@ -655,12 +671,12 @@
 			 * @param	{'r'|'r+'|'w'|'w+'|'a'|'a+'}	mode		Режим.
 			 * @returns	{number}
 			 */
-			async fsOpen(processID, path, mode = 'r') {
+			async vfsOpen(processID, path, mode = 'r') {
 				if(processID && typeof processID !== 'number')					throw new TypeError('Incorrect process ID');
 				if(typeof path !== 'string')									throw new TypeError('Incorrect path');
 				if(typeof mode !== 'string')									throw new TypeError('Incorrect mode');
 				if(!['r', 'r+', 'w', 'w+', 'a', 'a+'].includes(mode))			throw new RangeError('Incorrect mode');
-				if(['r', 'r+'].includes(mode) && !await this.fsExists(path))	throw new RangeError('Unable to find file');
+				if(['r', 'r+'].includes(mode) && !await this.vfsExists(path))	throw new RangeError('Unable to find file');
 
 				let ID = this.files.filter(v => v.processID === processID).reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
@@ -669,10 +685,10 @@
 					processID: processID,
 					path: path,
 					mode: mode,
-					position: !['a', 'a+'].includes(mode) ? 0 : ((await this.fsStatistics(path))?.size ?? -1)+1
+					position: !['a', 'a+'].includes(mode) ? 0 : ((await this.vfsStatistics(path))?.size ?? -1)+1
 				});
 				this.kdInfo(`
-					fsOpen${ processID ? '@'+processID : '' }: Object created:
+					vfsOpen${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    Path: ${ path }
 					    Mode: ${ mode }
@@ -681,7 +697,7 @@
 				return ID;
 			}
 
-			async fsClose(processID, fileID) {
+			async vfsClose(processID, fileID) {
 				if(processID && typeof processID !== 'number')	throw new TypeError('Incorrect process ID');
 				if(typeof fileID !== 'number')					throw new TypeError('Incorrect file ID');
 
@@ -689,7 +705,7 @@
 
 				if(!file) {
 					if(this.verbose) {
-						this.kdInfo(`fsClose${ processID ? '@'+processID : '' }: Unable to find object`);
+						this.kdInfo(`vfsClose${ processID ? '@'+processID : '' }: Unable to find object`);
 					}
 
 					return;
@@ -706,7 +722,7 @@
 			 * @param {number}	position	Позиция.
 			 * @param {0|1|2}	mode		Режим относительности: 0 - начало, 1 - текущая позиция, 2 - конец.
 			 */
-			async fsSeek(processID, fileID, position, mode = 0) {
+			async vfsSeek(processID, fileID, position, mode = 0) {
 				if(processID && typeof processID !== 'number')	throw new TypeError('Incorrect process ID');
 				if(typeof fileID !== 'number')					throw new TypeError('Incorrect file ID');
 				if(typeof position !== 'number')				throw new TypeError('Incorrect position');
@@ -719,48 +735,32 @@
 				if(position < 0)								throw new RangeError('Incorrect position');
 				if(![0, 1, 2].includes(mode))					throw new RangeError(`Incorrect mode`);
 
-				file.position = mode === 0 ? position : mode === 1 ? file.position+position : mode === 2 ? ((await this.fsStatistics(file.path))?.size ?? 0)+position : undefined;
+				file.position = mode === 0 ? position : mode === 1 ? file.position+position : mode === 2 ? ((await this.vfsStatistics(file.path))?.size ?? 0)+position : undefined;
 			}
 
-			async fsRead(path, raw = false) {
-				return (await this.urlPathInfo(path))?.fs.functions.read?.(...arguments);
+			async vfsRead(path, raw = false) {
+				return (await this.vfsPathInfo(path))?.fs.functions.read?.(...arguments);
 			}
 
-			async fsReadBasic(path, raw) {
-				try {
-					let c = await require('fs').promises.readFile('.'+path);
-
-					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || raw ? c : c.toString();
-				} catch {}
+			async vfsReadDirectory(path) {
+				return (await this.vfsPathInfo(path))?.fs.functions.readDirectory?.(...arguments);
 			}
 
-			async fsReadDirectory(path) {
-				return (await this.urlPathInfo(path))?.fs.functions.readDirectory?.(...arguments);
-			}
-
-			async fsReadDirectoryBasic(path) {
-				try {
-					return require('fs').promises.readdir('.'+path, { withFileTypes: true });
-				} catch {
-					return []
-				}
-			}
-
-			async fsReadPreferences(process, identifier) {
+			async vfsReadPreferences(process, identifier) {
 				let properties =
-					(process ? await this.fsRead('/Users/'+process.user+'/Library/Preferences/'+identifier+'.plist') : undefined) ??
-					await this.fsRead('/Library/Preferences/'+identifier+'.plist') ??
-					await this.fsRead('/Environment/Library/Preferences/'+identifier+'.plist');
+					(process ? await this.vfsRead('/Users/'+process.user+'/Library/Preferences/'+identifier+'.plist') : undefined) ??
+					await this.vfsRead('/Library/Preferences/'+identifier+'.plist') ??
+					await this.vfsRead('/Environment/Library/Preferences/'+identifier+'.plist');
 
 				return properties ? JSON.parse(properties) : undefined;
 			}
 
-			async fsWrite(path, content) {
-				return (await this.urlPathInfo(path))?.fs.functions.write?.(...arguments);
+			async vfsWrite(path, content) {
+				return (await this.vfsPathInfo(path))?.fs.functions.write?.(...arguments);
 			}
 
-			async fsWritePreferences(process, identifier, properties, type) {
-				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
+			async vfsWritePreferences(process, identifier, properties, type) {
+				let group = (await this.vfsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				type ??= process ? 'user' : 'shared';
 
@@ -773,14 +773,14 @@
 				properties = JSON.stringify(properties);
 
 				return {
-					user:			() => this.fsWrite('/Users/'+process.user+'/Library/Preferences/'+identifier+'.plist', properties),
-					shared:			() => this.fsWrite('/Library/Preferences/'+identifier+'.plist', properties),
-					environment:	() => this.fsWrite('/Environment/Library/Preferences/'+identifier+'.plist', properties)
+					user:			() => this.vfsWrite('/Users/'+process.user+'/Library/Preferences/'+identifier+'.plist', properties),
+					shared:			() => this.vfsWrite('/Library/Preferences/'+identifier+'.plist', properties),
+					environment:	() => this.vfsWrite('/Environment/Library/Preferences/'+identifier+'.plist', properties)
 				}[type]();
 			}
 
-			async fsControl(path, ...arguments_) {
-				return (await this.urlPathInfo(path))?.fs.functions.control?.(...arguments);
+			async vfsControl(path, ...arguments_) {
+				return (await this.vfsPathInfo(path))?.fs.functions.control?.(...arguments);
 			}
 
 			/**
@@ -872,7 +872,7 @@
 					title: title,
 					data: data
 				});
-				await this.fsCreateNode(undefined, '/dev/'+title, device.type, deviceMajorID, deviceMinorID);
+				await this.vfsCreateNode(undefined, '/dev/'+title, device.type, deviceMajorID, deviceMinorID);
 
 				return ID;
 			}
@@ -933,14 +933,14 @@
 					throw new TypeError('Incorrect path');
 				}
 
-				let info = await this.urlPathInfo(path),
+				let info = await this.vfsPathInfo(path),
 					physicalPath = info?.deviceInstance?.data.physicalPath;
 
-				return this.urlPathNormalize(physicalPath ? physicalPath+'/'+path.replace(new RegExp('^'+info.mp.targetPath), '') : /^[\\/]+/g.test(path) ? '.'+path : path);
+				return this.vfsPathNormalize(physicalPath ? physicalPath+'/'+path.replace(new RegExp('^'+info.mp.targetPath), '') : /^[\\/]+/g.test(path) ? '.'+path : path);
 			}
 
 			async universalFsCreateDirectory(processID, path) {
-				if(await this.fsExistsDirectory(path)) {
+				if(await this.vfsExistsDirectory(path)) {
 					return;
 				}
 				try {
@@ -1051,7 +1051,7 @@
 					size = 0;
 				}
 
-				let info = await this.urlPathInfo(path);
+				let info = await this.vfsPathInfo(path);
 
 				return {
 					deviceMajorID: info.device?.ID,
@@ -1070,7 +1070,7 @@
 					return /\.(png|jpe?g|gif|svg|pdf)$/gi.test(path) || raw ? c : c.toString();
 				} else {
 					if(this.verbose) {
-						this.kdInfo('fsRead: Unable to access file: '+path);
+						this.kdInfo('vfsRead: Unable to access file: '+path);
 					}
 				}
 			}
@@ -1082,7 +1082,7 @@
 					return require('fs').promises.readdir(finalPath, { withFileTypes: true });
 				} else {
 					if(this.verbose) {
-						this.kdInfo('fsReadDirectory: Unable to access directory: '+path);
+						this.kdInfo('vfsReadDirectory: Unable to access directory: '+path);
 					}
 
 					return []
@@ -1116,7 +1116,7 @@
 					}
 				} else {
 					if(this.verbose) {
-						this.kdInfo('fsDestroy: Unable to access file: '+path);
+						this.kdInfo('vfsDestroy: Unable to access file: '+path);
 					}
 				}
 			}
@@ -1131,10 +1131,10 @@
 				if(typeof deviceMinorID !== 'number')			throw new TypeError('Device minor ID should be number');
 				if(!['c', 'b'].includes(type))					throw new RangeError(`Type should be 'c' or 'b'`);
 
-				path = this.urlPathNormalize(path);
+				path = this.vfsPathNormalize(path);
 
-				if(await this.fsExists(path) || await this.fsExistsDirectory(path))			throw new RangeError(`Unable to create file: Already exists: "${ path }"`);
-				if(!await this.fsExistsDirectory(path.substring(0, path.lastIndexOf('/'))))	throw new RangeError(`Unable to create file: Directory does not exists: "${ path }"`);
+				if(await this.vfsExists(path) || await this.vfsExistsDirectory(path))			throw new RangeError(`Unable to create file: Already exists: "${ path }"`);
+				if(!await this.vfsExistsDirectory(path.substring(0, path.lastIndexOf('/'))))	throw new RangeError(`Unable to create file: Directory does not exists: "${ path }"`);
 
 				this.devicesFsData.push({
 					path: path,
@@ -1145,19 +1145,19 @@
 			}
 
 			devicesFsDestroy(path) {
-				this.devicesFsData = this.devicesFsData.filter(v => v.path !== this.urlPathNormalize(path));
+				this.devicesFsData = this.devicesFsData.filter(v => v.path !== this.vfsPathNormalize(path));
 			}
 
 			devicesFsExists(path) {
-				return this.devicesFsData.find(v => v.path === this.urlPathNormalize(path)) !== undefined;
+				return this.devicesFsData.find(v => v.path === this.vfsPathNormalize(path)) !== undefined;
 			}
 
 			async devicesFsExistsDirectory(path) {
-				return path === (await this.urlPathInfo(path))?.mp.targetPath;
+				return path === (await this.vfsPathInfo(path))?.mp.targetPath;
 			}
 
 			async devicesFsStatistics(path) {
-				let info = await this.urlPathInfo(path);
+				let info = await this.vfsPathInfo(path);
 
 				if(path === info?.mp.targetPath) return {
 					deviceMajorID: info.device?.ID,
@@ -1187,7 +1187,7 @@
 			}
 
 			async devicesFsReadDirectory(path) {
-				let mp = (await this.urlPathInfo(path))?.mp;
+				let mp = (await this.vfsPathInfo(path))?.mp;
 
 				if(mp && path === mp.targetPath) {
 					return this.devicesFsData.filter(v => v.path.startsWith(path)).map(v => new (require('fs')).Dirent(v.path.split('/').pop(), 1));
@@ -1225,13 +1225,13 @@
 				if(!fs) {
 					throw new RangeError(`Unable to find FS ${ typeof fsSearch === 'number' ? fsSearch : '"'+fsSearch+'"' }`);
 				}
-				if(fs.type === 0 && (await this.fsStatistics(sourcePath))?.type !== 'inode/blockdevice') {
+				if(fs.type === 0 && (await this.vfsStatistics(sourcePath))?.type !== 'inode/blockdevice') {
 					throw new Error(`"${ sourcePath }" is not a block device`);
 				}
 				if(sourcePath && this.mp.find(v => v.sourcePath === sourcePath)) {
 					throw new Error(`"${ sourcePath }" already mounted`);
 				}
-				if(targetPath !== '/' && !await this.fsExistsDirectory(targetPath)) {
+				if(targetPath !== '/' && !await this.vfsExistsDirectory(targetPath)) {
 					throw new Error(`"${ targetPath }" is not a directory`);
 				}
 
@@ -1265,14 +1265,14 @@
 				a = Array.isArray(a) ? a : []
 
 				if(a.length === 0) {
-					for(let v of await this.fsReadDirectoryBasic('/Environment/Library/Extensions')) {
+					for(let v of await this.fsReadDirectory('/Environment/Library/Extensions')) {
 						a.push(v.name.replace('.kext', ''));
 					}
 				}
 
 				for(let v of a) {
 					let b = `/Environment/Library/Extensions/${ v }.kext/Contents/Executables/${ v }`,
-						c = await this.fsReadBasic(b);
+						c = await this.fsRead(b);
 
 					if(c) {
 						this.kdInfo('extensionExecute: Loading: '+b);
@@ -1290,7 +1290,7 @@
 			}
 
 			async fbWrite(process, value) {
-				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
+				let group = (await this.vfsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
 					throw new Error(`Groups > 0 aren't allowed to write to framebuffer`);
@@ -1614,7 +1614,7 @@
 				}
 				if(processID && processID_ && processID !== processID_) {
 					let process = this.processes.find(v => v.ID === processID),
-						group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process.user)?.Group;
+						group = (await this.vfsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process.user)?.Group;
 
 					if(group > 0) {
 						throw new RangeError('Non-root processes allowed to throw events process-specifically to themselves only');
@@ -1897,7 +1897,7 @@
 				}
 
 				if(!dl) {
-					if(!await this.fsExists(path)) {
+					if(!await this.vfsExists(path)) {
 						throw new Error('Unable to access requested library');
 					}
 
@@ -1910,15 +1910,15 @@
 					}
 
 					try {
-					//	let fileID = await this.fsOpen(undefined, path);
+					//	let fileID = await this.vfsOpen(undefined, path);
 
 						dl.code = this.codePrepare(`
 							_environment['_dl_${ dl.title }'] = async (_title, _path) => {
-								${ await this.fsRead(path /*fileID*/) }
+								${ await this.vfsRead(path /*fileID*/) }
 							}
 						`);
 
-					//	this.fsClose(undefined, fileID);
+					//	this.vfsClose(undefined, fileID);
 					} catch(error) {
 						error.message = 'Unable to parse requested library';
 
@@ -2016,7 +2016,7 @@
 					paths = process.environment['_dl'+(framework ? 'Frameworks' : 'Libraries')+'Paths']
 						.split(';')
 						.filter(v => v.length > 0)
-						.map(v => this.urlPathNormalize(v)
+						.map(v => this.vfsPathNormalize(v)
 							.replace(/^~\//, '/Users/'+process.user+'/')
 							.replace(/\/$/, '')
 						),
@@ -2027,7 +2027,7 @@
 				for(path of paths) {
 					path = framework ? path+'/'+title+'.framework/Contents/Executables/'+title : path+'/'+title+'.dylib';
 
-					if(await this.fsExists(path)) {
+					if(await this.vfsExists(path)) {
 						break;
 					} else {
 						path = undefined;
@@ -2250,19 +2250,19 @@
 					uptime: () => this.uptime,
 					screen: () => this.screen,
 					log: (...a) => this.kdInfo(process.path.split('/').pop()+': ', ...a),
-					createDir: (a) => this.fsCreateDirectory(a),
-					createNode: (...a) => this.fsCreateNode(...a),
-					remove: (a) => this.fsDestroy(a),
-					exists: (a) => this.fsExists(a),
-					existsDir: (a) => this.fsExistsDirectory(a),
-					stat: (a) => this.fsStatistics(a),
-					open: (a) => this.fsOpen(a),
-					close: (a) => this.fsClose(a),
-					read: (a) => this.fsRead(a),
-					readDir: (a) => this.fsReadDirectory(a),
-					readPref: (a) => this.fsReadPreferences(process, a),
-					write: (...a) => this.fsWrite(...a),
-					writePref: (...a) => this.fsWritePreferences(process, ...a),
+					createDir: (a) => this.vfsCreateDirectory(a),
+					createNode: (...a) => this.vfsCreateNode(...a),
+					remove: (a) => this.vfsDestroy(a),
+					exists: (a) => this.vfsExists(a),
+					existsDir: (a) => this.vfsExistsDirectory(a),
+					stat: (a) => this.vfsStatistics(a),
+					open: (a) => this.vfsOpen(a),
+					close: (a) => this.vfsClose(a),
+					read: (a) => this.vfsRead(a),
+					readDir: (a) => this.vfsReadDirectory(a),
+					readPref: (a) => this.vfsReadPreferences(process, a),
+					write: (...a) => this.vfsWrite(...a),
+					writePref: (...a) => this.vfsWritePreferences(process, ...a),
 					fbWrite: (a) => this.fbWrite(process, a),
 					drCreate: (...a) => this.drCreate(...a),
 					drOpen: (...a) => this.drOpen(...a),
@@ -2316,9 +2316,9 @@
 			 */
 			async processExecute(terminalID, processID, login, password, path, ...arguments_) {
 				let user =
-						login != null && password != null ? (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === login && v.Password === password).Login :
+						login != null && password != null ? (await this.vfsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === login && v.Password === password).Login :
 						processID ? this.processes.find(v => v.ID === processID).user : undefined,
-					executable = await this.fsRead(path);
+					executable = await this.vfsRead(path);
 
 				if(terminalID != null && !this.terminals.find(v => v.ID === terminalID)) {
 					throw new Error('Incorrect terminal');
@@ -2812,7 +2812,7 @@
 			 * Перезапускает Окружение.
 			 */
 			async environmentRelaunch(process) {
-				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
+				let group = (await this.vfsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
 					console.error(0); return;
@@ -2826,7 +2826,7 @@
 			 * Завершает Окружение.
 			 */
 			async environmentQuit(process) {
-				let group = (await this.fsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
+				let group = (await this.vfsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
 
 				if(process && group > 0) {
 					console.error(0); return;
