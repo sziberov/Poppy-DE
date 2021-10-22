@@ -1,13 +1,13 @@
 let daemonLaunched = async () => {
 	return new Promise((resolve) => {
-		let catcher = _call('catcherCreate', 'launchdStatus', (a) => {
+		let catcher = _call('catcherCreate', 'launchStatus', (a) => {
 			if(a.value === 'ru.poppy.opendirectoryd') {
 				_call('catcherDestroy', catcher);
 				resolve(a.event === 'launched');
 			}
 		});
 
-		_call('throw', undefined, 'launchdLoad', 'ru.poppy.opendirectoryd');
+		_call('throw', undefined, 'launchLoad', { label: 'ru.poppy.opendirectoryd' });
 	});
 }
 

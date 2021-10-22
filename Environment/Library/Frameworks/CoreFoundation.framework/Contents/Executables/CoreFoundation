@@ -544,7 +544,7 @@ _environment.CFArrayOld = class CFArrayOld extends Array {
 		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo)) throw new TypeError(0);
 		if(typeof function_ !== 'function')                                                 throw new TypeError(1);
 
-		let ID = this.__observers.length > 0 ? Math.max(...this.__observers.map(v => v.ID))+1 : 1;
+		let ID = this.__observers.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
 		this.__observers.push({
 			ID: ID,
@@ -565,11 +565,13 @@ _environment.CFArrayOld = class CFArrayOld extends Array {
 	}
 
 	removeObserver(processInfo, observerID) {
-		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))             throw new TypeError(0);
-		if(typeof observerID !== 'number')                                                              throw new TypeError(1);
-		if(!this.__observers.find(v => v.ID === observerID && v.processInfo === processInfo))   throw new RangeError(2);
+		if(!Object.isObject(processInfo) || !Object.isMemberOf(processInfo, CFProcessInfo))		throw new TypeError(0);
+		if(typeof observerID !== 'number')														throw new TypeError(1);
+		if(!this.__observers.find(v => v.ID === observerID && v.processInfo === processInfo))	{
+			throw new RangeError(2);
+		}
 
-		this.__observers = this.__observers.filter(v => v.ID !== observerID && v.processInfo !== processInfo);
+		this.__observers = this.__observers.filter(v => !(v.ID === observerID && v.processInfo === processInfo));
 		if(this.__observers.length === 0) {
 			this.__observersHandlerID = CFEvent.removeHandler(this.__observersHandlerID);
 		}

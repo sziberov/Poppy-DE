@@ -1,49 +1,50 @@
 // noinspection JSAnnotator
 return class Main {
-	__daemonsPaths = [
+	process = _call('info');
+	daemonsPaths = [
 		'/Library/Launch Daemons',
 		'/Environment/Library/Launch Daemons'
 	]
-	__agentsPaths = [
+	agentsPaths = [
 	//	'~/Library/Launch Agents',
-	//	'/Library/Launch Agents',
-	//	'/Environment/Library/Launch Agents'
+		'/Library/Launch Agents',
+		'/Environment/Library/Launch Agents'
 	]
-	__services = []
+	services = []
 
 	constructor() {
 		this.initialize().catch((e) => _call('exit'));
 	}
 
 	async initialize() {
-		let process = _call('info');
-
-		if(process.ID !== 1 && process.parentID !== 1) {
+		if(this.process.ID !== 1 && this.process.parentID !== 1) {
 			console.log('launchd: This program is not meant to be run directly');
 			_call('exit');
 		}
 
 		await this.load();
 		await _call('catcherCreate', 'processListChanged', (a) => this.observe(a));	// (..., this.observe.bind(this))
-		await _call('catcherCreate', 'launchdLoad', (a) => this.load(a.value));
+		await _call('catcherCreate', 'userListChanged', (a) => a.event === 'added' ? this.load(undefined, a.value) : undefined);
+		await _call('catcherCreate', 'launchLoad', (a) => this.load(a.label, a.user));
 	}
 
-	async load(label) {
-		if(label != null && this.__services.find(v => v.properties.Label === label)) {
+	async load(label, user) {
+		if(label != null && this.services.find(v => v.properties.Label === label)) {
 			return this.start(label);
 		}
 
-		for(let directoryPath of [...this.__daemonsPaths, ...this.__agentsPaths]) {
+		for(let directoryPath of [...this.daemonsPaths, ...(user != null ? this.agentsPaths : [])]) {
 			for(let filePath of (await _call('readDir', directoryPath)).filter(v => v.isFile()).map(v => directoryPath+'/'+v.name)) {
 				let properties = JSON.parse(await _call('read', filePath));
 
-				if(!properties || typeof properties.Label !== 'string' || typeof properties.Program !== 'string' || properties.Label.length === 0 || properties.Program.length === 0 || label != null && properties.Label !== label) {
+				if(!properties || typeof properties.Label !== 'string' || typeof properties.Program !== 'string' || properties.Label.length === 0 || properties.Program.length === 0 || label != null && properties.Label !== label || this.services.find(v => v.properties.Label === properties.Label && (v.type === 'daemon' || v.user === user && v.type === 'agent'))) {
 					continue;
 				}
 
-				this.__services.push({
+				this.services.push({
 					processID: undefined,
-					type: this.__daemonsPaths.includes(directoryPath) ? 'daemon' : 'agent',
+					user: user ?? process.user,
+					type: this.daemonsPaths.includes(directoryPath) ? 'daemon' : 'agent',
 					status: 'stopped',
 					properties: properties
 				});
@@ -60,29 +61,39 @@ return class Main {
 	}
 
 	start(label) {
-		let service = this.__services.find(v => v.properties.Label === label);
+		for(let service of this.services.filter(v => v.properties.Label === label)) {
+			if(service.status === 'failed') {
+				_call('throw', undefined, 'launchStatus', { event: 'failed', value: label });
+			}
+			if(['launching', 'launched'].includes(service.status)) {
+				_call('throw', undefined, 'launchStatus', { event: service.status, value: label });
+			}
+			if(service.status !== 'stopped') {
+				continue;
+			}
 
-		if(!service || service.status === 'failed') {
-			_call('throw', undefined, 'launchdStatus', { event: 'failed', value: label });
+			service.status = 'launching';
+
+			_call('exec', service.user, undefined, service.properties.Program ?? service.properties.ProgramArguments[0], service.properties.ProgramArguments.slice(1)).then(value => {
+				service.processID = value.ID;
+				service.status = 'launched';
+			}, () => {
+				service.processID = undefined;
+				service.status = 'failed';
+			}).finally(() => {
+				_call('throw', undefined, 'launchStatus', { event: service.status, value: label });
+			});
 		}
-		if(['launching', 'launched'].includes(service.status)) {
-			_call('throw', undefined, 'launchdStatus', { event: service.status, value: label });
-		}
-		if(service.status !== 'stopped') {
+	}
+
+	stop(label) {
+		let service = this.services.find(v => v.properties.Label === label);
+
+		if(service || service.status !== 'launched') {
 			return;
 		}
 
-		service.status = 'launching';
-
-		_call('exec', 'root', 'root', service.properties.Program ?? service.properties.ProgramArguments[0], service.properties.ProgramArguments.slice(1)).then(value => {
-			service.processID = value.ID;
-			service.status = 'launched';
-		}, () => {
-			service.processID = undefined;
-			service.status = 'failed';
-		}).finally(() => {
-			_call('throw', undefined, 'launchdStatus', { event: service.status, value: label });
-		});
+		_call('kill', service.processID);
 	}
 
 	observe(a) {
@@ -90,7 +101,7 @@ return class Main {
 			return;
 		}
 
-		let service = this.__services.find(v => v.processID === a.value && v.status === 'launched');
+		let service = this.services.find(v => v.processID === a.value && v.status === 'launched');
 
 		if(!service) {
 			return;
@@ -99,7 +110,7 @@ return class Main {
 		service.processID = undefined;
 		service.status = 'stopped';
 
-		for(let service of this.__services.filter(v => v.status === 'stopped' && v.properties.KeepAlive)) {
+		for(let service of this.services.filter(v => v.status === 'stopped' && v.properties.KeepAlive)) {
 			this.start(service.properties.Label);
 		}
 	}

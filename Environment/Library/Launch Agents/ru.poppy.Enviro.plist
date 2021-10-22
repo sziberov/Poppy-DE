@@ -1,11 +1,5 @@
 {
-	"POSIXSpawnType": "App",
-	"RunAtLoad": false,
-	"KeepAlive": {
-		"SuccessfullExit": false,
-		"AfterInitialDemand": true
-	},
 	"Label": "ru.poppy.Enviro",
 	"Program": "/Environment/Applications/Enviro.app/Contents/Executables/Enviro",
-	"ThrottleInterval": 0
+	"KeepAlive": true
 }

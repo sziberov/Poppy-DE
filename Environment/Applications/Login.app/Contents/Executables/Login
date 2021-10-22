@@ -9,19 +9,6 @@ return class Main {
 	}
 
 	async initialize() {
-		this.__services = [
-			{
-				identifier: 'ru.poppy.enviro',
-				URL: '/Environment/Applications/Enviro',
-				status: 'stopped'
-			},
-			{
-				identifier: 'ru.poppy.dock',
-				URL: '/Environment/Applications/Dock',
-				status: 'stopped'
-			}
-		]
-
 		LFApp.focusingPolicy = 1;
 
 		new CGCursor();
@@ -92,24 +79,7 @@ return class Main {
 			})
 		]
 
-		this.updateServices();
-		CFArrayOld.addObserver(LFWorkspace.shared.launchedApplications, (a) => this.updateServices(a));
-	}
-
-	updateServices(a) {
-		if(a?.event === 'removed') {
-			this.__services.find(v => v.identifier === a.value.identifier && v.status !== 'failed').status = 'stopped';
-		}
-		for(let v of this.__services) {
-			if(v.status === 'stopped') {
-				v.status = 'launching';
-				LFWorkspace.shared.launchApplication(v.URL).then(() => {
-					v.status = 'launched';
-				}, () => {
-					v.status = 'failed';
-				});
-			}
-		}
+		CFEvent.dispatch(undefined, 'userListChanged', { event: 'added', value: 'dies' });
 	}
 
 	async about() {
@@ -175,7 +145,5 @@ return class Main {
 	willQuit() {
 		CGCursor.shared.remove();
 		LFWorkspace.shared.remove();
-
-	//	_call('quit');
 	}
 }

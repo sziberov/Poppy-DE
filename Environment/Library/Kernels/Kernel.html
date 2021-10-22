@@ -57,48 +57,49 @@
 			bootTimerID;
 			environment;
 
-			async initialize() {
-				await this.extensionExecute();
-
-				this.environment = {
-					...window,
-					Array: Array,
-					Date: Date,
-					Error: Error,
-					Function: undefined,
-					JSON: JSON,
-					Math: Math,
-					Number: Number,
-					Object: Object,
-					Promise: Promise,
-					Proxy: Proxy,
-					RangeError: RangeError,
-					RegExp: RegExp,
-					Symbol: Symbol,
-					TypeError: TypeError,
-				//	WeakRef: WeakRef,
-					console: console,
-					eval: (code) => eval(this.codePrepare(code)),
-					parseInt: parseInt
-				}
-
-				let self = this;
-
-				this.environment.Function = function(...arguments_) {
-					let code = arguments_.pop();
-
-					return new Function(...arguments_, self.codePrepare(code));
-				}
-				this.environment.Function.prototype = Function.prototype;
-				this.environment.Function.prototype.constructor = this.environment.Function;
-
-				$(async () => {
+			constructor() {
+				window.onload = async () => {
 					document.querySelectorAll('framebuffer')[0].appendChild(this.framebuffer);
 
 				//	this.verbose = true;
 
-				//	await this.fbWrite();
 					await this.bootState(true);
+					for(let v of ['fs', 'fast-xml-parser', 'child_process', 'vm', 'recast', 'flow-parser', 'os']) {
+						require(v);
+					}
+					await this.extensionExecute();
+
+					this.environment = {
+						...window,
+						Array: Array,
+						Date: Date,
+						Error: Error,
+						Function: undefined,
+						JSON: JSON,
+						Math: Math,
+						Number: Number,
+						Object: Object,
+						Promise: Promise,
+						Proxy: Proxy,
+						RangeError: RangeError,
+						RegExp: RegExp,
+						Symbol: Symbol,
+						TypeError: TypeError,
+					//	WeakRef: WeakRef,
+						console: console,
+						eval: (code) => eval(this.codePrepare(code)),
+						parseInt: parseInt
+					}
+
+					let self = this;
+
+					this.environment.Function = function(...arguments_) {
+						let code = arguments_.pop();
+
+						return new Function(...arguments_, self.codePrepare(code));
+					}
+					this.environment.Function.prototype = Function.prototype;
+					this.environment.Function.prototype.constructor = this.environment.Function;
 
 					this.vfsFsRegister('ufs', {
 						createDirectory: this.universalFsCreateDirectory,
@@ -193,17 +194,12 @@
 						this.eventThrow(undefined, undefined, 'dateChanged');
 					});
 
-					for(let v of ['fs', 'fast-xml-parser', 'child_process', 'vm', 'recast', 'flow-parser', 'os']) {
-						require(v);
-					}
-					this.processExecute(undefined, undefined, 'root', 'root', '/Environment/Applications/Login.app/Contents/Executables/Login').then(() => {
+					this.processExecute(undefined, undefined, 'root', 'root', '/sbin/launchd').then(() => {
 						this.bootState(false);
 					}, error => {
-						this.kdbPanic(error);
+						this.kdPanic(error);
 					});
-				});
-
-				return this;
+				}
 			}
 
 			/**
@@ -255,15 +251,6 @@
 			}
 
 			/**
-			 * Mount Points - Точки монтирования.
-			 *
-			 * @returns {Object[]}
-			 */
-			get mp() {
-				return this.objects.mp;
-			}
-
-			/**
 			 * Объекты файлов.
 			 *
 			 * @returns {Object[]}
@@ -279,6 +266,15 @@
 			 */
 			get devices() {
 				return this.objects.devices;
+			}
+
+			/**
+			 * Mount Points - Точки монтирования.
+			 *
+			 * @returns {Object[]}
+			 */
+			get mp() {
+				return this.objects.mp;
 			}
 
 			/**
@@ -361,16 +357,16 @@
 				this.objects.fs = value;
 			}
 
-			set mp(value) {
-				this.objects.mp = value;
-			}
-
 			set files(value) {
 				this.objects.files = value;
 			}
 
 			set devices(value) {
 				this.objects.devices = value;
+			}
+
+			set mp(value) {
+				this.objects.mp = value;
 			}
 
 			set channels(value) {
@@ -418,15 +414,15 @@
 				}
 			}
 
-			kdbClear() {
+			kdClear() {
 				$('kdb strings').text('');
 			}
 
-			async kdbPanic(error = {}) {
+			async kdPanic(error = {}) {
 				for(let v of this.timers) {
 					this.timerDestroy(undefined, v.ID);
 				}
-				this.kdbClear();
+				this.kdClear();
 				this.kdInfo(`
 					Please contact someone with an image of the
 					information printed below, along with a description of your
@@ -458,40 +454,40 @@
 			}
 
 			async bootState(value) {
-				return {
-					false: () => {
-						if(this.bootTimerID != null) {
-							this.timerDestroy(undefined, this.bootTimerID);
+				if(typeof value !== 'boolean') {
+					throw new TypeError('Value should be boolean');
+				}
 
-							this.bootTimerID = undefined;
-						}
-					},
-					true: async () => {
-						if(this.bootTimerID == null) {
-							let layer = this.drCreate(this.screen.width, this.screen.height),
-								logo = await this.drOpen(this.images.logo),
-								spinner = await this.drOpen(this.images.spinner),
-								spinnerBackground = this.drCreate(spinner.width, spinner.height),
-								spinnerIteration = 0;
+				let layer = this.drCreate(this.screen.width, this.screen.height),
+					logo = await this.drOpen(this.images.logo);
 
-							this.drDraw(layer, 'rectangle', this.colors.lightGray, 0, 0, layer.width, layer.height);
-							this.drDraw(layer, 'layer', logo, layer.width/2-logo.width/2, layer.height/2-logo.height/2);
-							this.drDraw(spinnerBackground, 'rectangle', this.colors.lightGray, 0, 0, spinnerBackground.width, spinnerBackground.height);
+				if(!value && this.bootTimerID != null) {
+					this.bootTimerID = this.timerDestroy(undefined, this.bootTimerID);
+				}
 
-							this.bootTimerID = this.timerCreate(undefined, true, 125/2, async () => {
-								spinnerIteration = spinnerIteration > 10 ? 0 : ++spinnerIteration;
+				this.drDraw(layer, 'rectangle', this.colors.lightGray, 0, 0, layer.width, layer.height);
+				this.drDraw(layer, 'layer', logo, layer.width/2-logo.width/2, layer.height/2-logo.height/2);
+				this.fbWrite(undefined, layer);
 
-								let x = layer.width/2,
-									y = layer.height/2+(layer.height+logo.height)/4,
-									angle = 30*spinnerIteration;
+				if(value && this.bootTimerID == null) {
+					let spinner = await this.drOpen(this.images.spinner),
+						spinnerBackground = this.drCreate(spinner.width, spinner.height),
+						spinnerIteration = 0;
 
-								this.drDraw(layer, 'layer', spinnerBackground, x, y, undefined, undefined, angle);
-								this.drDraw(layer, 'layer', spinner, x, y, undefined, undefined, angle);
-								this.fbWrite(undefined, layer);
-							});
-						}
-					}
-				}[value]();
+					this.drDraw(spinnerBackground, 'rectangle', this.colors.lightGray, 0, 0, spinnerBackground.width, spinnerBackground.height);
+
+					this.bootTimerID = this.timerCreate(undefined, true, 125/2, async () => {
+						spinnerIteration = spinnerIteration > 10 ? 0 : ++spinnerIteration;
+
+						let x = layer.width/2,
+							y = layer.height/2+(layer.height+logo.height)/4,
+							angle = 30*spinnerIteration;
+
+						this.drDraw(layer, 'layer', spinnerBackground, x, y, undefined, undefined, angle);
+						this.drDraw(layer, 'layer', spinner, x, y, undefined, undefined, angle);
+						this.fbWrite(undefined, layer);
+					});
+				}
 			}
 
 			async fsRead(path, raw) {
@@ -617,7 +613,7 @@
 						if(mp.sourcePath) {
 							let deviceStatistics = await this.vfsStatistics(mp.sourcePath);
 
-							info.device = this.devices.find(v => v.ID === deviceStatistics.internalDeviceMajorID && v.type === deviceStatistics.type.replace('inode/chardevice', 'c').replace('inode/blockdevice', 'b'));
+							info.device = this.devices.find(v => v.ID === deviceStatistics.internalDeviceMajorID && v.type === deviceStatistics.type.replace('application/x-character-device', 'c').replace('application/x-block-device', 'b'));
 							info.deviceInstance = info.device.instances.find(v => v.ID === deviceStatistics.internalDeviceMinorID);
 						}
 
@@ -980,7 +976,7 @@
 					data = await this.universalFsRead(path, true);
 				} else
 				if(await this.universalFsExistsDirectory(path)) {
-					type = 'inode/directory';
+					type = 'application/x-directory';
 				} else {
 					return;
 				}
@@ -1162,7 +1158,7 @@
 				if(path === info?.mp.targetPath) return {
 					deviceMajorID: info.device?.ID,
 					deviceMinorID: info.deviceInstance?.ID,
-					type: 'inode/directory',
+					type: 'application/x-directory',
 					size: 0
 				}
 
@@ -1173,7 +1169,7 @@
 					deviceMinorID: info?.deviceInstance?.ID,
 					internalDeviceMajorID: file.deviceMajorID,
 					internalDeviceMinorID: file.deviceMinorID,
-					type: file.type === 'c' ? 'inode/chardevice' : file.type === 'b' ? 'inode/blockdevice' : undefined,
+					type: file.type === 'c' ? 'application/x-character-device' : file.type === 'b' ? 'application/x-block-device' : undefined,
 					size: 0
 				}
 			}
@@ -1225,7 +1221,7 @@
 				if(!fs) {
 					throw new RangeError(`Unable to find FS ${ typeof fsSearch === 'number' ? fsSearch : '"'+fsSearch+'"' }`);
 				}
-				if(fs.type === 0 && (await this.vfsStatistics(sourcePath))?.type !== 'inode/blockdevice') {
+				if(fs.type === 0 && (await this.vfsStatistics(sourcePath))?.type !== 'application/x-block-device') {
 					throw new Error(`"${ sourcePath }" is not a block device`);
 				}
 				if(sourcePath && this.mp.find(v => v.sourcePath === sourcePath)) {
@@ -1290,9 +1286,7 @@
 			}
 
 			async fbWrite(process, value) {
-				let group = (await this.vfsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === process?.user)?.Group;
-
-				if(process && group > 0) {
+				if(process && (await this.vfsReadPreferences(undefined, 'Global'))?.Users?.find(v => v.Login === process?.user)?.Group > 0) {
 					throw new Error(`Groups > 0 aren't allowed to write to framebuffer`);
 				}
 				if(value !== undefined && !value instanceof Buffer && !value instanceof HTMLCanvasElement) {
@@ -1437,7 +1431,7 @@
 						} else {
 							angle = angle*Math.PI/180;
 
-							context.imageSmoothingEnabled = !Math.isEven(angle/90);
+							context.imageSmoothingEnabled = (angle/90)%2 !== 0;
 							context.translate(x, y);
 							context.rotate(angle);
 							context.drawImage(layer_, -layer_.width/2, -layer_.height/2);
@@ -1627,8 +1621,9 @@
 					} catch(error) {
 						error.fileName = this.processes.find(v => v.ID === catcher.processID)?.path;
 						this.kdInfo(`
-							eventThrow@${ catcher.processID }: Catcher failed to execute its function:
-							    Process ID: ${ processID_ ?? 'Not set' }
+							eventThrow${ processID ? '@'+processID : '' }: Catcher failed to execute its function:
+							    ID: ${ catcher.ID }
+							    Process ID: ${ catcher.processID ?? 'Not set' }
 							    Title: "${ title }"
 						`, error.stack);
 					}
@@ -1721,12 +1716,12 @@
 					timer;
 
 				if(!repeat) {
-					timer = sbSetTimeout(() => {
+					timer = setTimeout(() => {	// sbSetTimeout
 						function_(...arguments_);
 						this.timerDestroy(processID, ID);
 					}, delay);
 				} else {
-					timer = sbSetInterval(function_, delay, ...arguments_);
+					timer = setInterval(function_, delay, ...arguments_);	// sbSetInterval
 				}
 				this.timers.push({
 					ID: ID,
@@ -1764,9 +1759,9 @@
 				}
 
 				if(!timer.repeat) {
-					sbClearTimeout(timer.timer);
+					clearTimeout(timer.timer);	// sbClearTimeout
 				} else {
-					sbClearInterval(timer.timer);
+					clearInterval(timer.timer);	// sbClearInterval
 				}
 				this.timers = this.timers.filter(v => v !== timer);
 				this.kdInfo(`timerDestroy${ processID ? '@'+processID : '' }: Object ${ timer.ID } destroyed`);
@@ -2315,9 +2310,11 @@
 			 * @returns	{?Object}				Информация о процессе.
 			 */
 			async processExecute(terminalID, processID, login, password, path, ...arguments_) {
-				let user =
-						login != null && password != null ? (await this.vfsReadPreferences(undefined, 'Global')).Users.find(v => v.Login === login && v.Password === password).Login :
-						processID ? this.processes.find(v => v.ID === processID).user : undefined,
+				let parent = this.processes.find(v => v.ID === processID),
+					user =
+						login != null && password != null ? (await this.vfsReadPreferences(undefined, 'Global'))?.Users?.find(v => v.Login === login && v.Password === password)?.Login :
+						login != null && password == null && (await this.vfsReadPreferences(undefined, 'Global'))?.Users?.find(v => v.Login === parent.user)?.Group === 0 ? (await this.vfsReadPreferences(undefined, 'Global'))?.Users?.find(v => v.Login === login)?.Login :
+						processID ? parent.user : undefined,
 					executable = await this.vfsRead(path);
 
 				if(terminalID != null && !this.terminals.find(v => v.ID === terminalID)) {
@@ -2903,7 +2900,7 @@
 			 * - ? - Задачи с низким приоритетом по причине неясности пути и/или неуверенности в нужде реализации.
 			 * - X - Скорее всего отменённые задачи.
 			 */
-		}().initialize();
+		}
 	</script>
 	<style type="text/css">
 		@font-face {
