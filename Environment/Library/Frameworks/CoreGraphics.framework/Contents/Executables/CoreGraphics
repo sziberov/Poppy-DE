@@ -9,7 +9,7 @@ _import('<CoreFoundation>');
 /**
  * Тип, обозначающий точку в двумерной системе координат.
  */
-_environment.CGPoint = class CGPoint extends CFObject {
+_global.CGPoint = class CGPoint extends CFObject {
 	__x;
 	__y;
 
@@ -52,7 +52,7 @@ _environment.CGPoint = class CGPoint extends CFObject {
 /**
  * Тип, обозначающий размеры.
  */
-_environment.CGSize = class CGSize extends CFObject {
+_global.CGSize = class CGSize extends CFObject {
 	__width;
 	__height;
 
@@ -95,7 +95,7 @@ _environment.CGSize = class CGSize extends CFObject {
 /**
  * Тип, обозначающий положение и размеры прямоугольника.
  */
-_environment.CGRectangle = class CGRectangle extends CFObject {
+_global.CGRectangle = class CGRectangle extends CFObject {
 	__origin;
 	__size;
 
@@ -142,15 +142,15 @@ _environment.CGRectangle = class CGRectangle extends CFObject {
 	}
 }
 
-_environment.CGScreen = class CGScreen {
+_global.CGScreen = class CGScreen {
 	static size = new CGSize(_call('screen'));
 }
 
-_environment.CGColor = (red, green, blue, alpha) => {
+_global.CGColor = (red, green, blue, alpha) => {
 	return _call('drColor', red, green, blue, alpha);
 }
 /*
-_environment.CGColor = class CGColor {
+_global.CGColor = class CGColor {
 	constructor(red, green, blue, alpha) {
 		if(typeof red !== 'string') {
 			console.error(0); return;
@@ -183,7 +183,7 @@ _environment.CGColor = class CGColor {
 }
 */
 
-_environment.CGContext = class CGContext {
+_global.CGContext = class CGContext {
 	__layer;
 	__internalLayer;
 
@@ -241,7 +241,7 @@ _environment.CGContext = class CGContext {
 	}
 }
 
-_environment.CGImage = class CGImage {
+_global.CGImage = class CGImage {
 	static __friends__ = [CGContext]
 
 	static async new(URL, type, asLayer = false) {
@@ -269,7 +269,7 @@ _environment.CGImage = class CGImage {
  *
  * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
  */
-_environment.CGSWindowServer = $CFShared.CGSWindowServer ?? class CGSWindowServer extends CFObject {
+_global.CGSWindowServer = $CFShared.CGSWindowServer ?? class CGSWindowServer extends CFObject {
 	static __shared;
 
 	static get shared() {
@@ -595,7 +595,7 @@ _environment.CGSWindowServer = $CFShared.CGSWindowServer ?? class CGSWindowServe
 /**
  * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
  */
-_environment.CGSConnection = class CGSConnection {
+_global.CGSConnection = class CGSConnection {
 	static __shared;
 
 	static get shared() {
@@ -634,12 +634,12 @@ _environment.CGSConnection = class CGSConnection {
 /**
  * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
  */
-_environment.CGSWorkspace = class CGSWorkspace {}
+_global.CGSWorkspace = class CGSWorkspace {}
 
 /**
  * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
  */
-_environment.CGSWindow = class CGSWindow {
+_global.CGSWindow = class CGSWindow {
 	// Теги со звёздочкой означают, что (мне так кажется) на них должен реагировать не оконный сервер, а вышестоящий фреймфорк
 	static style = {
 		allowedBeforeLogin:         0,
@@ -696,9 +696,9 @@ _environment.CGSWindow = class CGSWindow {
 /**
  * _Этот класс является служебным и не предназначен для использования сторонними приложениями._
  */
-_environment.CGSCursor = class CGSCursor {}
+_global.CGSCursor = class CGSCursor {}
 
-_environment.CGLayer = class CGLayer {
+_global.CGLayer = class CGLayer {
 	static __friends__ = [CGContext, CGImage, CGSWindowServer]
 
 	__superlayer;
@@ -946,7 +946,7 @@ _environment.CGLayer = class CGLayer {
 	}
 }
 
-_environment.CGAppearance = $CFShared.CGAppearance ?? class CGAppearance {
+_global.CGAppearance = $CFShared.CGAppearance ?? class CGAppearance {
 	static __URLSs = []
 
 	constructor(URL) {
@@ -991,7 +991,7 @@ _environment.CGAppearance = $CFShared.CGAppearance ?? class CGAppearance {
 	}
 }
 
-_environment.CGElement = class CGElement {
+_global.CGElement = class CGElement {
 	constructor(_) {
 		this._ = {
 			tag: 'CGElement',
@@ -1054,7 +1054,7 @@ _environment.CGElement = class CGElement {
 	}
 }
 
-_environment.CGCursor = $CFShared.CGCursor ?? class CGCursor {
+_global.CGCursor = $CFShared.CGCursor ?? class CGCursor {
 	static __shared;
 
 	static get shared() {
@@ -1125,7 +1125,7 @@ _environment.CGCursor = $CFShared.CGCursor ?? class CGCursor {
 	}
 }
 
-_environment.CGFontManager = $CFShared.CGFontManager ?? class CGFontManager {
+_global.CGFontManager = $CFShared.CGFontManager ?? class CGFontManager {
 	static __shared;
 
 	static get shared() {
@@ -1203,7 +1203,7 @@ if(!CGSWindowServer.shared) {
 	await CGSWindowServer.new();
 }
 
-_environment.$CGAppearance = await new CGAppearance((await CFBundle.new(_path)).resourcesURL+'/Appearance.css').add();
+_global.$CGAppearance = await new CGAppearance((await CFBundle.new(_path)).resourcesURL+'/Appearance.css').add();
 
 $CFShared.CGSWindowServer = CGSWindowServer;
 $CFShared.CGAppearance = CGAppearance;

@@ -5,21 +5,21 @@
  *
  * _Этот сигнал не может быть перехвачен._
  */
-_environment.SIGKILL = 0;
+_global.SIGKILL = 0;
 
 /**
  * SIGnal INTerrupt
  *
  * Сигнал, посылаемый процессу для его уничтожения.
  */
-_environment.SIGINT = 1;
+_global.SIGINT = 1;
 
 /**
  * SIGnal WINdow CHanged
  *
  * Сигнал, посылаемый процессу при изменении размеров окна его терминала.
  */
-_environment.SIGWINCH = 2;
+_global.SIGWINCH = 2;
 
 /**
  * Создаёт обработчик сигнала для текущего процесса.
@@ -27,11 +27,11 @@ _environment.SIGWINCH = 2;
  * @param {Number} a Идентификатор сигнала.
  * @param {Function} b Обработчик сигнала.
  */
-_environment.signal = (a, b) => _call('signalCatcherCreate', a, b);
+_global.signal = (a, b) => _call('signalCatcherCreate', a, b);
 
 /**
  * Посылает процессу SIGKILL.
  *
  * @param {?Number} a Идентификатор процесса. Если не указан, предполагается текущий.
  */
-_environment.kill = (a) => _call('signalThrow', SIGKILL, a);
+_global.kill = (a) => _call('signalThrow', SIGKILL, a);

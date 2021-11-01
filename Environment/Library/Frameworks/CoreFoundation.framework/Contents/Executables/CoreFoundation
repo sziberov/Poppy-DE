@@ -4,7 +4,7 @@
  * Contains low-level management tools.
  */
 
-_environment.CFProcessInfo = class CFProcessInfo {
+_global.CFProcessInfo = class CFProcessInfo {
 	static __shared;
 
 	static get shared() {
@@ -46,15 +46,15 @@ _environment.CFProcessInfo = class CFProcessInfo {
 	}
 
 	get environment() {
-		return _environment;
+		return Object.fromEntries(_environment.map(v => v.split(/=(.+)/)));
 	}
 
 	get executable() {
-		return this.environment._executable;
+		return _executable;
 	}
 }
 
-_environment.CFFile = class CFFile {
+_global.CFFile = class CFFile {
 	static create(URL) {
 		return _call('write', URL, '');
 	}
@@ -73,7 +73,7 @@ _environment.CFFile = class CFFile {
 	}
 }
 
-_environment.CFDirectory = class CFDirectory {
+_global.CFDirectory = class CFDirectory {
 	static create(URL) {
 		return _call('createDir', URL);
 	}
@@ -93,7 +93,7 @@ _environment.CFDirectory = class CFDirectory {
 	}
 }
 
-_environment.CFPreferences = class CFPreferences {
+_global.CFPreferences = class CFPreferences {
 	static async new(identifier) {
 		let self = new this();
 
@@ -125,7 +125,7 @@ _environment.CFPreferences = class CFPreferences {
 	}
 }
 
-_environment.CFIdentity = class CFIdentity {
+_global.CFIdentity = class CFIdentity {
 	static __shared;
 
 	static get shared() {
@@ -181,7 +181,7 @@ _environment.CFIdentity = class CFIdentity {
 	}
 }
 
-_environment.CFEvent = class CFEvent {
+_global.CFEvent = class CFEvent {
 	static dispatch(processID, event, ...arguments_) {
 		if(processID && typeof processID !== 'number')  throw new TypeError(0);
 		if(typeof event !== 'string')                   throw new TypeError(1);
@@ -208,7 +208,7 @@ _environment.CFEvent = class CFEvent {
 // Каждый наблюдатель обязан автоматически удаляться:
 // - После завершения его породившего процесса.
 // - При недоступности наблюдаемого объекта.
-_environment.CFObject = class CFObject extends Object {
+_global.CFObject = class CFObject extends Object {
 	static __friends__ = [this]
 	static __observation = {
 		handlerID: undefined,
@@ -453,7 +453,7 @@ _environment.CFObject = class CFObject extends Object {
 	}
 }
 
-_environment.CFArrayOld = class CFArrayOld extends Array {
+_global.CFArrayOld = class CFArrayOld extends Array {
 	[Symbol.collection] = true;
 
 	__observers = []
@@ -625,7 +625,7 @@ _environment.CFArrayOld = class CFArrayOld extends Array {
 	}
 }
 
-_environment.CFArray = class CFArray extends CFObject {
+_global.CFArray = class CFArray extends CFObject {
 	static add(array, ...value) {
 		if(!Object.isObject(array) || !Object.isKindOf(array, this) || !Array.isArray(array)) {
 			throw new TypeError(0);
@@ -750,6 +750,20 @@ _environment.CFArray = class CFArray extends CFObject {
 			this.removeLast();
 		}
 	}
+
+	/*
+	[Symbol.get](self, key) {
+		if(typeof key === 'number' && key.isInteger() && key < 0) {
+			key = this.count+key;
+		}
+
+		let value = self[key]
+
+		CFEvent.dispatch(undefined, 'CFArrayNotification', { object: this, event: 'get', key: key });
+
+		return value;
+	}
+	*/
 
 	[Symbol.set](self, key, value) {
 		if(typeof key !== 'number' && !key.isInteger()) {
@@ -1243,7 +1257,7 @@ _environment.CFArray = class CFArray extends CFObject {
 	}
 }
 
-_environment.CFString = class CFString {
+_global.CFString = class CFString {
 	static splitByLast(string = '', value) {
 		let index = string.lastIndexOf(value);
 
@@ -1251,7 +1265,7 @@ _environment.CFString = class CFString {
 	}
 }
 
-_environment.CFURL = class CFURL {
+_global.CFURL = class CFURL {
 	components(value) {
 		if(typeof value !== 'string') {
 			throw new TypeError();
@@ -1261,7 +1275,7 @@ _environment.CFURL = class CFURL {
 	}
 }
 
-_environment.CFPropertyList = class CFPropertyList {
+_global.CFPropertyList = class CFPropertyList {
 	static serialize(value) {
 		if(!Object.isObject(value)) {
 			throw new TypeError();
@@ -1279,7 +1293,7 @@ _environment.CFPropertyList = class CFPropertyList {
 	}
 }
 
-_environment.CFBundle = class CFBundle {
+_global.CFBundle = class CFBundle {
 	static main;
 
 	static async new(URL) {
@@ -1358,24 +1372,24 @@ _environment.CFBundle = class CFBundle {
 	}
 }
 
-_environment.CFLocalizedString = async (key, bundle) => {
+_global.CFLocalizedString = async (key, bundle) => {
 	let language = (await CFPreferences.new('Global')).get().PreferredLanguages[0],
 		localizedStrings = (bundle ?? CFBundle.main).localizations[language]?.Localized;
 
 	return language && localizedStrings ? localizedStrings[key] ?? value ?? key : value ?? key;
 }
 
-_environment.CFLog = (...arguments_) => {
+_global.CFLog = (...arguments_) => {
 	_call('log', ...arguments_);
 }
 
 // ---- //
 
-if(!_call('seInfo', _title)) {
-	_call('seCreate', 'r', _title);
+if(!_call('smInfo', _title)) {
+	_call('smCreate', 'r', _title);
 }
 
-_environment.$CFShared = _call('seInfo', _title).environment;
+_global.$CFShared = _call('smInfo', _title).memory;
 
 try {
 	CFBundle.main = await CFBundle.new(CFProcessInfo.shared.path);

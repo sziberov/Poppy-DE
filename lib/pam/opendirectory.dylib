@@ -11,6 +11,6 @@ let daemonLaunched = async () => {
 	});
 }
 
-_environment.pamAuthentificate = async (user) => {
+_global.pamAuthentificate = async (user) => {
 	return await daemonLaunched();
 }

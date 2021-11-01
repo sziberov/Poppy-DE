@@ -7,7 +7,7 @@
 _import('<CoreFoundation>');
 _import('<CoreGraphics>');
 
-_environment.LFObject = class LFObject {
+_global.LFObject = class LFObject {
 	static __friends__ = [CFObject]
 
 	__element;
@@ -103,18 +103,16 @@ _environment.LFObject = class LFObject {
 	}
 
 	release() {
-		let environment = CFProcessInfo.shared.environment;
-
 		this.remove();
-		for(let v in environment) {
-			if(environment.hasOwnProperty(v) && environment[v] === this) {
-				delete environment[v]
+		for(let v in _global) {
+			if(_global.hasOwnProperty(v) && _global[v] === this) {
+				delete _global[v]
 			}
 		}
 	}
 }
 
-_environment.LFResponder = class LFResponder extends LFObject {
+_global.LFResponder = class LFResponder extends LFObject {
 	constructor() {
 		super();
 	}
@@ -152,7 +150,7 @@ _environment.LFResponder = class LFResponder extends LFObject {
 	}
 }
 
-_environment.LFView = class LFView extends LFResponder {
+_global.LFView = class LFView extends LFResponder {
 	__superview;
 	__subviews = new CFArrayOld();
 	__subviews_;
@@ -357,7 +355,7 @@ _environment.LFView = class LFView extends LFResponder {
 	}
 }
 
-_environment.LFConstraint = class LFConstraint {
+_global.LFConstraint = class LFConstraint {
 	constructor({ view, multiplier = 1, side, position, margin = 16, direction = 'out' }) {
 		return {
 			top: 0,
@@ -366,7 +364,7 @@ _environment.LFConstraint = class LFConstraint {
 	}
 }
 
-_environment.LFControl = class LFControl extends LFView {
+_global.LFControl = class LFControl extends LFView {
 	__action;
 
 	constructor({ action } = {}) {
@@ -443,7 +441,7 @@ _environment.LFControl = class LFControl extends LFView {
 	}
 }
 
-_environment.LFButton = class LFButton extends LFControl {
+_global.LFButton = class LFButton extends LFControl {
 	__minWidth;
 	__title;
 	__image;
@@ -560,7 +558,7 @@ _environment.LFButton = class LFButton extends LFControl {
 	}
 }
 
-_environment.LFMenubar = $CFShared.LFMenubar ?? class LFMenubar extends LFView {
+_global.LFMenubar = $CFShared.LFMenubar ?? class LFMenubar extends LFView {
 	static __friends__ = [CGSWindowServer]
 
 	static __shared;
@@ -678,7 +676,7 @@ _environment.LFMenubar = $CFShared.LFMenubar ?? class LFMenubar extends LFView {
 	}
 }
 
-_environment.LFMenu = class LFMenu extends LFView {
+_global.LFMenu = class LFMenu extends LFView {
 	__x;
 	__y;
 	__corners = []
@@ -871,7 +869,7 @@ _environment.LFMenu = class LFMenu extends LFView {
 	}
 }
 
-_environment.LFMenuItem = class LFMenuItem extends LFButton {
+_global.LFMenuItem = class LFMenuItem extends LFButton {
 	constructor({ title = 'MenuItem' } = {}) {
 		super(...arguments);
 	}
@@ -944,7 +942,7 @@ _environment.LFMenuItem = class LFMenuItem extends LFButton {
 	}
 }
 
-_environment.LFWorkspace = $CFShared.LFWorkspace ?? class LFWorkspace extends LFView {
+_global.LFWorkspace = $CFShared.LFWorkspace ?? class LFWorkspace extends LFView {
 	static __shared;
 
 	static get shared() {
@@ -1043,7 +1041,7 @@ _environment.LFWorkspace = $CFShared.LFWorkspace ?? class LFWorkspace extends LF
 	async launch(URL, ...arguments_) {
 		let user = (await CFPreferences.new('Global')).get().Users.find(v => v.Group === 1);
 
-		return _call('exec', user.Login, user.Password, URL, ...arguments_);
+		return _call('exec', user.Login, user.Password, URL, arguments_);
 	}
 
 	async launchApplication(URL, ...arguments_) {
@@ -1064,7 +1062,7 @@ _environment.LFWorkspace = $CFShared.LFWorkspace ?? class LFWorkspace extends LF
 				throw new Error(`Properties list has no executable set`);
 			}
 
-			await _call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable, ...arguments_);
+			await _call('exec', user.Login, user.Password, bundle.executablesURL+'/'+bundle.properties.CFBundleExecutable, arguments_);
 
 			return this.getApplication(URL);
 		} catch(error) {
@@ -1089,7 +1087,7 @@ _environment.LFWorkspace = $CFShared.LFWorkspace ?? class LFWorkspace extends LF
 	}
 }
 
-_environment.LFLaunchedApplication = class LFLaunchedApplication {
+_global.LFLaunchedApplication = class LFLaunchedApplication {
 	static __shared;
 
 	static get shared() {
@@ -1156,7 +1154,7 @@ _environment.LFLaunchedApplication = class LFLaunchedApplication {
 	}
 }
 
-_environment.LFApplication = class LFApplication {
+_global.LFApplication = class LFApplication {
 	static __shared;
 
 	static get shared() {
@@ -1178,7 +1176,7 @@ _environment.LFApplication = class LFApplication {
 			throw new Error('Only one instance allowed');
 		}
 
-		this.process.environment.LFApp = this.constructor.shared;
+		_global.LFApp = this.constructor.shared;
 
 		LFWorkspace.shared.launchedApplications.add(new LFLaunchedApplication(this));
 		CFArrayOld.addObserver(LFWorkspace.shared.subviews, (a) => {
@@ -1358,7 +1356,7 @@ _environment.LFApplication = class LFApplication {
 	}
 }
 
-_environment.LFWindow = class LFWindow extends LFView {
+_global.LFWindow = class LFWindow extends LFView {
 	static center = Object.freeze({
 		xy:	0,
 		x:	1,
@@ -1721,7 +1719,7 @@ _environment.LFWindow = class LFWindow extends LFView {
 	}
 }
 
-_environment.LFFrame = class LFFrame extends LFView {	// Не имеет ничего общего с CGRectangle и .frame, название выбрано по ошибке
+_global.LFFrame = class LFFrame extends LFView {	// Не имеет ничего общего с CGRectangle и .frame, название выбрано по ошибке
 	__type;
 
 	constructor({ type = 'top', subviews } = {}) {
@@ -1764,7 +1762,7 @@ _environment.LFFrame = class LFFrame extends LFView {	// Не имеет нич�
 	}
 }
 
-_environment.LFTitlebar = class LFTitlebar extends LFView {
+_global.LFTitlebar = class LFTitlebar extends LFView {
 	__title;
 
 	constructor({ title, subviews } = {}) {
@@ -1788,7 +1786,7 @@ _environment.LFTitlebar = class LFTitlebar extends LFView {
 	}
 }
 
-_environment.LFTitlebarButton = class LFTitlebarButton extends LFControl {
+_global.LFTitlebarButton = class LFTitlebarButton extends LFControl {
 	__type;
 
 	constructor({ type } = {}) {
@@ -1826,7 +1824,7 @@ _environment.LFTitlebarButton = class LFTitlebarButton extends LFControl {
 	}
 }
 
-_environment.LFToolbar = class LFToolbar extends LFView {
+_global.LFToolbar = class LFToolbar extends LFView {
 	constructor({ subviews } = {}) {
 		super(...arguments);
 
@@ -1834,7 +1832,7 @@ _environment.LFToolbar = class LFToolbar extends LFView {
 	}
 }
 
-_environment.LFSidebar = class LFSidebar extends LFView {
+_global.LFSidebar = class LFSidebar extends LFView {
 	constructor({ subviews } = {}) {
 		super(...arguments);
 
@@ -1842,7 +1840,7 @@ _environment.LFSidebar = class LFSidebar extends LFView {
 	}
 }
 
-_environment.LFImage = class LFImage extends LFView {
+_global.LFImage = class LFImage extends LFView {
 	__width;
 	__height;
 	__url;
@@ -1924,7 +1922,7 @@ _environment.LFImage = class LFImage extends LFView {
 	}
 }
 
-_environment.LFText = class LFText extends LFView {
+_global.LFText = class LFText extends LFView {
 	__string;
 	__size;
 	__weight;
@@ -1979,7 +1977,7 @@ _environment.LFText = class LFText extends LFView {
 	}
 }
 
-_environment.LFTable = class LFTable extends LFView {
+_global.LFTable = class LFTable extends LFView {
 	constructor({ subviews } = {}) {
 		super(...arguments);
 
@@ -1997,7 +1995,7 @@ _environment.LFTable = class LFTable extends LFView {
 	}
 }
 
-_environment.LFTableRow = class LFTableRow extends LFControl {
+_global.LFTableRow = class LFTableRow extends LFControl {
 	__title;
 
 	data;
@@ -2049,7 +2047,7 @@ _environment.LFTableRow = class LFTableRow extends LFControl {
 	mouseup() {}
 }
 
-_environment.LFAlert = class LFAlert {
+_global.LFAlert = class LFAlert {
 	__type;
 	__message;
 	__information;
@@ -2117,8 +2115,8 @@ _environment.LFAlert = class LFAlert {
 
 // ---- //
 
-_environment.$LFBundle = await CFBundle.new(_path);
-_environment.$LFAppearance = await new CGAppearance((await CFBundle.new(_path)).resourcesURL+'/Appearance.less').add();
+_global.$LFBundle = await CFBundle.new(_path);
+_global.$LFAppearance = await new CGAppearance((await CFBundle.new(_path)).resourcesURL+'/Appearance.less').add();
 
 $CFShared.LFMenubar = LFMenubar;
 $CFShared.LFWorkspace = LFWorkspace;

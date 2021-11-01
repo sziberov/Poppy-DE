@@ -48,14 +48,14 @@
 				channels: [],
 				catchers: [],
 				timers: [],
-				se: [],
+				sm: [],
 				dl: [],
 				terminals: [],
 				processes: []
 			}
 			eventsReserved = ['keyboardChanged', 'mouseChanged', 'fbChanged', 'terminalChanged', 'processListChanged', 'dateChanged']
 			bootTimerID;
-			environment;
+			memory;
 
 			constructor() {
 				window.onload = async () => {
@@ -69,7 +69,7 @@
 					}
 					await this.extensionExecute();
 
-					this.environment = {
+					this.memory = {
 						...window,
 						Array: Array,
 						Date: Date,
@@ -93,13 +93,13 @@
 
 					let self = this;
 
-					this.environment.Function = function(...arguments_) {
+					this.memory.Function = function(...arguments_) {
 						let code = arguments_.pop();
 
 						return new Function(...arguments_, self.codePrepare(code));
 					}
-					this.environment.Function.prototype = Function.prototype;
-					this.environment.Function.prototype.constructor = this.environment.Function;
+					this.memory.Function.prototype = Function.prototype;
+					this.memory.Function.prototype.constructor = this.memory.Function;
 
 					this.vfsFsRegister('ufs', {
 						createDirectory: this.universalFsCreateDirectory,
@@ -309,8 +309,8 @@
 			 *
 			 * @returns {Object[]}
 			 */
-			get se() {
-				return this.objects.se;
+			get sm() {
+				return this.objects.sm;
 			}
 
 			/**
@@ -381,8 +381,8 @@
 				this.objects.timers = value;
 			}
 
-			set se(value) {
-				this.objects.se = value;
+			set sm(value) {
+				this.objects.sm = value;
 			}
 
 			set dl(value) {
@@ -424,11 +424,6 @@
 				}
 				this.kdClear();
 				this.kdInfo(`
-					Please contact someone with an image of the
-					information printed below, along with a description of your
-					environment configuration and what you were doing at the time that
-					the kernel panic occurred. We apologize for the inconvenience.
-
 					panic: "${ error.name }: ${ error.message }"@${ error.fileName }:${ error.lineNumber }
 
 					${ error.stack }
@@ -1768,30 +1763,30 @@
 			}
 
 			/**
-			 * Создаёт общее окружение для передачи информации между процессами и возвращает его идентификатор.
+			 * Создаёт общую область памяти для передачи информации между процессами и возвращает её идентификатор.
 			 *
 			 * @param	{?number} processID	Идентификатор процесса.
 			 * @param	{'r'|'u'} access	Уровень доступа: чтение или чтение/запись.
 			 * @param	{?string} title		Название.
 			 * @returns	{number}
 			 */
-			seCreate(processID, access, title) {
+			smCreate(processID, access, title) {
 				if(typeof access !== 'string')						throw new TypeError('Incorrect access');
 				if(typeof title !== 'string')						throw new TypeError('Incorrect title');
 				if(!['r', 'u'].includes(access))					throw new RangeError('Incorrect access');
-				if(title && this.se.find(v => v.title === title))	throw new RangeError(`Object with same title already exists`);
+				if(title && this.sm.find(v => v.title === title))	throw new RangeError(`Object with same title already exists`);
 
-				let ID = this.se.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
+				let ID = this.sm.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
-				this.se.push({
+				this.sm.push({
 					ID: ID,
 					processID: processID,
 					access: access,
 					title: title,
-					environment: {}
+					memory: {}
 				});
 				this.kdInfo(`
-					seCreate${ processID ? '@'+processID : '' }: Object created:
+					smCreate${ processID ? '@'+processID : '' }: Object created:
 					    ID: ${ ID }
 					    Access: ${ access === 'r' ? 'Read' : 'Read-Write' }
 					    Title: ${ title ? '"'+title+'"' : 'Not set' }
@@ -1801,26 +1796,26 @@
 			}
 
 			/**
-			 * Возвращает список идентификаторов существующих общих окружений, созданных процессом,
+			 * Возвращает список идентификаторов существующих общих областей памяти, созданных процессом,
 			 * чей идентфикатор указан (или всех, если последнего нет).
 			 *
 			 * @param	{?number} processID Идентификатор процесса.
 			 * @returns	{number[]}
 			 */
-			seList(processID) {
-				return this.se.filter(v => (!processID || v.processID === processID)).map(v => v.ID);
+			smList(processID) {
+				return this.sm.filter(v => (!processID || v.processID === processID)).map(v => v.ID);
 			}
 
-			seInfo(processID, seSearch) {
+			smInfo(processID, seSearch) {
 				if(!['number', 'string'].includes(typeof seSearch)) {
 					throw new TypeError('Incorrect search');
 				}
 
-				let se = this.se.find(v => v.ID === seSearch || v.title === seSearch);
+				let sm = this.sm.find(v => v.ID === seSearch || v.title === seSearch);
 
-				if(!se) {
+				if(!sm) {
 					if(this.verbose) {
-						this.kdInfo(`seInfo${ processID ? '@'+processID : '' }: Unable to find object`);
+						this.kdInfo(`smInfo${ processID ? '@'+processID : '' }: Unable to find object`);
 					}
 
 					return;
@@ -1828,8 +1823,8 @@
 
 				let validator = {
 					get: (target, key) => {
-						if(this.se.find(v => v === se)) {
-							if(processID && processID !== se.processID && se.access === 'r' && typeof target[key] === 'object') {
+						if(this.sm.find(v => v === sm)) {
+							if(processID && processID !== sm.processID && sm.access === 'r' && typeof target[key] === 'object') {
 								return new Proxy(target[key], validator);
 							}
 
@@ -1837,8 +1832,8 @@
 						}
 					},
 					set: (target, key, value) => {
-						if(this.se.find(v => v === se)) {
-							if(processID && processID !== se.processID && se.access === 'r') {
+						if(this.sm.find(v => v === sm)) {
+							if(processID && processID !== sm.processID && sm.access === 'r') {
 								return true;
 							}
 
@@ -1850,34 +1845,34 @@
 				}
 
 				return {
-					ID: se.ID,
-					processID: se.processID,
-					access: se.access,
-					title: se.title,
-					environment: new Proxy(se.environment, validator)
+					ID: sm.ID,
+					processID: sm.processID,
+					access: sm.access,
+					title: sm.title,
+					memory: new Proxy(sm.memory, validator)
 				}
 			}
 
-			seDestroy(processID, seSearch) {
+			smDestroy(processID, seSearch) {
 				if(!['number', 'string'].includes(typeof seSearch)) {
 					throw new TypeError('Incorrect search');
 				}
 
-				let se = this.se.find(v => v.ID === seSearch || v.title === seSearch);
+				let sm = this.sm.find(v => v.ID === seSearch || v.title === seSearch);
 
-				if(!se) {
+				if(!sm) {
 					if(this.verbose) {
-						this.kdInfo(`seDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
+						this.kdInfo(`smDestroy${ processID ? '@'+processID : '' }: Unable to find object`);
 					}
 
 					return;
 				}
-				if(processID && processID !== se.processID) {
+				if(processID && processID !== sm.processID) {
 					throw new Error(`Processes aren't allowed to destroy not owned objects`);
 				}
 
-				this.se = this.se.filter(v => v !== se);
-				this.kdInfo(`seDestroy${ processID ? '@'+processID : '' }: Object ${ se.ID } destroyed`);
+				this.sm = this.sm.filter(v => v !== sm);
+				this.kdInfo(`smDestroy${ processID ? '@'+processID : '' }: Object ${ sm.ID } destroyed`);
 			}
 
 			async dlLoad(processID, path) {
@@ -1908,7 +1903,7 @@
 					//	let fileID = await this.vfsOpen(undefined, path);
 
 						dl.code = this.codePrepare(`
-							_environment['_dl_${ dl.title }'] = async (_title, _path) => {
+							_global['_dl_${ dl.title }'] = async (_title, _path) => {
 								${ await this.vfsRead(path /*fileID*/) }
 							}
 						`);
@@ -1933,6 +1928,18 @@
 
 				dl.processIDs.push(processID);
 
+				/*
+				let memory = this.sbCreate(new Proxy({}, {
+					get: (target, key) => {
+						if(key === '_path')						return path;
+						if(['_global', 'window'].includes(key))	return target;
+						if(key === 'require')					return;
+
+						return target[key] ?? process.memory[key]
+					}
+				}));
+				*/
+
 				return new Promise((resolve, reject) => {
 					let a = (error) => {
 						if(Object.isObject(error)) {
@@ -1945,12 +1952,12 @@
 					}
 
 					try {
-						this.sbExecute(dl.code, process.environment, dl.title);
+						this.sbExecute(dl.code, process.memory, dl.title);
 					} catch(error) {
 						a(error);
 					}
-					process.environment['_dl_'+dl.title](dl.title, path).then(v => {
-						delete process.environment['_dl_'+dl.title]
+					process.memory['_dl_'+dl.title](dl.title, path).then(v => {
+						delete process.memory['_dl_'+dl.title]
 						resolve(dl.ID);
 					}, error => {
 						a(error);
@@ -1992,8 +1999,8 @@
 			/**
 			 * Интерфейс для Dynamic Linker'а. Поддерживает как обычные библиотеки, так и framework'и.
 			 *
-			 * С помощью переменных окружения `_dlLibrariesPaths` и `_dlFrameworksPaths` можно контролировать
-			 * пути поиска (строка с разделением через `;`). ~~Переменная `_dlFrameworksPaths` изменяется автоматически
+			 * С помощью переменных окружения `DL_LIBRARIES_PATHS` и `DL_FRAMEWORKS_PATHS` можно контролировать
+			 * пути поиска (строка с разделением через `;`). ~~Переменная `DL_FRAMEWORKS_PATHS` изменяется автоматически
 			 * в зависимости от подключаемых framework'ов.~~
 			 *
 			 * _Этот метод является частью Objective-Root._
@@ -2008,13 +2015,13 @@
 				if(title.length === 0 || title === '<>')		throw new RangeError('Incorrect title');
 
 				let framework = /^<.+>$/.test(title),
-					paths = process.environment['_dl'+(framework ? 'Frameworks' : 'Libraries')+'Paths']
-						.split(';')
+					paths = this.processEnvironment(process.ID, 0, 'DL_'+(framework ? 'FRAMEWORKS' : 'LIBRARIES')+'_PATHS')
+						?.split(';')
 						.filter(v => v.length > 0)
 						.map(v => this.vfsPathNormalize(v)
 							.replace(/^~\//, '/Users/'+process.user+'/')
 							.replace(/\/$/, '')
-						),
+						) ?? [],
 					path;
 
 				title = framework ? title.substring(1, title.length-1) : title;
@@ -2055,7 +2062,7 @@
 			 * Регистрирует устройство-терминал.
 			 */
 			async terminalRegister() {
-				if(terminalDeviceID != null) {
+				if(this.terminalDeviceID != null) {
 					throw new RangeError('Unable to register terminal device: Already exists');
 				}
 
@@ -2073,14 +2080,18 @@
 			 * @returns	{number}
 			 */
 			async terminalInstanceCreate(processID) {
+				if(this.terminalDeviceID == null) {
+					throw new RangeError('Unable to create instance of terminal device: No terminal device registered');
+				}
+
 				let process = this.processes.find(v => v.ID === processID),
 					terminals = this.devices.find(v => v.ID === this.terminalDeviceID).instances,
-					ID = terminals.length;
+					ID = terminals.reduce((a, b) => b.ID > a ? b.ID : a, -1)+1;
 
-				await this.deviceInstanceCreate(this.terminalDeviceID, ID, 'term', {
+				await this.deviceInstanceCreate(this.terminalDeviceID, ID, 'term'+ID, {
 					parentID: process?.terminalID ?? 0,
 					mode: 'text',
-					current: !terminals.some(v => v.data.current),
+					current: !terminals.some(v => v.data.current)
 				});
 				await this.eventThrow(undefined, undefined, 'terminalListChanged', { event: 'added', value: ID });
 
@@ -2216,24 +2227,24 @@
 			}
 
 			/**
-			 * Подготавливает окружение, (частично) изолируя его от остальной среды.
+			 * Подготавливает контейнер, (частично) изолируя его от остальной среды.
 			 *
-			 * @param {Object} environment Сырое окружение.
+			 * @param {Object} container Сырой контейнер.
 			 * @returns {Context}
 			 */
-			sbCreate(environment) {
-				return require('vm').createContext(environment);
+			sbCreate(container) {
+				return require('vm').createContext(container);
 			}
 
 			/**
-			 * Запускает код в окружении.
+			 * Запускает код в контейнере.
 			 *
 			 * @param {string}	code		Код.
-			 * @param {Context}	environment	Окружение.
-			 * @param {?string}	title		Название окружения, видимое при отладке.
+			 * @param {Context}	container	Контейнер.
+			 * @param {?string}	title		Название контейнера, видимое при отладке.
 			 */
-			sbExecute(code, environment, title) {
-				return require('vm').runInContext(code, environment, {
+			sbExecute(code, container, title) {
+				return require('vm').runInContext(code, container, {
 					filename: title?.split('/').pop(),
 					timeout: 60000
 				});
@@ -2251,7 +2262,7 @@
 					exists: (a) => this.vfsExists(a),
 					existsDir: (a) => this.vfsExistsDirectory(a),
 					stat: (a) => this.vfsStatistics(a),
-					open: (a) => this.vfsOpen(a),
+					open: (...a) => this.vfsOpen(...a),
 					close: (a) => this.vfsClose(a),
 					read: (a) => this.vfsRead(a),
 					readDir: (a) => this.vfsReadDirectory(a),
@@ -2275,16 +2286,17 @@
 					catcherDestroy: (a) => this.eventCatcherDestroy(process.ID, a),
 					timerCreate: (...a) => this.timerCreate(process.ID, ...a),
 					timerDestroy: (a) => this.timerDestroy(process.ID, a),
-					seCreate: (...a) => this.seCreate(process.ID, ...a),
-					seList: (a) => this.seList(a ?? process.ID),
-					seInfo: (a) => this.seInfo(process.ID, a),
-					seDestroy: (a) => this.seDestroy(process.ID, a),
+					smCreate: (...a) => this.smCreate(process.ID, ...a),
+					smList: (a) => this.smList(a ?? process.ID),
+					smInfo: (a) => this.smInfo(process.ID, a),
+					smDestroy: (a) => this.smDestroy(process.ID, a),
 					exec: (...a) => this.processExecute(process.terminalID, process.ID, ...a),
+					env: (a) => this.processEnvironment(process.ID, ...a),
 					list: () => this.processList(),
 					info: (a) => this.processInfo(a ?? process.ID),
 				//	fork: (a) => this.processFork(process.ID, a),
 					kill: (a) => this.processKill(a ?? process.ID),
-					import: (...a) => this.dlImport(process, ...a),
+					import: (a) => this.dlImport(process, a),
 					protected: (...a) => this.classProtected(process.ID, ...a),
 					system: () => this.system(),
 					relaunch: () => this.environmentRelaunch(process),
@@ -2306,10 +2318,11 @@
 			 * @param	{string}	login		Логин пользователя.
 			 * @param	{string}	password	Пароль пользователя.
 			 * @param	{string}	path		Абсолютный путь к исполняемому файлу.
-			 * @param	{string[]}	arguments_	Параметры запуска, передаваемые в точку вхождения.
+			 * @param	{string[]}	arguments_	Параметры запуска.
+			 * @param	{string[]}	environment	Переменные окружения. Каждая строка должна иметь вид `^\w+=.+$`.
 			 * @returns	{?Object}				Информация о процессе.
 			 */
-			async processExecute(terminalID, processID, login, password, path, ...arguments_) {
+			async processExecute(terminalID, processID, login, password, path, arguments_ = [], environment = []) {
 				let parent = this.processes.find(v => v.ID === processID),
 					user =
 						login != null && password != null ? (await this.vfsReadPreferences(undefined, 'Global'))?.Users?.find(v => v.Login === login && v.Password === password)?.Login :
@@ -2337,23 +2350,28 @@
 					user: user,
 					path: path,
 					arguments: arguments_.filter(v => typeof v === 'string'),
-					environment: undefined
+					environment: undefined,
+					memory: undefined
 				}
 
-				process.environment = this.sbCreate(new Proxy({
-					_dlLibrariesPaths: '~/lib;/usr/lib;/lib',
-					_dlFrameworksPaths: '~/Library/Frameworks;/Library/Frameworks;/Environment/Library/Frameworks',
+				process.environment = [
+					'DL_LIBRARIES_PATHS=~/lib;/usr/lib;/lib',
+					'DL_FRAMEWORKS_PATHS=~/Library/Frameworks;/Library/Frameworks;/Environment/Library/Frameworks',
+					...environment.filter(v => typeof v === 'string' && /^\w+=.+$/.test(v))
+				]
+				process.memory = this.sbCreate(new Proxy({
 					_call: (...a) => this.processCall(process, ...a),
 					_import: (...a) => this.processCall(process, 'import', ...a),
 					_protected: (...a) => this.processCall(process, 'protected', ...a)
 				}, {
 					get: (target, key) => {
-						if(key === '_path')								return process.path;
-						if(key === '_arguments')						return [...process.arguments]
-						if(['_environment', 'window'].includes(key))	return target;
-						if(key === 'require')							return;
+						if(key === '_path')						return process.path;
+						if(key === '_arguments')				return [...process.arguments]
+						if(key === '_environment')				return [...process.environment]
+						if(['_global', 'window'].includes(key))	return target;
+						if(key === 'require')					return;
 
-						return target[key] ?? this.environment[key]
+						return target[key] ?? this.memory[key]
 					}
 				}));
 
@@ -2383,16 +2401,16 @@
 							var _executable = async () => {
 								${ executable }
 							}
-						`), process.environment, process.path);
+						`), process.memory, process.path);
 					} catch(error) {
 						a(error);
 					}
-					process.environment._executable().then(value => {
+					process.memory._executable().then(value => {
 						if(value.prototype?.constructor.name !== 'Main') {
 							a(new Error('Cannot find entry point')); return;
 						}
 						try {
-							process.environment._executable = new value(...process.arguments);
+							process.memory._executable = new value(...process.arguments);
 							resolve(this.processInfo(process.ID));
 						} catch(error) {
 							a(error);
@@ -2401,6 +2419,51 @@
 						a(error);
 					});
 				});
+			}
+
+			/**
+			 * Возвращает или устанавливает переменную окружения.
+			 *
+			 * @param	{number}			processID	Идентификатор процесса.
+			 * @param	{number}			mode		Режим: 0 - получение, 1 - установка.
+			 * @param	{string}			key			Название переменной в формате `^\w+$`.
+			 * @param	{?(string|number)}	value		Значение переменной.
+			 * @returns	{?*}
+			 */
+			processEnvironment(processID, mode, key, value) {
+				if(typeof processID !== 'number')											throw new TypeError('Incorrect process ID');
+				if(typeof mode !== 'number')												throw new TypeError('Incorrect mode');
+				if(typeof key !== 'string')													throw new TypeError('Incorrect key');
+				if(value != null && typeof value !== 'string' && typeof value !== 'number')	throw new TypeError('Incorrect value');
+				if(![0, 1].includes(mode))													throw new RangeError('Incorrect mode');
+				if(!/^\w+$/.test(key))														throw new RangeError('Incorrect key');
+
+				let process = this.processes.find(v => v.ID === processID);
+
+				if(!process) {
+					if(this.verbose) {
+						this.kdInfo('processEnvironment: Unable to find process '+processID);
+					}
+
+					return;
+				}
+
+				let index = process.environment.indexOf(process.environment.find(v => v.startsWith(key+'=')));
+
+				return {
+					0: () => process.environment[index]?.substring(key.length+1),
+					1: () => {
+						if(value != null && value.toString().length > 0) {
+							if(index != null) {
+								process.environment[index] = key+'='+value;
+							} else {
+								process.environment.push(key+'='+value);
+							}
+						} else {
+							process.environment.splice(index, 1);
+						}
+					}
+				}[mode]();
 			}
 
 			/**
@@ -2442,7 +2505,8 @@
 						user: v.user,
 						path: v.path,
 						arguments: [...v.arguments],
-					//	memory: Object.sizeOf(v.environment)	// Всё Окружение вылетает со свистом
+						environment: [...v.environment],
+					//	memorySize: Object.sizeOf(v.memory)	// Всё Окружение вылетает со свистом
 					});
 				}
 
@@ -2470,7 +2534,7 @@
 
 				for(let v of this.catchers.filter(v => v.processID === processID))	this.eventCatcherDestroy(processID, v.ID);
 				for(let v of this.timers.filter(v => v.processID === processID))	this.timerDestroy(processID, v.ID);
-				for(let v of this.se.filter(v => v.processID === processID))		this.seDestroy(processID, v.ID);
+				for(let v of this.sm.filter(v => v.processID === processID))		this.smDestroy(processID, v.ID);
 				for(let v of this.dl.filter(v => v.processIDs.includes(processID)))	this.dlUnload(processID, v.ID);
 				this.processes = this.processes.filter(v => v !== process);
 				if(!quiet) {
@@ -2541,8 +2605,8 @@
 					private_ = !number && !reserved && field.indexOf('__') === 0,
 					protected_ = !number && !reserved && !private_ && field.indexOf('_') === 0,
 					mutating = type === 'set' && !(field in class_) || type === 'delete' && field in class_,
-					environment = this.processes.find(v => v.ID === processID)?.environment,
-					global = environment ? Object.isShallowlyEqual(environment, class_) : false,	// Object.isMemberOf(class_, environment)
+					memory = this.processes.find(v => v.ID === processID)?.memory,
+					global = memory ? Object.isShallowlyEqual(memory, class_) : false,	// Object.isMemberOf(class_, memory)
 					equals = caller === class_ || Object.isMemberOf(caller, class_),
 					inherits = Object.isKindOf(caller, class_),
 					friends = (class_.constructor ?? class_).__friends__ ?? [],
@@ -2835,7 +2899,7 @@
 			async __test() {
 				$('framebuffer').css('z-index', 2);
 				this.verbose = true;
-				let e = this.processes[0].environment,
+				let e = this.processes[0].memory,
 					s = e.CGSWindowServer.shared;
 
 				return s.__test();
@@ -2888,7 +2952,7 @@
 			 * - [~] Доработать (оптимизировать) асинхронность процессов (мультизадачность).
 			 * - [?] Добавить проверку необходимости оператора ?. в .codePrepare() (вместо его слепой расстановки вовсюда).
 			 * - [?] Законопатить дырку безопасности, связанную с возможностью перезаписи приватных полей классами-наследниками.
-			 * - [?] Написать как минимум часть NetInfo/Directory Services, для администрирования локальных пользователей.
+			 * - [?] Написать как минимум часть Directory Services, для администрирования локальных пользователей.
 			 * - [?] Добавить поддержку разнообразных сигналов. Смысл как у событий, но в отличии от них список относительно
 			 *       стандартизирован, а момент уведомления преимущественно перед действиями, а не после.
 			 * - [?] Раскомментить и переписать processFork() так, чтобы он соответствовал реализации в Linux (создаётся дочерний процесс

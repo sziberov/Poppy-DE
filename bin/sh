@@ -12,7 +12,7 @@ return class Main {
 	}
 
 	async initialize() {
-		_environment.$pwd = this.home;
+		_global.$pwd = this.home;
 
 		return this.listen();
 	}
@@ -57,7 +57,7 @@ return class Main {
 
 			arguments_[0] = '/bin/'+arguments_[0]
 
-			_call('exec', undefined, undefined, ...arguments_).then(value => {
+			_call('exec', undefined, undefined, arguments_[0], arguments_.slice(1)).then(value => {
 				if(!value) {
 					return resolve(this.listen());
 				}
