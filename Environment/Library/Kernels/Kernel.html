@@ -128,14 +128,30 @@
 
 					/*
 					await this.deviceInstanceCreate(
-						await this.deviceRegister('b', 'disk', undefined, undefined),
-						0,
+						await this.deviceRegister('b', 'disk'),
+						1,
 						'disk0s1',
 						{ physicalPath: 'G:\\' }
 					);
 					await this.vfsCreateDirectory(undefined, '/Volumes/HD');
 					await this.mpCreate(undefined, 'ufs', '/dev/disk0s1', '/Volumes/HD', 'u');
 					console.log(await this.vfsReadDirectory('/Volumes/HD'));
+
+					await this.deviceInstanceCreate(
+						await this.deviceRegister('c', 'fb'),
+						0,
+						'fb0'
+					);
+					await this.deviceInstanceCreate(
+						await this.deviceRegister('c', 'kbd'),
+						0,
+						'kbd0'
+					);
+					await this.deviceInstanceCreate(
+						await this.deviceRegister('c', 'ms'),
+						0,
+						'ms0'
+					);
 					*/
 
 					$(document).on('keydown keyup keypress', 'body', (e) => {
@@ -305,7 +321,7 @@
 			}
 
 			/**
-			 * Shared Environments - Объекты общих окружений.
+			 * Shared Memory - Объекты общих областей памяти.
 			 *
 			 * @returns {Object[]}
 			 */

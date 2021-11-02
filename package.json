@@ -13,8 +13,8 @@
 		"height": 600
 	},
 	"dependencies": {
-		"fast-xml-parser": "^3.19.0",
-		"flow-parser": "^0.157.0",
+		"fast-xml-parser": "^3.21.1",
+		"flow-parser": "^0.158.0",
 		"recast": "^0.20.5"
 	}
 }
