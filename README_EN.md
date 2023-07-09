@@ -4,6 +4,10 @@ Poppy DE
 --
 Free OS X-like environment implementation.
 
+![Concept](Resources/Concept.png)
+
+![Screenshot](Resources/Screenshot.png)
+
 The project is by no means a typical DE (as the name suggests) or an independent OS (as it might seem from its architecture), but it should be thought as a combination of these concepts. The choice of the abbreviation in the name is due to the widespread opinion that any real OS should communicate with hardware only directly (the exception is hypervisors), while DE, of course, do not have such a limitation.
 
 Main project requirements:
